@@ -115,7 +115,7 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
 ## FASE 0 — Cimientos
 
 ### [C-01] `foundation-setup`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` pendiente
 - **Scope**: Scaffolding completo del monorepo + infraestructura base (DD-08, DD-09)
   - Estructura: `backend/app/{domain,application,infrastructure}/`, `frontend/src/{features,shared,pages}/`, `jobs/`, `docs-legales/`
   - `backend/`: Python + FastAPI app mínima con `GET /api/health`, settings por env (`DATABASE_URL`, `APP_BASE_URL`, `RESERVA_PREBLOQUEO_MIN`), logger, handler de excepciones, Alembic inicializado, `docker-compose.yml` con PostgreSQL
@@ -134,7 +134,7 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
 ---
 
 ### [C-02] `core-models-multitenancy`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` pendiente
 - **Scope**: Modelos base multi-tenant + migraciones iniciales + seed mínimo (DD-09, SU-01/SU-02 validados)
   - Modelos: `Clinica` (nombre, CUIT, domicilio, datos fiscales ARCA, moneda ARS, política de seña), `Usuario` (clinica_id, email, hash, activo), `Rol`, `UsuarioRol`
   - `TenantMixin` (clinica_id obligatorio) + `AuditMixin` (`is_active`, `created_at`, `updated_at`, `deleted_at`); aislamiento por tenant a nivel query (scoped session / dependencia FastAPI `require_tenant`)

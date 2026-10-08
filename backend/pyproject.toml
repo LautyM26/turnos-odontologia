@@ -1,0 +1,37 @@
+[project]
+name = "turnos-odontologia-backend"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn>=0.30",
+  "pydantic>=2.0",
+  "pydantic-settings>=2.0",
+  "sqlalchemy>=2.0",
+  "psycopg[binary]>=3.0",
+  "alembic>=1.13",
+  "bcrypt>=4.0",
+  "PyJWT>=2.8",
+  "slowapi>=0.1.9",
+]
+
+[dependency-groups]
+test = [
+  "pytest>=8.0",
+  "httpx>=0.27",
+  "testcontainers[postgres]>=4.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["backend"]
+testpaths = ["backend/tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.alembic]
+script_location = "backend/alembic"
