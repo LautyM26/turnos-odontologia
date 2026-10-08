@@ -12,8 +12,8 @@
 
 ## 3. Servicio auth (tokens + blacklist + rate-limit)
 
-- [ ] 3.1 Implementar `domain/auth/tokens.py` (emisión HS256 con claims `sub/tenant_id/roles/email/jti/type/iat/exp`, verificación firma+exp+tolerancia 60s+type, blacklist lookup) con schemas `extra='forbid'`, y verificar tests unitarios de firma/expiración/`type` cruzado rechazado.
-- [ ] 3.2 Implementar verificación de password bcrypt en tiempo constante + normalización de email, y verificar test de login-fallo genérico (mismo mensaje para usuario-inexistente vs password-mala).
+- [x] 3.1 Implementar `domain/auth/tokens.py` (emisión HS256 con claims `sub/tenant_id/roles/email/jti/type/iat/exp`, verificación firma+exp+tolerancia 60s+type, blacklist lookup) con schemas `extra='forbid'`, y verificar tests unitarios de firma/expiración/`type` cruzado rechazado.
+- [x] 3.2 Implementar verificación de password bcrypt en tiempo constante + normalización de email, y verificar test de login-fallo genérico (mismo mensaje para usuario-inexistente vs password-mala).
 - [x] 3.3 Implementar rate limit slowapi 5/60s por IP+email en login con `429` + `Retry-After`, y verificar test de 6º intento bloqueado.
 
 ## 4. Endpoints /api/auth/*
@@ -29,8 +29,8 @@
 
 ## 6. Integración y cierre
 
-- [ ] 6.1 Cablear routers en `main.py`, actualizar `deps.py` (reexport compat + remoción del TODO(C-03)), guía frontend (Bearer + `X-Clinica-Id`, nunca `localStorage`) en `frontend/src/shared/apiClient` o nota de contrato, y verificar `ruff + pytest` backend y `tsc --noEmit` frontend en verde.
-- [ ] 6.2 Verificación E2E por tenant con `PostgresContainer("postgres:16-alpine")`: seed C-02 → login → `me` → refresh → replay 401 → logout 401 → cross-tenant 403, y verificar `openspec validate --strict` del change en verde.
+- [x] 6.1 Cablear routers en `main.py`, actualizar `deps.py` (reexport compat + remoción del TODO(C-03)), guía frontend (Bearer + `X-Clinica-Id`, nunca `localStorage`) en `frontend/src/shared/apiClient` o nota de contrato, y verificar `ruff + pytest` backend y `tsc --noEmit` frontend en verde.
+- [x] 6.2 Verificación E2E por tenant con `PostgresContainer("postgres:16-alpine")`: seed C-02 → login → `me` → refresh → replay 401 → logout 401 → cross-tenant 403, y verificar `openspec validate --strict` del change en verde.
 
 ## Workflow follow-up
 

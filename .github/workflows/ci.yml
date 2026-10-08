@@ -15,7 +15,15 @@ jobs:
       - name: Pull Postgres image (pre-warm for testcontainers)
         run: docker pull postgres:16-alpine
       - name: Install dependencies
-        run: pip install fastapi uvicorn pydantic-settings sqlalchemy "psycopg[binary]" alembic pytest httpx "testcontainers[postgres]" ruff
+        # Fuente única: backend/pyproject.toml (dependencies + grupo test).
+        run: |
+          python - > "$RUNNER_TEMP/requirements.txt" <<'EOF'
+          import tomllib
+          with open("backend/pyproject.toml", "rb") as f:
+              d = tomllib.load(f)
+          print("\n".join(d["project"]["dependencies"] + d["dependency-groups"]["test"]))
+          EOF
+          pip install -r "$RUNNER_TEMP/requirements.txt" ruff
       - name: Lint
         run: ruff check backend
       - name: Tests
