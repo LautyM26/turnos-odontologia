@@ -34,8 +34,11 @@ def _database_url() -> str:
 target_metadata = None
 
 try:  # C-02: metadata core para `alembic check` y autogenerate-compare.
+    from app.domain.agenda import models as _agenda_models  # noqa: F401
+    from app.domain.auditoria import models as _auditoria_models  # noqa: F401
     from app.domain.auth.models import TokenBlacklist  # noqa: F401
     from app.domain.core.models import Clinica, Rol, Usuario, UsuarioRol  # noqa: F401
+    from app.domain.pacientes import models as _pacientes_models  # noqa: F401
     from app.infrastructure.persistence.base import Base
 
     target_metadata = Base.metadata

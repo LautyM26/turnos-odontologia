@@ -3,7 +3,7 @@
 from collections.abc import Sequence
 from datetime import UTC, datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import ColumnElement, func, select
 from sqlalchemy.orm import Session
 
 from app.infrastructure.persistence.mixins import AuditMixin, TenantMixin
@@ -35,6 +35,30 @@ class BaseRepository[ModelT: TenantMixin]:
     def list(self, include_inactive: bool = False) -> Sequence[ModelT]:
         """List tenant rows, active only unless ``include_inactive``."""
         return self._session.scalars(self._scoped(include_inactive)).all()
+
+    def page(
+        self,
+        after_id: int | None,
+        limit: int,
+        include_inactive: bool = False,
+        *filtros: ColumnElement[bool],
+    ) -> tuple[Sequence[ModelT], int | None]:
+        """Keyset pagination by ``id`` (never OFFSET). Returns ``(items, next_cursor)``.
+
+        Fetches ``limit + 1`` rows to know whether another page exists; ``next_cursor``
+        is the id of the last returned row, or ``None`` on the final page.
+        """
+        stmt = self._scoped(include_inactive)
+        if after_id is not None:
+            stmt = stmt.where(self._model.id > after_id)  # type: ignore[attr-defined]
+        if filtros:
+            stmt = stmt.where(*filtros)
+        stmt = stmt.order_by(self._model.id).limit(limit + 1)  # type: ignore[attr-defined]
+        rows = list(self._session.scalars(stmt).all())
+        if len(rows) > limit:
+            rows = rows[:limit]
+            return rows, rows[-1].id  # type: ignore[attr-defined]
+        return rows, None
 
     def add(self, obj: ModelT) -> ModelT:
         """Attach a row, forcing the repository tenant scope."""

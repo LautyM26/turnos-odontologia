@@ -6,22 +6,28 @@ paciente-enlace (solo reserva pública). Todo falla cerrado: 401 sin token,
 403 sin rol. Sobreturnos/anulaciones son contrato que C-05/C-12 invocarán.
 """
 
+import logging
 from collections.abc import Callable
 
 from fastapi import Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
-from app.api.deps import AuthContext, get_current_user
+from app.api.deps import AuthContext, get_current_user, require_tenant_checked
+from app.domain.pacientes.models import Paciente
+from app.domain.pacientes.servicios import obtener_paciente
 from app.infrastructure.db import get_session
 
-#: (session, usuario_id) → profesional_id vinculado. Sin binding (pre-C-04)
-#: retorna None → falla cerrado. C-04 lo reemplaza por el join real.
+_logger = logging.getLogger("turnos.permissions")
+
+#: (session, usuario_id) → profesional_id vinculado. ``create_app()`` registra el
+#: resolver real de C-04 (``profesional_de_usuario``); sin binding retorna None →
+#: falla cerrado.
 AgendaResolver = Callable[[Session, int], int | None]
 _agenda_resolver: AgendaResolver | None = None
 
 
 def set_resolver_agenda_propia(fn: AgendaResolver | None) -> None:
-    """Inyecta el vínculo Usuario→Profesional (C-04; solo tests hasta entonces)."""
+    """Inyecta el vínculo Usuario→Profesional (C-04 lo registra en ``create_app``)."""
     global _agenda_resolver
     _agenda_resolver = fn
 
@@ -47,6 +53,58 @@ def require_admin():  # type: ignore[no-untyped-def]
 def require_clinico():  # type: ignore[no-untyped-def]
     """HC/odontograma/evolución: admin + odontólogo (recepción → 403)."""
     return require_role("admin", "odontologo")
+
+
+def require_clinico_escritura():  # type: ignore[no-untyped-def]
+    """Escritura clínica (ficha, adjuntos): solo rol odontólogo (admin solo lee, matriz 03)."""
+    return require_role("odontologo")
+
+
+#: (session, auth, paciente) -> ¿el odontólogo está vinculado al paciente?
+VinculoPacienteResolver = Callable[[Session, AuthContext, Paciente], bool]
+
+
+def _vinculo_interino(session: Session, auth: AuthContext, paciente: Paciente) -> bool:
+    """Regla interina aprobada: todo paciente de la clínica del JWT (ya filtrado por tenant).
+
+    C-05 la reemplaza con ``set_resolver_vinculo_paciente``: existe turno no cancelado
+    entre el paciente y el profesional vinculado al usuario. Lecturas siempre auditadas.
+    """
+    return True
+
+
+_vinculo_resolver: VinculoPacienteResolver = _vinculo_interino
+
+
+def set_resolver_vinculo_paciente(fn: VinculoPacienteResolver | None) -> None:
+    """Inyecta el vínculo odontólogo-paciente; ``None`` restaura la regla interina."""
+    global _vinculo_resolver
+    _vinculo_resolver = fn or _vinculo_interino
+
+
+def verificar_vinculo_paciente(session: Session, auth: AuthContext, paciente: Paciente) -> None:
+    """403 si el odontólogo (no admin) no está vinculado; excepción del resolver -> 403."""
+    if "admin" in auth.roles or "odontologo" not in auth.roles:
+        return
+    try:
+        vinculado = bool(_vinculo_resolver(session, auth, paciente))
+    except Exception:
+        _logger.exception("resolver de vinculo fallo usuario=%s", auth.sub)
+        vinculado = False
+    if not vinculado:
+        raise HTTPException(status_code=403, detail="Paciente no vinculado al profesional")
+
+
+def require_vinculo_paciente(
+    paciente_id: int,
+    auth: AuthContext = Depends(get_current_user),  # noqa: B008
+    tenant: int = Depends(require_tenant_checked),  # noqa: B008
+    session: Session = Depends(get_session),  # type: ignore[arg-type] # noqa: B008
+) -> Paciente:
+    """Paciente del tenant (404 si ajeno) y luego vínculo (403)."""
+    paciente = obtener_paciente(session, tenant, paciente_id)
+    verificar_vinculo_paciente(session, auth, paciente)
+    return paciente
 
 
 def require_sobreturno():  # type: ignore[no-untyped-def]

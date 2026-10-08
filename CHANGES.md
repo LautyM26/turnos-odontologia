@@ -155,7 +155,7 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
 ## FASE 1 — Identidad y acceso
 
 ### [C-03] `auth-rbac`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` completado
 - **Scope**: Autenticación JWT + RBAC por recurso (SU-02 validado: 4 roles, tercerizado solo su agenda, sobreturnos admin/recepcionista)
   - `POST /api/auth/login` — JWT access (15 min) + refresh (7 días), rate limit 5/60s por IP+email; `POST /api/auth/refresh` con rotación + blacklist; `POST /api/auth/logout`; `GET /api/auth/me`
   - Claims JWT: `sub`, `tenant_id` (clinica_id), `roles`, `email`, `jti`, `type`, `iat`, `exp`; refresh en cookie HttpOnly (secure, samesite=lax)
@@ -178,7 +178,7 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
 > C-04 y C-08 corren en paralelo tras C-03. C-05 exige ambas (el turno referencia profesional + sillón + paciente — regla entidad-referenciada-antes).
 
 ### [C-04] `clinica-catalogo`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` completado
 - **Scope**: Catálogo operativo de la clínica: profesionales, sillones/recursos, prestaciones y bloqueos (DD-04, US-001/US-002)
   - Modelos: `Profesional` (clinica_id, nombre, matrícula, especialidad, agenda_activa, tercerizado flag), `SillonRecurso` (nombre, tipo sillón/box/equipo, activo), `Prestacion` (nombre, duracion_min editable, monto ARS referencia, activa), `Bloqueo` (profesional_id/sillon_id nullable, rango inicio-fin, motivo), `ProfesionalSillon` (habilitación *—*)
   - Endpoints admin CRUD: `/api/admin/profesionales`, `/sillones`, `/prestaciones`, `/bloqueos` (paginados, scoped por tenant)
@@ -197,7 +197,7 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
 ---
 
 ### [C-08] `pacientes-ficha`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` completado
 - **Scope**: Pacientes + ficha de anamnesis + adjuntos + campos OS mínimos + base de auditoría (US-007, US-017)
   - Modelos: `Paciente` (clinica_id, nombre, DNI, email, teléfono/WhatsApp, obra_social nombre, plan, nro_afiliado, riesgo_ausencia score default 0, consentimiento_datos bool), `Ficha` (paciente_id 1—1, anamnesis, alergias, antecedentes), `Adjunto` (paciente_id/evolucion_id, tipo foto/PDF, storage path), `AuditoriaHC` (actor, acción, entidad_id, diff, timestamp — inmutable, sin endpoint de escritura)
   - Endpoints: `GET/POST /api/pacientes`, `GET/PATCH /api/pacientes/{id}`, `GET/PUT /api/pacientes/{id}/ficha`, `POST /api/pacientes/{id}/adjuntos` (límite tamaño + MIME foto/PDF, RN-CL-05); búsqueda por DNI/teléfono; DNI+email normalizados

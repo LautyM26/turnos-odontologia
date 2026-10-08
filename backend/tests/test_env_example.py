@@ -28,6 +28,9 @@ BACKEND_REQUIRED = [
     "JWT_REFRESH_DAYS",
     "COOKIE_SECURE",
     "RATE_LIMIT_LOGIN",
+    # Adjuntos clínicos (C-08).
+    "ADJUNTOS_STORAGE_DIR",
+    "ADJUNTO_MAX_BYTES",
 ]
 
 SECRET_MARKERS = ("APP_USR-", "EAAB", "whsec_", "-----BEGIN")

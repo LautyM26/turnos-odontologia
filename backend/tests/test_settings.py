@@ -17,6 +17,8 @@ def _clean_env(monkeypatch: pytest.MonkeyPatch) -> None:
         "JWT_REFRESH_DAYS",
         "COOKIE_SECURE",
         "RATE_LIMIT_LOGIN",
+        "ADJUNTOS_STORAGE_DIR",
+        "ADJUNTO_MAX_BYTES",
     ):
         monkeypatch.delenv(key, raising=False)
     # Secreto sintético por defecto (32+ chars); los tests de boot-falla lo borran.
@@ -90,6 +92,41 @@ def test_settings_jwt_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_settings_rechaza_secreto_corto(monkeypatch: pytest.MonkeyPatch) -> None:
     _clean_env(monkeypatch)
     monkeypatch.setenv("JWT_SECRET_KEY", "corto")
+    from app.infrastructure.settings import Settings
+
+    with pytest.raises(ValidationError):
+        Settings()
+
+
+def test_settings_adjuntos_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
+    """C-08 1.2: storage local y tope de 10 MiB por defecto."""
+    _clean_env(monkeypatch)
+    from pathlib import Path
+
+    from app.infrastructure.settings import Settings
+
+    settings = Settings()
+    assert settings.adjuntos_storage_dir == Path("./var/adjuntos")
+    assert settings.adjunto_max_bytes == 10485760
+
+
+def test_settings_adjuntos_override(monkeypatch: pytest.MonkeyPatch) -> None:
+    _clean_env(monkeypatch)
+    monkeypatch.setenv("ADJUNTO_MAX_BYTES", "2048")
+    monkeypatch.setenv("ADJUNTOS_STORAGE_DIR", "/tmp/sintetico-adjuntos")
+    from app.infrastructure.settings import Settings
+
+    settings = Settings()
+    assert settings.adjunto_max_bytes == 2048
+    assert str(settings.adjuntos_storage_dir).endswith("sintetico-adjuntos")
+
+
+@pytest.mark.parametrize("valor", ["0", str(30 * 1024 * 1024)])
+def test_settings_adjunto_max_bytes_fuera_de_rango(
+    monkeypatch: pytest.MonkeyPatch, valor: str
+) -> None:
+    _clean_env(monkeypatch)
+    monkeypatch.setenv("ADJUNTO_MAX_BYTES", valor)
     from app.infrastructure.settings import Settings
 
     with pytest.raises(ValidationError):

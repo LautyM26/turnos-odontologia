@@ -1,5 +1,7 @@
 """Application settings loaded from environment (12 vars documented in .env.example)."""
 
+from pathlib import Path
+
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -51,6 +53,17 @@ class Settings(BaseSettings):
     rate_limit_login: str = Field(
         default="5/60s",
         description="Ventana de rate-limit login (formato N/Vs).",
+    )
+    # --- Adjuntos clínicos (C-08, D9/D14). ---
+    adjuntos_storage_dir: Path = Field(
+        default=Path("./var/adjuntos"),
+        description="Directorio local de adjuntos (fuera de cualquier static mount).",
+    )
+    adjunto_max_bytes: int = Field(
+        default=10485760,
+        ge=1,
+        le=26214400,
+        description="Tamaño máximo de un adjunto en bytes (default 10 MiB, tope 25 MiB).",
     )
 
 
