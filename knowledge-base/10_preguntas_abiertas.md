@@ -103,18 +103,26 @@
 
 | Prioridad | Pregunta | Bloquea | Decisor |
 |-----------|----------|---------|---------|
-| Alta | PA-01 — Stack: ¿frontend / backend / DB / hosting? El discovery no lo define. [DISCOVERY] `stack` no pudo inferirse con confianza: por favor confirmar lenguajes, framework y base de datos. | `02`, `08`, Sprint 1 | Equipo técnico + dueño |
-| Alta | PA-02 — Despliegue: ¿SaaS multi-tenant en la nube sí/no? (SU-01). ¿Un tenant por clínica con datos aislados? | Arquitectura, `08` | Dueño |
-| Alta | PA-03 — Roles (P3/SU-02): ¿admin / odontólogo / recepcionista / paciente-enlace alcanzan para el MVP? ¿El odontólogo tercerizado ve solo lo suyo? ¿Quién puede crear sobreturnos y anular caja? | `03`, RBAC, Sprint 1 | Dueño + piloto |
-| Alta | PA-04 — Legal: validar con asesoría las leyes 26.529 (HC), 25.326 (datos sensibles), 25.506 (firma), 27.553 + DNU 345/2024, Res. 1959/2024 y 2214/2025 (ReNaPDiS), 27.706 y facturación ARCA antes de diseñar HC y receta (§10). | HC, receta, cumplimiento | Asesoría legal |
-| Media | PA-05 — WhatsApp: ¿proveedor (BSP) y quién paga la plantilla? ¿Costo en ARS por tipo de plantilla para exponerlo transparente? Tipo de WhatsApp de Bilog (posible API oficial por changelog +1 555) sin confirmar (§11). | Costos, `08` env vars | Dueño |
-| Media | PA-06 — Mercado Pago: ¿seña a cuenta del profesional directo (como §07) con qué cuenta/credenciales? ¿Política de reembolso ante cancelación? | Flujos 1/3/7 | Dueño |
-| Media | PA-07 — ARCA: ¿CUIT y régimen (B/C) del piloto? ¿Facturación por profesional o por clínica? Comportamiento ante caída de ARCA (cola visible — propuesta Flujo 7). | Flujo 7, Sprint 1 | Dueño + contador |
-| Media | PA-08 — Partner recetas: ¿Farmalink, Innovamed u otro registrado en ReNaPDiS? ¿Alcance a órdenes de estudios (Res. 2214/2025)? | Flujo 9 / etapa temprana | Dueño |
-| Media | PA-09 — Prestaciones y duraciones: ¿catálogo inicial con duración por prestación (limpieza 30', conducto 60'…)? ¿Bloqueos y política de sobreturnos del piloto? | Seed data, `04` | Piloto |
+| Alta | PA-01 — Stack ✅ RESUELTA (ronda usuario 1, 2026-10-07): Python + FastAPI + PostgreSQL + React/Vite. El discovery exigía nube sin imponer tecnología. Ver DD-08. | `02`, `08` ✅ desbloqueados | Equipo técnico + dueño |
+| Alta | PA-02 — Despliegue ✅ RESUELTA (ronda usuario 1): SÍ, SaaS multi-tenant en la nube, un tenant por clínica con datos aislados (estándar DrApp/Dentalink). Ver DD-09, SU-01 validado. | Arquitectura, `08` ✅ | Dueño |
+| Alta | PA-03 — Roles ✅ RESUELTA (ronda usuario 1): los 4 roles alcanzan para iniciar, con permisos granulares — odontólogo tercerizado ve solo su agenda; sobreturnos los maneja admin/recepcionista. Ver SU-02 validado. | `03`, RBAC ✅ | Dueño + piloto |
+| Alta | PA-04 — Legal: ABIERTA, supuesto Sprint 1 (ronda usuario 1). Validar con asesoría las leyes 26.529 (HC), 25.326 (datos sensibles), 25.506 (firma), 27.553 + DNU 345/2024, Res. 1959/2024 y 2214/2025 (ReNaPDiS), 27.706 y facturación ARCA antes de diseñar HC y receta (§10). Ver SU-08. | HC, receta, cumplimiento | Asesoría legal |
+| Media | PA-05 — WhatsApp: ABIERTA, supuesto Sprint 1 (ronda usuario 1). Definir BSP/proveedor, quién gestiona y asume el costo transparente en ARS por tipo de plantilla. Tipo de WhatsApp de Bilog sin confirmar (§11). Ver SU-07. | Costos, `08` env vars | Dueño |
+| Media | PA-06 — Mercado Pago: ABIERTA, supuesto Sprint 1 (ronda usuario 1). Definir cuenta (¿profesional directo como §07?), credenciales y política de reembolso ante cancelación. Ver SU-07. | Flujos 1/3/7 | Dueño |
+| Media | PA-07 — ARCA: PARCIALMENTE VALIDADA (ronda usuario 1) — el consultorio propio es el piloto que aportará CUIT/régimen (B/C) y criterio (por profesional o por clínica). Comportamiento ante caída de ARCA (cola visible) sigue a validar. | Flujo 7, Sprint 1 | Dueño + contador |
+| Media | PA-08 — Partner recetas: ABIERTA, supuesto Sprint 1 (ronda usuario 1). ¿Farmalink, Innovamed u otro registrado en ReNaPDiS? ¿Alcance a órdenes de estudios (Res. 2214/2025)? Temprano vía partner (DD-06). Ver SU-08. | Flujo 9 / etapa temprana | Dueño |
+| Media | PA-09 — Prestaciones y duraciones: PARCIALMENTE VALIDADA (ronda usuario 1) — fuente identificada: el consultorio propio fija catálogo inicial, duración por prestación, bloqueos y política de sobreturnos. Falta cargar el catálogo como seed. Ver SU-06. | Seed data, `04` | Piloto |
 | Media | PA-10 — Actores solo-GPT (Dentidad, Órbita, DentApp) y solo-Gemini (DentalSoft, Dentaly, Dentatools, Benty, RivoClin): ¿verificar antes del roadmap o aceptar como periféricos? Órbita declara agenda por sillón (relevante para DD-04). | Roadmap / demos | Equipo |
 | Baja | PA-11 — Reseñas y seguridad no re-verificadas: Capterra/G2, videos DentalTec, páginas /seguridad de Odonthia y DrApp (§11). ¿Se re-verifican o se acepta NE? | Benchmark | Equipo |
-| Baja | PA-12 — Métricas base: ¿línea base de ausentismo/ocupación del piloto para medir éxito (las de competidores son autodeclaradas y no valen)? | `01` métricas | Piloto |
+| Baja | PA-12 — Métricas base: PENDIENTE DEL PILOTO (ronda usuario 1) — la línea base de ausentismo/ocupación se releva en el consultorio propio (las de competidores son autodeclaradas y no valen). Ver SU-06. | `01` métricas | Piloto |
+
+## Respuestas ronda usuario 1 (2026-10-07) — cierre parcial kb-creator
+
+1. **Stack (PA-01): DECIDIDA** → DD-08. 2. **Nube multi-tenant (PA-02): CONFIRMADA** → DD-09 / SU-01 validado.
+3. **Roles (PA-03): CONFIRMADOS** → SU-02 validado (tercerizado solo su agenda; sobreturnos admin/recepcionista).
+4. **Piloto (PA-07/09/12): CONFIRMADO** → SU-06 (consultorio propio; catálogo/duraciones/agenda real desde el piloto; métricas base pendientes).
+5. **Pagos y mensajes (PA-05/06): SUPUESTO Sprint 1** → SU-07. 6. **Legal y recetas (PA-04/08): SUPUESTO Sprint 1** → SU-08.
+Lo no respondido más allá de esto queda como supuesto marcado y se valida en Sprint 1.
 
 ## Question round sugerido (para cerrar gaps sin asumir)
 

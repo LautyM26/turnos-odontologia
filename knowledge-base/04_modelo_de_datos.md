@@ -92,8 +92,8 @@ Usuario *──* Rol (RBAC) ; Evolucion *──1 Usuario (autor) ; AuditoriaHC r
 
 ## Seed data inicial
 
-- Roles base (admin, odontólogo, recepcionista) + matriz mínima de permisos.
-- Sillón de ejemplo + profesional de ejemplo + prestaciones con duración (limpieza 30', conducto 60', etc. — duraciones a confirmar con el consultorio).
+- Roles base (admin, odontólogo, recepcionista) + matriz mínima de permisos (4 roles confirmados, granularidad tercerizado/sobreturnos — ronda usuario 1, PA-03).
+- Sillón de ejemplo + profesional de ejemplo + prestaciones con duración (fuente: consultorio piloto propio — ronda usuario 1, PA-09; duraciones a cargar desde el piloto).
 - Plantillas WhatsApp aprobadas (recordatorio 24 h, confirmación, cancelación, reprogramación, oferta de hueco).
 - Textos legales base: política de privacidad y página de cumplimiento (leyes 26.529, 25.326, 25.506) para adaptar con asesoría legal.
 - Nomenclador base para RNO (etapa 2).

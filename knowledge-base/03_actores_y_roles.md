@@ -12,7 +12,7 @@
 | Administrador / dueño de clínica | Configura el consultorio y supervisa | Panel admin: usuarios y roles, sillones/recursos y reglas, precios en ARS, reportes, respaldo/exportación |
 | Sistema externo (no humano) | ARCA, Mercado Pago, WhatsApp/Meta, partner recetas, OS/círculos | APIs/webhooks (ver `02_descripcion_general.md`) |
 
-**Suposición SU-02:** el MVP distingue al menos 4 roles humanos (admin, odontólogo, recepcionista, paciente). Origen: matriz RBAC/permisos granulares citada como referencia (Dentally) y requisito MVP "roles, permisos, respaldo y exportación". Riesgo si es falso: re-modelar permisos y pantallas (ver P3 en `10_preguntas_abiertas.md`).
+**Confirmado SU-02 (ronda usuario 1, PA-03):** los 4 roles humanos alcanzan para iniciar el MVP, con permisos granulares: el odontólogo tercerizado ve solo su agenda; los sobreturnos los maneja admin/recepcionista según rol. Origen: matriz RBAC/permisos granulares citada como referencia (Dentally) + requisito MVP "roles, permisos, respaldo y exportación" + respuesta usuario ronda 1.
 
 ## RBAC — Matriz de permisos
 
@@ -22,7 +22,7 @@
 |---------------|---------------|------------------|--------------------------|------------------|--------------------|------------------------|----------------------|
 | Administrador | CRUD + reglas y bloqueos | CRUD | Lectura (auditoría) | CRUD | CRUD + arqueo | CRUD | Totales |
 | Odontólogo | Lectura + bloqueos propios; sobreturnos según rol | Lectura/escritura de sus pacientes | CRUD propias (autor/fecha) | CRUD propios | Cobrar sus prácticas | Sin acceso | Propios |
-| Recepcionista | CRUD turnos; sobreturnos solo si el rol lo autoriza | CRUD | Sin acceso clínico (solo datos contacto/OS) | Crear/seguimiento, no modificar clínica | Cobrar/seña, no anular sin rol | Sin acceso | Operativos |
+| Recepcionista | CRUD turnos; sobreturnos si el rol lo autoriza (confirmado ronda 1: admin/recepcionista manejan sobreturnos) | CRUD | Sin acceso clínico (solo datos contacto/OS) | Crear/seguimiento, no modificar clínica | Cobrar/seña, no anular sin rol | Sin acceso | Operativos |
 | Paciente (enlace) | Crear/cancelar/reprogramar los suyos vía enlace + WhatsApp | Solo sus datos | Sin acceso | Ver/aceptar los suyos | Pagar seña/saldo | Sin acceso | Solo sus comprobantes |
 
 Reglas transversales: sobreturnos autorizados por rol; prevención dura de solapamientos (sillón + profesional + equipo); evolución siempre con autor y fecha; anulaciones de caja con traza.

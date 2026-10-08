@@ -10,7 +10,7 @@
       "system_type": "saas_multi_tenant",
       "domain": "odontologia (dental practice management, Argentina)",
       "scale": "multi_tenant",
-      "stack": "Por definir (inferred, low confidence) - integraciones exigidas: WhatsApp Business API + Mercado Pago + ARCA + partner ReNaPDiS registrado",
+      "stack": "Python + FastAPI + PostgreSQL + React/Vite (DECIDED, user-answer-round-1 2026-10-07, DD-08; integraciones no negociables: WhatsApp Business API + Mercado Pago + ARCA + partner ReNaPDiS)",
       "needs_infra": true
     },
     "files": [

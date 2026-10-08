@@ -1,6 +1,6 @@
 # Arquitectura Propuesta
 
-> Fuente: `discovery/Discovery Consolidado Turnos Odontologia.pdf`. El discovery NO define stack (ver PA-01 en `10_preguntas_abiertas.md`). Lo marcado **(S)** es propuesta de modelado a validar, no texto del PDF.
+> Fuente: `discovery/Discovery Consolidado Turnos Odontologia.pdf`. Stack DECIDIDO en ronda de respuestas usuario 1 (2026-10-07, PA-01 → DD-08): Python + FastAPI (backend) + PostgreSQL (DB) + React/Vite (frontend). El discovery no imponía tecnología. Lo marcado **(S)** es propuesta de modelado a validar, no texto del PDF.
 
 ## Patrones aplicados
 
@@ -17,11 +17,11 @@
 
 ## Estructura de directorios
 
-> Stack sin definir (PA-01). Estructura agnóstica; si se elige un monolito web clásico, mapear `api/` al framework que se adopte.
+> Stack decidido (DD-08): `frontend/` = React/Vite, `backend/` = Python/FastAPI, DB = PostgreSQL.
 
 ```
 proyecto/
-├── frontend/                 # App web (framework por definir, ver PA-01)
+├── frontend/                 # React + Vite (decidido ronda usuario 1)
 │   └── src/
 │       ├── features/
 │       │   ├── agenda/       # vista día/semana, reglas, bloqueos, sobreturnos
@@ -33,7 +33,7 @@ proyecto/
 │       │   └── admin/        # usuarios/RBAC, sillones, precios ARS, reportes
 │       ├── shared/
 │       └── pages/            # rutas públicas: reserva, cumplimiento, comprobantes
-├── backend/                  # API (framework por definir, ver PA-01)
+├── backend/                  # Python + FastAPI (decidido ronda usuario 1)
 │   └── app/
 │       ├── domain/
 │       │   ├── agenda/       # motor anti-solapamiento, sobreturnos, lista de espera
@@ -53,18 +53,18 @@ proyecto/
 
 ## Seguridad
 
-- Autenticación: por definir (PA-01). Mínimo exigible (S): sesiones con expiración, todo lo no-público tras login (ver rutas públicas en `03_actores_y_roles.md`).
+- Autenticación: a definir sobre el stack decidido (FastAPI + React/Vite). Mínimo exigible (S): sesiones con expiración, todo lo no-público tras login (ver rutas públicas en `03_actores_y_roles.md`).
 - Autorización: RBAC por recurso (matriz en `03_actores_y_roles.md`); sobreturnos y anulaciones de caja solo con rol; evolución exige autor profesional.
 - Validación de input: duraciones/end-times calculados en servidor (nunca confiar en el cliente para solapamientos); DNI/email/teléfono normalizados para reserva sin cuenta (S).
 - HC y datos sensibles: cifrado en tránsito y en reposo, auditoría inmutable, consentimiento de datos (Ley 25.326 — datos de salud = sensibles); ubicación de datos declarada públicamente (hoy nadie la publica, §06).
 - Firma: consentimientos con fecha, IP, dispositivo y hash, documento bloqueado (modelo Odonthia, Ley 25.506).
-- Secrets management: por definir con el stack (PA-01). Mínimo (S): ningún secreto en repo; credenciales MP/ARCA/Meta solo en vault o env gestionado.
+- Secrets management: sobre el stack decidido (env gestionado / vault compatible con despliegue FastAPI + PostgreSQL). Mínimo (S): ningún secreto en repo; credenciales MP/ARCA/Meta solo en vault o env gestionado.
 
 ## Variables de entorno
 
 | Variable | Descripción | Ejemplo | Sensible |
 |----------|-------------|---------|----------|
-| `DATABASE_URL` | Conexión a la DB (motor por definir, PA-01) | `postgres://…` | Y |
+| `DATABASE_URL` | Conexión a PostgreSQL (decidido, DD-08) | `postgres://…` | Y |
 | `MP_ACCESS_TOKEN` | Mercado Pago, cobro de seña/saldo a cuenta del profesional | `APP_USR-…` | Y |
 | `MP_WEBHOOK_SECRET` | Firma de webhooks de pago | `whsec_…` | Y |
 | `WHATSAPP_API_TOKEN` | Meta WhatsApp Business API oficial | `EAAB…` | Y |

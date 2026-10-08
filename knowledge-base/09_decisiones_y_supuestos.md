@@ -53,31 +53,58 @@
 **Justificación**: R2 penaliza lo no evidenciado (NE); promediar mezclaría evidencia con afirmaciones sin fuente.
 **Trade-offs aceptados**: se descartan puntajes altos de Gemini para Reservo/DentalSoft/Dentaly/Dentatools (sin verificar).
 
+### DD-08 — Stack decidido: Python + FastAPI + PostgreSQL + React/Vite
+**Decisión**: stack del producto = backend Python + FastAPI, base PostgreSQL, frontend React + Vite.
+**Contexto**: el discovery exige capacidades en la nube pero no impone tecnología (PA-01); la ronda de respuestas usuario 1 (2026-10-07) propone avanzar con este stack y queda DECIDIDO.
+**Alternativas consideradas**: (a) seguir con stack indefinido; (b) otra combinación — no propuesta en la ronda.
+**Justificación**: el Discovery exige capacidades en la nube sin imponer tecnología; decidir ahora desbloquea `02`, `08` y el Sprint 1.
+**Trade-offs aceptados**: compromiso con este stack para el MVP; integraciones no negociables sin cambio (WhatsApp oficial + Mercado Pago + ARCA + partner ReNaPDiS).
+
+### DD-09 — Nube multi-tenant confirmada (un tenant por clínica, datos aislados)
+**Decisión**: SaaS multi-tenant en la nube, un tenant por clínica con datos aislados.
+**Contexto**: SU-01 / PA-02; ronda usuario 1 (2026-10-07) lo confirma como estándar validado por referentes regionales (DrApp, Dentalink).
+**Alternativas consideradas**: on-premise / mono-tenant — descartadas.
+**Justificación**: estándar regional validado; sostiene agenda en la nube, reserva online y modelo por profesional/sillón.
+**Trade-offs aceptados**: exige aislamiento de datos por tenant y despliegue cloud desde el día 1.
+
 ## Supuestos inferidos
 
-### SU-01 — SaaS web multi-tenant en la nube
+### SU-01 — SaaS web multi-tenant en la nube ✅ VALIDADO (ronda usuario 1, 2026-10-07)
 **Supuesto**: el producto es SaaS web multi-tenant (una instancia, clínicas como tenants).
 **Origen**: agenda en la nube, reserva online, multisede y precios por profesional/sillón en todo el mapa §03; inferido para `02_descripcion_general.md`.
-**Riesgo si es falso**: cambia toda la arquitectura (on-premise/mono-tenant exigiría otro modelo de despliegue y facturación).
-**Cómo validar**: confirmar con el dueño: ¿nube multi-tenant sí/no? (ver PA-02).
+**Validación**: CONFIRMADO por el usuario — SaaS multi-tenant, un tenant por clínica con datos aislados; estándar de DrApp/Dentalink. Ver DD-09. Ya no es supuesto abierto.
 
-### SU-02 — Al menos 4 roles humanos (admin, odontólogo, recepcionista, paciente)
-**Supuesto**: el MVP distingue esos 4 roles.
+### SU-02 — 4 roles humanos + permisos granulares ✅ VALIDADO (ronda usuario 1, 2026-10-07)
+**Supuesto**: el MVP distingue admin, odontólogo, recepcionista, paciente-enlace.
 **Origen**: requisito "roles y permisos" §09 + referencia Dentally (permisos granulares); inferido para `03_actores_y_roles.md`.
-**Riesgo si es falso**: re-modelar permisos y pantallas.
-**Cómo validar**: pregunta P3 en `10_preguntas_abiertas.md`.
+**Validación**: CONFIRMADO por el usuario — los 4 roles alcanzan para iniciar; granularidad: odontólogo tercerizado ve solo su agenda; sobreturnos los maneja admin/recepcionista. Ya no es supuesto abierto.
 
-### SU-03 — Stack sin definir; integraciones sí definidas
-**Supuesto**: lenguaje/framework/DB quedan a decisión técnica (PA-01); lo no negociable es WhatsApp oficial + Mercado Pago + ARCA + partner ReNaPDiS.
+### SU-03 — Stack decidido; integraciones no negociables ✅ RESUELTO (ronda usuario 1, 2026-10-07)
+**Supuesto original**: lenguaje/framework/DB quedaban a decisión técnica (PA-01); lo no negociable es WhatsApp oficial + Mercado Pago + ARCA + partner ReNaPDiS.
 **Origen**: el discovery no menciona stack en ningún §; sí exige esas 4 integraciones (§09).
-**Riesgo si es falso**: ninguno si se decide a tiempo; alto si se posterga (bloquea `02` y `08`).
-**Cómo validar**: ronda corta de preguntas (ver salida: question round).
+**Resolución**: stack DECIDIDO — Python + FastAPI + PostgreSQL + React/Vite (DD-08). PA-01 cerrada. Las 4 integraciones siguen no negociables.
 
 ### SU-04 — Ventanas operativas típicas (recordatorio 24 h, pre-bloqueo ~15 min, timeouts de oferta)
 **Supuesto**: recordatorio 24 h antes; pre-bloqueo de horario expira en minutos; oferta de lista de espera expira.
 **Origen**: operatoria mínima necesaria para los flujos `07`; el discovery no fija estos valores.
 **Riesgo si es falso**: fricción con la operatoria real del consultorio (demasiados/faltos avisos, huecos retenidos).
-**Cómo validar**: confirmar con 1–2 consultorios piloto antes del Sprint 1.
+**Cómo validar**: confirmar con el consultorio piloto propio antes del Sprint 1 (piloto identificado en ronda usuario 1: PA-07/09/12).
+
+### SU-06 — Piloto: consultorio propio (parcialmente validado, ronda usuario 1, 2026-10-07)
+**Supuesto**: el consultorio odontológico propio es el entorno piloto principal para fijar catálogo de prestaciones, duraciones y probar la agenda real.
+**Origen**: respuesta usuario ronda 1 (PA-07/09/12).
+**Estado**: fuente de seed data IDENTIFICADA (prestaciones/duraciones/agenda real se fijan con el piloto). Métricas base (ausentismo/ocupación, PA-12) aún pendientes de medir en el piloto.
+**Cómo validar**: cargar catálogo + duraciones del piloto como seed antes del Sprint 1; relevar línea base de ausentismo/ocupación en el piloto.
+
+### SU-07 — Pagos y mensajes: supuestos Sprint 1 (PA-05/PA-06 ABIERTOS)
+**Supuesto**: quién gestiona y asume el costo transparente de la API oficial de WhatsApp (BSP/plantillas en ARS) y la cuenta de Mercado Pago (titularidad, credenciales, reembolsos) queda como supuesto a definir en Sprint 1.
+**Origen**: respuesta usuario ronda 1 — "queda como supuesto para el Sprint 1".
+**Plan de validación (Sprint 1)**: definir BSP y quién paga cada tipo de plantilla (costo ARS a exponer); definir cuenta MP (¿profesional directo?), credenciales y política de reembolso ante cancelación.
+
+### SU-08 — Legal y recetas: supuestos Sprint 1 (PA-04/PA-08 ABIERTOS)
+**Supuesto**: encuadre normativo (leyes 26.529, 25.326, 25.506, 27.553 + DNU 345/2024, Res. 1959/2024 y 2214/2025, ley 27.706, facturación ARCA) a validar con asesoría legal; receta ReNaPDIS temprana vía partner.
+**Origen**: respuesta usuario ronda 1 — "queda como supuesto para el Sprint 1"; el Discovery indica validar con asesoría y cubrir receta temprana vía partner.
+**Plan de validación (Sprint 1)**: consulta con asesoría legal antes de diseñar HC/receta; elegir partner ReNaPDiS (Farmalink/Innovamed/u otro registrado) y alcance (¿órdenes de estudios?).
 
 ### SU-05 — Demos priorizadas como orden de verificación
 **Supuesto**: el orden Dentalink → DentalCore → Bilog → DentalTec → DrApp (§08) es también el orden en que conviene verificar huecos (ARCA nativo de Reservo, WhatsApp de Bilog/DentalSoft, reglas de agenda de todos).

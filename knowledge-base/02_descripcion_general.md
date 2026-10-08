@@ -1,20 +1,20 @@
 # Descripción General
 
-> Fuente: `discovery/Discovery Consolidado Turnos Odontologia.pdf`. El discovery NO define stack (lenguaje/framework/DB). Ver § Stack y `10_preguntas_abiertas.md` (PA-01).
+> Fuente: `discovery/Discovery Consolidado Turnos Odontologia.pdf`. El discovery NO impone tecnología específica (la nube es exigencia de capacidades, no de stack). Stack DECIDIDO en ronda de respuestas usuario 1 (2026-10-07, PA-01): Python + FastAPI + PostgreSQL + React/Vite. Ver `09_decisiones_y_supuestos.md` (DD-08) y `10_preguntas_abiertas.md` (PA-01 resuelta).
 
-## Stack tecnológico
+## Stack tecnológico — DECIDIDO (ronda usuario 1, PA-01)
 
 | Capa | Tecnologías | Versión mínima |
 |------|--------------|----------------|
-| Frontend | **Por definir** — el discovery no lo especifica (ver PA-01) | — |
-| Backend | **Por definir** — el discovery no lo especifica (ver PA-01) | — |
-| Base de datos | **Por definir** — requerida por HC/auditoría, agenda y caja (ver PA-01) | — |
+| Frontend | **React + Vite** (decidido, ronda usuario 1) | — |
+| Backend | **Python + FastAPI** (decidido, ronda usuario 1) | — |
+| Base de datos | **PostgreSQL** (decidida, ronda usuario 1) | — |
 | Mensajería | WhatsApp Business API oficial (plantillas aprobadas, cobro por plantilla entregada) | API vigente Meta al 2026 |
 | Cobros | Mercado Pago (seña y saldo; seña ligada al presupuesto en etapa posterior) | — |
 | Facturación | ARCA factura electrónica B/C con CAE y QR, emitida desde el cobro | — |
 | Receta electrónica | Vía partner registrado en ReNaPDiS (Res. 1959/2024); propia es F2 | — |
 
-**Suposición SU-01:** se asume SaaS web multi-tenant en la nube (ver `09_decisiones_y_supuestos.md`). Origen: agenda en la nube, reserva online, multisede y precios por profesional/sillón en todo el mapa de competidores. Si el producto fuera on-premise o mono-tenant, cambiaría toda la arquitectura.
+**Confirmado SU-01 (ronda usuario 1, PA-02):** SaaS web multi-tenant en la nube, un tenant por clínica con datos aislados — estándar validado por referentes regionales (DrApp, Dentalink). Origen: agenda en la nube, reserva online, multisede y precios por profesional/sillón en todo el mapa de competidores. Ver `09_decisiones_y_supuestos.md`.
 
 ## Arquitectura general
 

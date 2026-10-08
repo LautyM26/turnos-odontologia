@@ -57,7 +57,7 @@ IMP = imprescindible, DIF = diferenciador de lanzamiento. Consenso total salvo n
 
 > Las cifras comerciales de competidores ("reduce ausencias 40 %", "64 % menos débitos", conteos de clientes) son autodeclaradas y NO se toman como evidencia (§02). Las métricas de abajo son propuestas de medición propia, no promesas del discovery.
 
-- Ausentismo: % de turnos con falta / cancelación tardía (línea base propia, objetivo: bajar con recordatorios + seña + relleno).
+- Ausentismo: % de turnos con falta / cancelación tardía (línea base a relevar en el consultorio piloto propio — ronda usuario 1, PA-12 pendiente; objetivo: bajar con recordatorios + seña + relleno).
 - Ocupación: % de huecos de sillón ocupados por semana; nº de huecos recuperados vía lista de espera.
 - Conversión: % de presupuestos aceptados que generan turnos; monto en seguimiento no agendado.
 - Cobro: % de turnos online con seña cobrada; tiempo de cobro a factura ARCA con CAE.
