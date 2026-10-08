@@ -1,4 +1,7 @@
-"""E2E por tenant en PG16 real (C-03 6.2): seed → login → me → refresh → replay → logout → cross-tenant."""
+"""E2E por tenant en PG16 real (C-03 6.2).
+
+Flujo: seed → login → me → refresh → replay → logout → cross-tenant.
+"""
 
 from tests.integration.conftest import TEST_PASSWORD, make_test_client
 from tests.integration.test_auth_endpoints import probe_router

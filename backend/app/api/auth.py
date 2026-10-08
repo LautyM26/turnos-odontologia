@@ -53,7 +53,9 @@ def _bearer_token(request: Request) -> str | None:
     return credencial.strip()
 
 
-def _set_refresh_cookie(response: JSONResponse, refresh: str, refresh_days: int, secure: bool) -> None:
+def _set_refresh_cookie(
+    response: JSONResponse, refresh: str, refresh_days: int, secure: bool
+) -> None:
     response.set_cookie(
         key=REFRESH_COOKIE,
         value=refresh,

@@ -49,7 +49,9 @@ PUBLIC_PREFIXES = (
 
 def is_public_path(path: str) -> bool:
     """True si el path es ruta pública declarada (sin login)."""
-    return any(path == prefix or path.startswith(prefix.rstrip("/") + "/") for prefix in PUBLIC_PREFIXES)
+    return any(
+        path == prefix or path.startswith(prefix.rstrip("/") + "/") for prefix in PUBLIC_PREFIXES
+    )
 
 
 @dataclass(frozen=True)
