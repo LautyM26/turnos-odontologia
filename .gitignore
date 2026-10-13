@@ -1,0 +1,33 @@
+# Dependencias
+node_modules/
+.venv/
+venv/
+
+# Artefactos de build
+frontend/dist/
+build/
+*.egg-info/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Secretos (solo se versiona .env.example)
+.env
+.env.*
+!.env.example
+
+# Configuración local del agente y del editor
+.claude/settings.local.json
+.vscode/
+.idea/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+*.log
