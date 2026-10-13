@@ -18,6 +18,37 @@ cd frontend && npm install && npm run dev          # UI en :5173
 curl http://localhost:8000/api/health             # {"status":"ok"}
 ```
 
+## Cómo correr los tests
+
+Requisitos: Python 3.12+ y **Docker Desktop corriendo** (los tests de integración levantan
+PostgreSQL 16 real con testcontainers; nunca SQLite).
+
+```bash
+python -m venv .venv
+# Windows: .venv\Scripts\activate   ·   Linux/macOS: source .venv/bin/activate
+pip install fastapi uvicorn "pydantic[email]" pydantic-settings sqlalchemy "psycopg[binary]" \
+  alembic bcrypt PyJWT slowapi phonenumbers python-multipart \
+  pytest httpx "testcontainers[postgres]" ruff
+docker version                      # debe mostrar la sección "Server"
+python -m pytest backend/tests -q   # unit + integración
+ruff check backend
+```
+
+Solo los tests del change `crear-turno-sin-solapamientos` (un archivo por grupo de escenarios del spec
+`openspec/specs/appointments/spec.md`):
+
+```bash
+python -m pytest backend/tests/unit/test_turno_schemas.py backend/tests/unit/test_turno_errores.py \
+  backend/tests/integration/test_migracion_005.py backend/tests/integration/test_turnos_db_constraints.py \
+  backend/tests/integration/test_turnos_api.py backend/tests/integration/test_turnos_concurrencia.py -v
+```
+
+## Documentación del trabajo (Metodología I)
+
+- `docs/discovery/` — informe de Discovery (`.md` + `.pdf`) y checklist de 11 puntos.
+- `knowledge-base/` — 10 archivos canónicos · `CHANGES.md` — roadmap · `AGENTS.md`/`CLAUDE.md` — reglas del agente.
+- `openspec/changes/archive/` — changes archivados (el del ciclo OPSX de la Etapa 6: `crear-turno-sin-solapamientos`).
+
 ## Estructura
 
 `backend/` · `frontend/` · `jobs/` · `docs-legales/` · `knowledge-base/` ·
@@ -25,4 +56,4 @@ curl http://localhost:8000/api/health             # {"status":"ok"}
 
 ## Estado
 
-C-01 `foundation-setup` en progreso; ver `CHANGES.md` y `openspec/changes/`.
+Archivados: C-01, C-02, C-03, C-04, C-08 y `crear-turno-sin-solapamientos` (recorte de C-05). Ver `CHANGES.md` y `openspec/changes/archive/`.

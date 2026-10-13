@@ -215,7 +215,7 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
 ---
 
 ### [C-05] `motor-turnos`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[~]` parcial — recorte archivado como `crear-turno-sin-solapamientos` (2026-10-13): alta de turno + anti-solapamiento profesional/sillón + bloqueos + rechazo de turnos en el pasado. Pendiente: máquina de estados, sobreturnos, huecos, reprogramar/cancelar.
 - **Scope**: Motor de turnos con anti-solapamiento duro + máquina de estados + sobreturnos por rol (corazón del DD-04, US-001/US-002, Flujo 1)
   - Modelo `Turno` (clinica_id, profesional_id, sillon_id, paciente_id, prestacion_id, inicio, fin calculado = inicio + duracion prestacion, estado reservado/confirmado/asistido/ausente/cancelado/sobreturno, origen enlace/mostrador/WhatsApp/lista_espera, seña_exigida, seña_pagada, motivo_sobreturno)
   - Anti-solapamiento DURO a nivel DB: exclusion constraints PostgreSQL (rango tstzrange) en `(sillon_id, rango)` y `(profesional_id, rango)` solo turnos activos + chequeo de bloqueos en servicio de dominio; doble-clic concurrente → gana primera escritura, segunda recibe 409 "horario no disponible"
