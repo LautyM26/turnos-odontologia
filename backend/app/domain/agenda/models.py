@@ -98,6 +98,7 @@ class Prestacion(Base, TenantMixin, AuditMixin):
 
     __tablename__ = "prestacion"
     __table_args__ = (
+        UniqueConstraint("clinica_id", "id", name="uq_prestacion_clinica_id"),
         CheckConstraint("length(nombre) BETWEEN 1 AND 200", name="nombre_len"),
         CheckConstraint("duracion_min BETWEEN 5 AND 480", name="duracion_rango"),
         CheckConstraint("precio_referencia >= 0", name="precio_no_negativo"),

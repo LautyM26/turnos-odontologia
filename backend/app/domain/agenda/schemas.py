@@ -216,3 +216,35 @@ class BloqueoOut(SalidaBase):
     motivo: str
     is_active: bool
     deleted_at: datetime | None = None
+
+
+# --- Turno (C-05 recorte: alta sin solapamientos) ------------------------------------------
+
+
+class TurnoCreate(EntradaBase):
+    """Alta de turno: fin, duracion, estado, origen y tenant los fija el servidor."""
+
+    profesional_id: StrictInt
+    sillon_id: StrictInt
+    paciente_id: StrictInt
+    prestacion_id: StrictInt
+    inicio: AwareDatetime
+
+    @field_validator("inicio")
+    @classmethod
+    def _utc(cls, value: datetime) -> datetime:
+        return value.astimezone(UTC)
+
+
+class TurnoOut(SalidaBase):
+    id: int
+    profesional_id: int
+    sillon_id: int
+    paciente_id: int
+    prestacion_id: int
+    inicio: datetime
+    fin: datetime
+    duracion_min: int
+    estado: str
+    origen: str
+    created_at: datetime

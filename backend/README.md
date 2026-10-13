@@ -52,3 +52,16 @@ sillón, usuario ya vinculado) `409`. Contratos para C-05: `calcular_fin(inicio,
 
 Seed sintético: ejecutar `seed_core` y **luego** `seed_catalogo` (`app/infrastructure/persistence/`);
 `borrar_seed_catalogo` retira solo filas `es_seed` antes del go-live (PA-09 / SU-06).
+
+## Turnos sin solapamientos (C-05, recorte `crear-turno-sin-solapamientos`)
+
+Migración `005_turnos` (sobre `004_pacientes_ficha`): tabla `turno` + `uq_prestacion_clinica_id`.
+El anti-solapamiento vive en la base: dos exclusion constraints GiST (`ex_turno_profesional_rango`
+y `ex_turno_sillon_rango`, rango `[inicio, fin)`, solo turnos `reservado`/`confirmado`/`asistido`
+activos); los bloqueos se chequean en el servicio (`bloqueos_solapados`). `fin` lo calcula siempre
+el servidor.
+
+| Endpoint | Rol | Códigos |
+|----------|-----|---------|
+| `POST /api/turnos` (`profesional_id`, `sillon_id`, `paciente_id`, `prestacion_id`, `inicio` con zona horaria) | `admin`, `recepcionista` | `201`, `401`, `403`, `409` (horario no disponible), `422` (cuerpo, referencias, turno en el pasado) |
+| `GET /api/turnos/{id}` | `admin`, `recepcionista`, `odontologo` | `200`, `401`, `404` |

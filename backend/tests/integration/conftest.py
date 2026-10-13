@@ -263,3 +263,63 @@ def alta_paciente(client, headers, **extra):  # type: ignore[no-untyped-def]
     }
     payload.update(extra)
     return client.post("/api/pacientes", json=payload, headers=headers)
+
+
+# --- C-05 recorte: turnos sin solapamientos -------------------------------------------------
+
+
+def paciente_sintetico(clinica_id: int, **over):  # type: ignore[no-untyped-def]
+    """Paciente ORM sintético (DNI 9xxxxxxx, teléfono ficticio); regla dura 14."""
+    from app.domain.pacientes.models import Paciente
+
+    cols = {
+        "nombre": "Paciente", "apellido": "Sintetico", "dni": dni_sintetico(),
+        "telefono": "+5491155550001", "nombre_busqueda": "sintetico paciente", "es_seed": True,
+    }  # fmt: skip
+    cols.update(over)
+    return Paciente(clinica_id=clinica_id, **cols)
+
+
+@pytest.fixture(scope="module")
+def turnos_data(session_factory, auth_data, catalogo_data, password_hash):  # type: ignore[no-untyped-def]
+    """Habilitaciones, pacientes y recursos extra para turnos (sobre ``catalogo_data``).
+
+    A: P y Q habilitados en S1 y S2 (P NO en S3); R con ``agenda_activa=false`` habilitado en
+    S1; pacientes activo/inactivo; prestación inactiva. B: profesional habilitado en su sillón,
+    paciente y un recepcionista propio (``recepcion-b@test.test``).
+    """
+    from decimal import Decimal  # noqa: I001
+
+    from app.domain.agenda.models import Prestacion, Profesional, ProfesionalSillon
+
+    a, b = catalogo_data["a"], catalogo_data["b"]
+    s1, s2, s3 = catalogo_data["sillones"]
+    p, q = catalogo_data["prof_p"], catalogo_data["prof_q"]
+    with session_factory() as session:
+        prof_r = Profesional(
+            clinica_id=a, nombre="Profesional R Sintetico", matricula="FIX-R",
+            agenda_activa=False,
+        )  # fmt: skip
+        prest_inactiva = Prestacion(
+            clinica_id=a, nombre="Prestacion inactiva", duracion_min=30,
+            precio_referencia=Decimal("500.00"), is_active=False,
+        )  # fmt: skip
+        pac_a = paciente_sintetico(a)
+        pac_a_inactivo = paciente_sintetico(a, is_active=False)
+        pac_b = paciente_sintetico(b)
+        session.add_all([prof_r, prest_inactiva, pac_a, pac_a_inactivo, pac_b])
+        session.flush()
+        habilitaciones = [(a, p, s1), (a, p, s2), (a, q, s1), (a, q, s2), (a, prof_r.id, s1)]
+        habilitaciones.append((b, catalogo_data["prof_b"], catalogo_data["sillon_b"]))
+        session.add_all(
+            ProfesionalSillon(clinica_id=c, profesional_id=pr, sillon_id=si)
+            for c, pr, si in habilitaciones
+        )
+        session.commit()
+        out = dict(
+            catalogo_data, s1=s1, s2=s2, s3=s3, p=p, q=q, prof_r=prof_r.id,
+            prest_inactiva=prest_inactiva.id, pac_a=pac_a.id,
+            pac_a_inactivo=pac_a_inactivo.id, pac_b=pac_b.id,
+        )  # fmt: skip
+    crear_usuario(session_factory, password_hash, b, "recepcion-b@test.test", ["recepcionista"])
+    return out

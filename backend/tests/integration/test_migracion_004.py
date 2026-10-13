@@ -295,7 +295,7 @@ def test_auditoria_checks_y_fk(session_factory, auth_data) -> None:  # type: ign
 
 
 def test_downgrade_elimina_004_y_reupgrade_restaura(cfg, postgres_url) -> None:  # type: ignore[no-untyped-def]
-    command.downgrade(cfg, "-1")
+    command.downgrade(cfg, "003_clinica_catalogo")
     try:
         assert not set(TABLAS) & _tablas(postgres_url)
         sql_fn = "SELECT count(*) FROM pg_proc WHERE proname='fn_rechazar_mutacion'"
