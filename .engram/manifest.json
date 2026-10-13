@@ -8,6 +8,14 @@
       "sessions": 1,
       "memories": 9,
       "prompts": 0
+    },
+    {
+      "id": "5710d58b",
+      "created_by": "Lautaro",
+      "created_at": "2026-10-13T23:42:11Z",
+      "sessions": 0,
+      "memories": 0,
+      "prompts": 0
     }
   ]
 }
