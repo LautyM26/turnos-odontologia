@@ -5,7 +5,7 @@
 
 ## Propósito del sistema
 
-Construir el sistema de turnos y gestión odontológica para Argentina que hoy no existe: un solo producto que combine profundidad clínica (odontograma, historia clínica), circuito administrativo local (ARCA, Mercado Pago, obras sociales) y WhatsApp Business API oficial bidireccional con costo transparente.
+Construir el sistema de turnos y gestión odontológica para Argentina que hoy no existe: un solo producto que combine profundidad clínica (odontograma, historia clínica), circuito administrativo local (ARCA, Mercado Pago, obras sociales) y WhatsApp bidireccional (por QR con número dedicado, DD-10) con costo transparente.
 
 Contexto: el discovery cruzó 4 fuentes (Perplexity, ChatGPT, Gemini, Claude R1/R2) y concluye que no hay un líder completo (franja 3,3–3,6/5, nadie supera 4 con evidencia verificada). El mercado tiene dos polos —profundidad clínica sin adaptación argentina vs. circuito administrativo local con automatización rezagada— y un vacío: nadie integra clínica + agenda + integración AR (fiscal y cobro) + obras sociales + WhatsApp oficial en un solo producto.
 
@@ -26,7 +26,7 @@ IMP = imprescindible, DIF = diferenciador de lanzamiento. Consenso total salvo n
 - IMP — Agenda multiprofesional y multisillón, vista día/semana.
 - IMP — Reglas de agenda explícitas: duración por prestación, bloqueos, sobreturnos por rol, anti-solapamiento duro. (Vacío documentado del mercado.)
 - IMP — Reserva online por enlace, sin registro y abierta a pacientes nuevos.
-- IMP — WhatsApp Business API oficial bidireccional: recordatorio, confirmar, cancelar y reprogramar. Oficial, no por QR.
+- IMP — WhatsApp bidireccional por QR con número dedicado (DD-10, reemplaza la API oficial de DD-02): recordatorio, confirmar, cancelar y reprogramar. Riesgo de bloqueo/ToS asumido; migración a API oficial en F2.
 - IMP — Ficha con anamnesis + odontograma FDI (permanentes y temporales).
 - IMP — Evolución con autor y fecha + auditoría de HC (exigido por Ley 26.529).
 - IMP — Presupuesto y plan de tratamiento.

@@ -9,7 +9,7 @@
 | Frontend | **React + Vite** (decidido, ronda usuario 1) | — |
 | Backend | **Python + FastAPI** (decidido, ronda usuario 1) | — |
 | Base de datos | **PostgreSQL** (decidida, ronda usuario 1) | — |
-| Mensajería | WhatsApp Business API oficial (plantillas aprobadas, cobro por plantilla entregada) | API vigente Meta al 2026 |
+| Mensajería | WhatsApp por QR con número dedicado (DD-10, 2026-10-08), detrás de un adapter/puerto; migrable a API oficial en F2 | — |
 | Cobros | Mercado Pago (seña y saldo; seña ligada al presupuesto en etapa posterior) | — |
 | Facturación | ARCA factura electrónica B/C con CAE y QR, emitida desde el cobro | — |
 | Receta electrónica | Vía partner registrado en ReNaPDiS (Res. 1959/2024); propia es F2 | — |
@@ -21,7 +21,7 @@
 ```
 Paciente (enlace reserva / WhatsApp) ─┐
                                       ├─→ App web SaaS ─→ API ─→ DB (HC, agenda, caja)
-Recepcionista / Odontólogo (panel) ───┘        │             ├─→ WhatsApp Business API oficial
+Recepcionista / Odontólogo (panel) ───┘        │             ├─→ WhatsApp (sesión QR, número dedicado)
                                                ├─→ Mercado Pago (seña/saldo)
                                                ├─→ ARCA (FE con CAE desde el cobro)
                                                └─→ Partner recetas (ReNaPDiS) [etapa temprana]
@@ -34,14 +34,14 @@ Justificación (desde el discovery): el cuadrante vacío es clínica + integraci
 
 | Servicio | Propósito | Tipo |
 |----------|-----------|------|
-| WhatsApp Business API (Meta) | Recordatorio, confirmar/cancelar/reprogramar bidireccional; chatbot transaccional; lista de espera | API oficial + webhooks (plantillas aprobadas). Costo por plantilla entregada; utilidad dentro de ventana gratis. Tarifa ARS vigente desde 1/7/2026 |
+| WhatsApp (sesión QR, número dedicado) | Recordatorio, confirmar/cancelar/reprogramar bidireccional; chatbot transaccional; lista de espera | Sesión QR no oficial (DD-10) detrás de adapter/puerto; eventos entrantes de la sesión en lugar de webhooks Meta. Sin plantillas aprobadas ni tarifa oficial. Riesgo: bloqueo del número/ToS, caída de sesión; mitigado con monitoreo, reconexión, backup de sesión y fallback email/manual. Migración a API oficial en F2 |
 | Mercado Pago | Seña como condición de reserva; seña condicionada a riesgo de ausencia; saldo | SDK/API pagos |
 | ARCA (ex AFIP) | Factura electrónica B/C con CAE y QR desde el cobro | Web service fiscal |
 | ReNaPDiS / partner recetas (Farmalink, Innovamed u otro registrado) | Receta electrónica y órdenes de estudios (Res. 2214/2025) | Integración vía partner registrado (propia es F2) |
 | Obras sociales / círculos / Frontini "Odontología Digital" | Etapa 2: cobertura, copago, lotes exportables, RNO; luego validación en línea | Alianzas por financiador / integrador (Frontini como posible socio, no competidor) |
 | Google Calendar | Mencionado en DentApp como referencia; no exigido en MVP | Por confirmar (PA) |
 
-Uso no oficial por QR (ej. DentalCore): explícitamente descartado — arriesga bloqueo del número.
+Uso no oficial por QR: **adoptado** por decisión del equipo el 2026-10-08 (DD-10), que reemplaza el descarte original (DD-02). El Discovery re-verificado (2026-10-13) halló que DentalCore y Órbita declaran usar la API oficial, así que esta decisión es un trade-off deliberado contra la evidencia, con riesgo de bloqueo asumido.
 
 ## API REST (si aplica)
 

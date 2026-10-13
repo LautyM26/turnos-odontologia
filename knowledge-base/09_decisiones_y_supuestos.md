@@ -11,12 +11,23 @@
 **Justificación**: Gemini y Claude la señalan como el mayor punto de fricción administrativa del consultorio argentino, y DrApp demuestra que es alcanzable.
 **Trade-offs aceptados**: suma integración fiscal al camino crítico del MVP; exige CUIT/configuración antes de facturar y cola de reintentos ante caídas de ARCA.
 
-### DD-02 — WhatsApp solo por API oficial, nunca por QR
+### DD-02 — WhatsApp solo por API oficial, nunca por QR — REEMPLAZADA por DD-10 (2026-10-08) · Histórico
+> **Histórico**: esta decisión quedó sin efecto el 2026-10-08. Se conserva el texto original como trazabilidad del discovery; la decisión vigente es DD-10.
 **Decisión**: integración exclusivamente con WhatsApp Business API oficial, bidireccional, con costo transparente en pesos.
 **Contexto**: todos los verticales la ofrecen como adicional pago, "individual", con cupos o por QR no oficial (§01); DentalCore usa QR no oficial (§03).
 **Alternativas consideradas**: (a) QR no oficial más barato; (b) aviso de una vía (solo recordatorio).
 **Justificación**: el QR arriesga bloqueo del número; la tarifa Meta en ARS vigente desde 1/7/2026 (plantillas de utilidad dentro de ventana gratis) hace viable el costo transparente.
 **Trade-offs aceptados**: costo por plantilla y gestión de plantillas aprobadas; a cambio, confirmación/cancelación/reprogramación que sí actualiza la agenda.
+
+### DD-10 — WhatsApp por QR con número dedicado (reemplaza DD-02)
+**Fecha**: 2026-10-08 · **Decidido por**: el equipo/usuario del proyecto (trade-off deliberado).
+**Decisión**: la mensajería de WhatsApp se implementa por **sesión QR (WhatsApp Web) con un número dedicado** al consultorio, y no por la API oficial de WhatsApp Business (Meta). Se mantiene el comportamiento funcional: recordatorio, confirmar/cancelar/reprogramar bidireccional que actualiza la agenda.
+**Contexto**: el equipo considera la API oficial no confiable para este proyecto (dependencia de BSP, aprobación de plantillas y costo por plantilla). El DD-02 original prohibía el QR por riesgo de bloqueo.
+**Alternativas consideradas**: (a) API oficial vía BSP, con plantillas aprobadas y costo por plantilla (DD-02 original); (b) aviso de una vía (solo recordatorio); (c) email/recordatorio manual como único canal.
+**Consecuencias**: no hay plantillas aprobadas ni tarifa oficial por mensaje (RN-WA-02 pasa a costo interno/estimado); la sesión QR debe mantenerse viva, monitorearse y respaldarse; el canal queda sujeto a los ToS de Meta.
+**Riesgos**: (1) bloqueo o baneo del número por uso no oficial/ToS de Meta; (2) la sesión QR se cae o se desvincula y se pierden mensajes salientes/entrantes; (3) sin plantillas aprobadas ni garantías de entrega/SLA oficial; (4) riesgo reputacional y de continuidad del servicio para el consultorio.
+**Mitigaciones**: número dedicado (nunca el personal del consultorio); monitoreo de estado de sesión y reconexión asistida (re-escaneo de QR desde el panel); backup/restauración de la sesión; límites de ritmo de envío y mensajes solo a pacientes con turno/consentimiento; fallback a email o recordatorio manual desde la bandeja de fallos; **mensajería encapsulada en un adapter/puerto** (`MensajeriaPort`) para poder migrar a la API oficial en F2 sin cambiar el dominio.
+**Nota de evidencia (re-verificación 2026-10-13, `docs/discovery/informe-discovery.md` §C, §D y "Hallazgos")**: el Discovery re-verificado encontró que DentalCore y Órbita declaran usar la API oficial de Meta, por lo que la afirmación previa "ningún vertical odontológico argentino usa la API oficial" era falsa. La decisión de QR va en contra de esa evidencia y se registra como una apuesta deliberada del equipo, asumiendo los riesgos anteriores.
 
 ### DD-03 — Obras sociales en dos niveles (MVP mínimo → validación vía alianzas)
 **Decisión**: MVP solo registra OS/plan/afiliado; etapa 2 calcula cobertura/copago, genera RNO y lotes; validación en línea solo vía alianzas con círculos o integradores (Frontini como posible socio, no competidor).
@@ -97,7 +108,7 @@
 **Cómo validar**: cargar catálogo + duraciones del piloto como seed antes del Sprint 1; relevar línea base de ausentismo/ocupación en el piloto.
 
 ### SU-07 — Pagos y mensajes: supuestos Sprint 1 (PA-05/PA-06 ABIERTOS)
-**Supuesto**: quién gestiona y asume el costo transparente de la API oficial de WhatsApp (BSP/plantillas en ARS) y la cuenta de Mercado Pago (titularidad, credenciales, reembolsos) queda como supuesto a definir en Sprint 1.
+**Supuesto**: quién gestiona y asume el costo del canal WhatsApp (por DD-10 ya no hay BSP/plantillas oficiales: queda el número dedicado y su operación) y la cuenta de Mercado Pago (titularidad, credenciales, reembolsos) queda como supuesto a definir en Sprint 1.
 **Origen**: respuesta usuario ronda 1 — "queda como supuesto para el Sprint 1".
 **Plan de validación (Sprint 1)**: definir BSP y quién paga cada tipo de plantilla (costo ARS a exponer); definir cuenta MP (¿profesional directo?), credenciales y política de reembolso ante cancelación.
 

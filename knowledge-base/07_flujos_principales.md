@@ -33,16 +33,16 @@ API → ARCA (FE con CAE) → DB (Factura) → WhatsApp (confirmación)
 **Actor**: Sistema → Paciente.
 
 **Pasos**:
-1. [API] envía plantilla aprobada de WhatsApp Business API oficial (recordatorio con botones Confirmar / Cancelar / Reprogramar).
+1. [API] envía por WhatsApp (sesión QR, número dedicado, DD-10) el recordatorio con opciones Confirmar / Cancelar / Reprogramar (texto base interno, sin plantilla aprobada por Meta).
 2. [Paciente] responde (texto o botón).
-3. [Meta webhook → API] interpreta la respuesta y actualiza el Turno: `reservado → confirmado | cancelado`.
+3. [evento entrante de la sesión QR → API] interpreta la respuesta y actualiza el Turno: `reservado → confirmado | cancelado`.
 4. [API] si cancela: libera el hueco y dispara Flujo 4 (lista de espera); si confirma: marca asistencia esperada y registra costo del mensaje en ARS.
 5. [API] guarda MensajeWhatsApp (plantilla, dirección, estado, costo).
 
 **Casos de error**:
 - Webhook duplicado o fuera de orden → idempotencia por `turno_id + mensaje_id` (S).
 - Número bloqueado / plantilla rechazada → el turno queda sin confirmar y se escala a la recepcionista (bandeja de fallos) (S).
-- Uso de QR no oficial: explícitamente prohibido (RN-WA-01) — riesgo de bloqueo del número.
+- Sesión QR caída/desvinculada o número bloqueado → alerta de reconexión (re-escanear QR) y el turno se escala por email/recordatorio manual (RN-WA-01, DD-10).
 
 ## Flujo 3: Reprogramación y chatbot transaccional (IMP)
 **Disparador**: paciente pide mover su turno (por WhatsApp o enlace).

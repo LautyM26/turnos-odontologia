@@ -10,7 +10,7 @@
 | Recepcionista / administrativo | Gestiona agenda, pacientes y caja diaria | Panel web: agenda día/semana, fichas, presupuestos, cobros, lista de espera, mensajes |
 | Odontólogo / profesional | Prestador clínico, dueño o tercerizado | Panel web: su agenda, ficha + odontograma + evolución, presupuesto/plan, consentimientos; **Suposición:** firma sus evoluciones con autor/fecha |
 | Administrador / dueño de clínica | Configura el consultorio y supervisa | Panel admin: usuarios y roles, sillones/recursos y reglas, precios en ARS, reportes, respaldo/exportación |
-| Sistema externo (no humano) | ARCA, Mercado Pago, WhatsApp/Meta, partner recetas, OS/círculos | APIs/webhooks (ver `02_descripcion_general.md`) |
+| Sistema externo (no humano) | ARCA, Mercado Pago, WhatsApp (sesión QR), partner recetas, OS/círculos | APIs/webhooks (ver `02_descripcion_general.md`) |
 
 **Confirmado SU-02 (ronda usuario 1, PA-03):** los 4 roles humanos alcanzan para iniciar el MVP, con permisos granulares: el odontólogo tercerizado ve solo su agenda; los sobreturnos los maneja admin/recepcionista según rol. Origen: matriz RBAC/permisos granulares citada como referencia (Dentally) + requisito MVP "roles, permisos, respaldo y exportación" + respuesta usuario ronda 1.
 

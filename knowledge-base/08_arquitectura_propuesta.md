@@ -11,7 +11,7 @@
 | RBAC por recurso | Panel admin / recepción / clínica | Exigido en MVP ("roles, permisos"); referencia Dentally con permisos granulares |
 | Append-only + auditoría inmutable | Evoluciones, HC, consentimientos | Exigido por Ley 26.529; argumento comercial de cumplimiento (§07) |
 | Presupuesto → plan → turnos (saga simple) | Conversión clínica en agenda | Diferenciador §07: cada presupuesto aceptado genera secuencia de turnos; lo no agendado va a seguimiento |
-| Webhooks + idempotencia | WhatsApp/Meta, Mercado Pago, ARCA | Respuestas por WhatsApp actualizan la agenda; pagos y CAE llegan asíncronos; los reintentos no pueden duplicar turnos ni cobros (S) |
+| Webhooks + idempotencia | WhatsApp (sesión QR), Mercado Pago, ARCA | Respuestas por WhatsApp actualizan la agenda; pagos y CAE llegan asíncronos; los reintentos no pueden duplicar turnos ni cobros (S) |
 | Cola + reintentos visibles | Factura ARCA, mensajes WhatsApp, ofertas de lista de espera | Los servicios externos caen; el estado pendiente/reintentando debe ser visible, no mudo (S) |
 | Score de riesgo + seña condicional | Confirmación de reserva online | Combina puntaje de riesgo tipo DrApp con relleno tipo DentalCore (§07): la seña solo se exige ante riesgo |
 
@@ -41,7 +41,7 @@ proyecto/
 │       │   ├── comercial/    # presupuesto/plan, riesgo de ausencia, recall
 │       │   └── cumplimiento/ # consentimientos, firma, exportación
 │       ├── infrastructure/
-│       │   ├── whatsapp/     # API oficial Meta + webhooks + costos
+│       │   ├── whatsapp/     # sesión QR (número dedicado) + adapter/puerto de mensajería + costos (DD-10)
 │       │   ├── pagos/        # Mercado Pago (seña/saldo)
 │       │   ├── fiscal/       # ARCA FE B/C con CAE + QR + cola de reintentos
 │       │   ├── recetas/      # partner ReNaPDiS (propia es F2)
@@ -58,7 +58,7 @@ proyecto/
 - Validación de input: duraciones/end-times calculados en servidor (nunca confiar en el cliente para solapamientos); DNI/email/teléfono normalizados para reserva sin cuenta (S).
 - HC y datos sensibles: cifrado en tránsito y en reposo, auditoría inmutable, consentimiento de datos (Ley 25.326 — datos de salud = sensibles); ubicación de datos declarada públicamente (hoy nadie la publica, §06).
 - Firma: consentimientos con fecha, IP, dispositivo y hash, documento bloqueado (modelo Odonthia, Ley 25.506).
-- Secrets management: sobre el stack decidido (env gestionado / vault compatible con despliegue FastAPI + PostgreSQL). Mínimo (S): ningún secreto en repo; credenciales MP/ARCA/Meta solo en vault o env gestionado.
+- Secrets management: sobre el stack decidido (env gestionado / vault compatible con despliegue FastAPI + PostgreSQL). Mínimo (S): ningún secreto en repo; credenciales MP/ARCA/sesión WhatsApp solo en vault o env gestionado.
 
 ## Variables de entorno
 
@@ -67,9 +67,9 @@ proyecto/
 | `DATABASE_URL` | Conexión a PostgreSQL (decidido, DD-08) | `postgres://…` | Y |
 | `MP_ACCESS_TOKEN` | Mercado Pago, cobro de seña/saldo a cuenta del profesional | `APP_USR-…` | Y |
 | `MP_WEBHOOK_SECRET` | Firma de webhooks de pago | `whsec_…` | Y |
-| `WHATSAPP_API_TOKEN` | Meta WhatsApp Business API oficial | `EAAB…` | Y |
-| `WHATSAPP_PHONE_ID` | Número remitente oficial | `54911…` | N |
-| `WHATSAPP_WEBHOOK_VERIFY` | Token de verificación del webhook | `…` | Y |
+| `WHATSAPP_API_TOKEN` | Credencial del cliente de sesión QR (o de la API oficial si se migra en F2); DD-10 | `EAAB…` | Y |
+| `WHATSAPP_PHONE_ID` | Número remitente dedicado (sesión QR) | `54911…` | N |
+| `WHATSAPP_WEBHOOK_VERIFY` | Token de verificación del callback de eventos (sesión QR / futura API oficial) | `…` | Y |
 | `ARCA_CUIT` | CUIT del consultorio para FE | `30-…-…` | N |
 | `ARCA_CERT` / `ARCA_KEY` | Certificado fiscal | ruta/vault | Y |
 | `RECETAS_PARTNER_KEY` | Partner ReNaPDiS (Farmalink/Innovamed/u otro) | `…` | Y |

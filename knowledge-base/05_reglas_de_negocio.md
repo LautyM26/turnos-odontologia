@@ -20,9 +20,9 @@
 
 ## Dominio: WhatsApp (RN-WA)
 
-- **RN-WA-01**: solo API oficial de WhatsApp Business; prohibido el QR no oficial (riesgo de bloqueo del número).
-- **RN-WA-02**: costo por mensaje transparente en pesos (plantillas Meta: utilidad dentro de ventana gratis; tarifa ARS vigente desde 1/7/2026).
-- **RN-WA-03**: cada mensaje guarda plantilla, dirección, estado y costo para exponerlo al consultorio.
+- **RN-WA-01** (modificada 2026-10-08, ver DD-10): WhatsApp se envía por sesión QR con un número dedicado (no se usa la API oficial de Meta); se asume el riesgo de bloqueo/ToS. La sesión QR se monitorea, se reconecta y se respalda; si cae o el número se bloquea, el turno queda sin confirmar y se escala por email/recordatorio manual. La mensajería va detrás de un adapter/puerto para poder migrar a la API oficial en F2.
+- **RN-WA-02** (modificada 2026-10-08, ver DD-10): costo por mensaje transparente en pesos. Sin plantillas Meta ni tarifa oficial, el costo se expone como costo interno configurable (`ARS_PRECIO_MENSAJE`); la tarifa oficial ARS (vigente 1/7/2026) queda como referencia para la migración F2.
+- **RN-WA-03**: cada mensaje guarda plantilla (texto base interno, no aprobada por Meta), dirección, estado y costo para exponerlo al consultorio.
 
 ## Dominio: Clínica (RN-CL)
 

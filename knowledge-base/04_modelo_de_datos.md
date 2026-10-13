@@ -88,7 +88,7 @@ Usuario *──* Rol (RBAC) ; Evolucion *──1 Usuario (autor) ; AuditoriaHC r
 ### MensajeWhatsApp + ListaEspera
 - Mensaje: id, turno_id, plantilla, dirección (entrante/saliente), estado (enviado/entregado/leído), costo ARS
 - ListaEspera: id, prestacion/profesional/sillon, paciente, prioridad, oferta_enviada, estado
-- Constraints: solo API oficial; costo por mensaje transparente en pesos
+- Constraints: canal WhatsApp por QR con número dedicado (DD-10); costo por mensaje transparente en pesos; estado de sesión QR registrado
 
 ## Seed data inicial
 

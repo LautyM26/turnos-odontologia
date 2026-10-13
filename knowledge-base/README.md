@@ -28,4 +28,4 @@ Base de conocimiento generada desde `discovery/Discovery Consolidado Turnos Odon
 
 ## Resumen Ejecutivo
 
-Sistema de turnos y gestión odontológica para Argentina que ocupa el cuadrante vacío del mercado: profundidad clínica (odontograma FDI + HC auditada) + circuito local (ARCA, Mercado Pago, obras sociales por etapas) + WhatsApp Business API oficial bidireccional con costo transparente. MVP de 17 historias en 5 épicas con reglas de agenda (sillón como recurso, anti-solapamiento duro) como vacío diferencial; stack técnico y 6 gaps operativos quedan en `10_preguntas_abiertas.md` para cerrar sin asumir.
+Sistema de turnos y gestión odontológica para Argentina que ocupa el cuadrante vacío del mercado: profundidad clínica (odontograma FDI + HC auditada) + circuito local (ARCA, Mercado Pago, obras sociales por etapas) + WhatsApp bidireccional por QR con número dedicado (DD-10, riesgo de bloqueo/ToS asumido) con costo transparente. MVP de 17 historias en 5 épicas con reglas de agenda (sillón como recurso, anti-solapamiento duro) como vacío diferencial; stack técnico y 6 gaps operativos quedan en `10_preguntas_abiertas.md` para cerrar sin asumir.

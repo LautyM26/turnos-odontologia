@@ -160,7 +160,7 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
   - `POST /api/auth/login` — JWT access (15 min) + refresh (7 días), rate limit 5/60s por IP+email; `POST /api/auth/refresh` con rotación + blacklist; `POST /api/auth/logout`; `GET /api/auth/me`
   - Claims JWT: `sub`, `tenant_id` (clinica_id), `roles`, `email`, `jti`, `type`, `iat`, `exp`; refresh en cookie HttpOnly (secure, samesite=lax)
   - `PermissionContext`: `require_role()`, `require_admin()`, `require_own_agenda()` (tercerizado); matriz del `03` codificada; anulaciones de caja y sobreturnos chequeados aquí
-  - Rutas públicas declaradas: enlace reserva, webhooks (Meta/MP), comprobantes, cumplimiento (resto tras login)
+  - Rutas públicas declaradas: enlace reserva, webhooks (WhatsApp/MP), comprobantes, cumplimiento (resto tras login)
   - Migración 002: blacklist de tokens (`jti`, `exp`)
   - Tests: login OK/KO, token expirado, refresh rotation invalida anterior, tercerizado no ve agenda ajena, rate limit
 - **Dependencias**: C-02
@@ -382,19 +382,20 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
 
 ---
 
-## FASE 5 — Comunicación WhatsApp (oficial, bidireccional)
+## FASE 5 — Comunicación WhatsApp (QR con número dedicado, bidireccional)
 
-> Solo API oficial Meta (DD-02, RN-WA-01). QR prohibido. Costo ARS transparente (RN-WA-02). Supuestos BSP/plantillas en PA-05/SU-07.
+> WhatsApp por QR con número dedicado (DD-10, RN-WA-01 modificada 2026-10-08; reemplaza DD-02 "solo API oficial"). Riesgo asumido: bloqueo del número/ToS de Meta, caída de sesión. Mensajería detrás de un puerto/adapter para migrar a API oficial en F2. Costo ARS transparente (RN-WA-02). Operación del número en PA-05/SU-07.
 
 ### [C-15] `whatsapp-bidireccional`
 - **Estado**: `[ ]` pendiente
-- **Scope**: Recordatorio/confirmación/cancelación bidireccional por WhatsApp oficial + costos + bandeja de fallos (US-005, Flujo 2)
-  - Modelos: `MensajeWhatsApp` (turno_id, plantilla, dirección entrante/saliente, estado enviado/entregado/leído/error, costo ARS), `PlantillaWA` (nombre, idioma es_AR, variables, estado aprobada)
-  - Servicio `infrastructure/whatsapp/meta_client` (env `WHATSAPP_API_TOKEN`, `WHATSAPP_PHONE_ID`): envío de plantillas (recordatorio 24 h — ventana SU-04 a confirmar, confirmación, cancelación); `POST /api/webhooks/whatsapp` (verificación `WHATSAPP_WEBHOOK_VERIFY`, idempotencia `turno_id + mensaje_id`, interpreta Confirmar/Cancelar/Reprogramar → actualiza Turno + registra costo)
-  - Job `jobs/recordatorios.py` (cron 24 h antes, reintentos con backoff); respuestas actualizan agenda de verdad (RN-TU-03); fallo (bloqueado/plantilla rechazada) → bandeja de fallos para recepcionista + endpoint `GET /api/whatsapp/fallos`, `GET /api/whatsapp/costos?desde&hasta`
-  - Seed: 5 plantillas (recordatorio 24 h, confirmación, cancelación, reprogramación, oferta de hueco)
+- **Scope**: Recordatorio/confirmación/cancelación bidireccional por WhatsApp (QR, número dedicado) + costos + bandeja de fallos + sesión QR (US-005, Flujo 2, DD-10)
+  - Modelos: `MensajeWhatsApp` (turno_id, plantilla, dirección entrante/saliente, estado enviado/entregado/leído/error, costo ARS), `PlantillaWA` (nombre, idioma es_AR, variables; texto base interno, sin aprobación Meta)
+  - Puerto `domain/ports/MensajeriaPort` + adapter `infrastructure/whatsapp/qr_client` (sesión QR, número dedicado; env `WHATSAPP_API_TOKEN`, `WHATSAPP_PHONE_ID`): envío de mensajes (recordatorio 24 h — ventana SU-04 a confirmar, confirmación, cancelación); `POST /api/webhooks/whatsapp` (callback de eventos entrantes de la sesión, verificación `WHATSAPP_WEBHOOK_VERIFY`, idempotencia `turno_id + mensaje_id`, interpreta Confirmar/Cancelar/Reprogramar → actualiza Turno + registra costo); adapter intercambiable por API oficial en F2
+  - Sesión QR (DD-10): `GET /api/whatsapp/sesion` (estado) y `POST /api/whatsapp/sesion/reconectar` (nuevo QR), monitoreo con alerta a admin si cae, backup/restauración cifrada de la sesión (vault/env backend, nunca en repo ni browser), límite de ritmo de envío, fallback a email/recordatorio manual desde la bandeja de fallos; documentar riesgo de bloqueo Meta/ToS
+  - Job `jobs/recordatorios.py` (cron 24 h antes, reintentos con backoff); respuestas actualizan agenda de verdad (RN-TU-03); fallo (número bloqueado/sesión caída) → bandeja de fallos para recepcionista + endpoint `GET /api/whatsapp/fallos`, `GET /api/whatsapp/costos?desde&hasta`
+  - Seed: 5 textos base (recordatorio 24 h, confirmación, cancelación, reprogramación, oferta de hueco)
   - Migración 011: tablas mensajes/plantillas + índice `(turno_id, estado)`
-  - Tests: respuesta "SI" confirma turno, duplicado de webhook no duplica transición, costo registrado en ARS
+  - Tests: respuesta "SI" confirma turno, duplicado de evento no duplica transición, costo registrado en ARS, sesión caída → fallo en bandeja y fallback
 - **Dependencias**: C-05
 - **Governance**: ALTO
 - **Leer antes**:
@@ -402,7 +403,7 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
   - `knowledge-base/05_reglas_de_negocio.md` §WhatsApp RN-WA-01–03 + §Turnos RN-TU-02/03
   - `knowledge-base/06_funcionalidades.md` §Épica 2 US-005
   - `knowledge-base/07_flujos_principales.md` §Flujo 2 completo
-  - `knowledge-base/09_decisiones_y_supuestos.md` §DD-02 + §SU-07/PA-05 (BSP y costos)
+  - `knowledge-base/09_decisiones_y_supuestos.md` §DD-10 (y DD-02 histórico) + §SU-07/PA-05 (operación del número y costos)
 
 ---
 
@@ -428,7 +429,7 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
 
 ### [C-17] `chatbot-reprogramacion`
 - **Estado**: `[ ]` pendiente
-- **Scope**: Reprogramación autoguiada por WhatsApp + enlace con las mismas reglas de agenda (US-006, Flujo 3)
+- **Scope**: Reprogramación autoguiada por WhatsApp (QR, DD-10) + enlace con las mismas reglas de agenda (US-006, Flujo 3)
   - Flujo conversacional con estado en servidor (máquina: menu → ver_opciones → elegir → confirmar): muestra hasta 3 huecos reales (motor C-05: duración, bloqueos, solapamientos, sillón+profesional), mueve el Turno conservando seña imputada (recobra solo diferencia si cambia prestación), confirma por WA y actualiza agenda
   - Mismo flujo servido por enlace web (`/reprogramar/{token}` reutiliza token de C-06) para quien prefiere web
   - Concurrencia: hueco ocupado entre consulta y confirmación → ofrece alternativas (mismo 409 de C-05); cambio de duración recalcula fin (RN-AG-02)

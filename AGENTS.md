@@ -21,7 +21,7 @@ Fuente: `knowledge-base/02_descripcion_general.md` §Stack DECIDIDO + `knowledge
 | Receta electrónica | Vía partner registrado en ReNaPDiS (Res. 1959/2024); propia es F2 | — |
 | Despliegue | SaaS web multi-tenant en la nube, un tenant por clínica con datos aislados (DD-09, SU-01) | — |
 
-> **Nota decisión QR 2026-10-08 (prevalece sobre KB/CHANGES hasta actualizarlos):** el usuario abandona la API oficial Meta (DD-02 / RN-WA-01) por considerarla no confiable. WhatsApp se implementa por **QR con número dedicado**: asumir riesgo de bloqueo Meta/ToS, documentar sesión QR, reconexión y backup. Deja sin efecto el "QR prohibido" en C-15/C-17 y en `02 §Integraciones externas` hasta que el orquestador lo documente en fase 5 (KB + CHANGES). Ver regla dura 17.
+> **Nota decisión QR 2026-10-08 (documentada en KB y CHANGES el 2026-10-13: DD-10, RN-WA-01, C-15/C-17):** el usuario abandona la API oficial Meta (DD-02 / RN-WA-01) por considerarla no confiable. WhatsApp se implementa por **QR con número dedicado**: asumir riesgo de bloqueo Meta/ToS, documentar sesión QR, reconexión y backup. Deja sin efecto el "QR prohibido" previo en C-15/C-17 y en `02 §Integraciones externas` (ya reemplazado en KB + CHANGES). Ver DD-10 y regla dura 17.
 
 Detalle completo: [knowledge-base/02_descripcion_general.md](knowledge-base/02_descripcion_general.md)
 
@@ -113,7 +113,7 @@ El plan de implementación completo está en [CHANGES.md](CHANGES.md). Resumen:
 14. NUNCA datos reales de pacientes en repo, seeds, tests ni ejemplos → solo datos sintéticos/marcados seed=true borrables. (Ley 25.326 + secreto profesional)
 15. NUNCA historia clínica mutable → Evolución append-only sin PUT/DELETE (corrección = nueva fila corrige_a_id); sin autor profesional → 422; consentimiento firmado = documento bloqueado. (Ley 26.529)
 16. NUNCA cargar datos de salud sin consentimiento_datos=true + respetar RBAC clínico (recepción sin acceso clínico salvo contacto/OS) → 403 si no.
-17. NUNCA receta fuera de ReNaPDiS → solo vía partner registrado (RN-CU-03); factura ARCA solo desde cobro con CUIT configurado (RN-AF-01/02); WhatsApp por QR con número dedicado (DECISIÓN USUARIO 2026-10-08: se abandona API oficial DD-02/RN-WA-01 por considerarla no confiable — asumir riesgo de bloqueo Meta/ToS, documentar sesión QR, reconexión y backup; deja sin efecto "QR prohibido" en C-15/C-17 hasta actualizar KB/CHANGES).
+17. NUNCA receta fuera de ReNaPDiS → solo vía partner registrado (RN-CU-03); factura ARCA solo desde cobro con CUIT configurado (RN-AF-01/02); WhatsApp por QR con número dedicado (DECISIÓN USUARIO 2026-10-08: se abandona API oficial DD-02/RN-WA-01 por considerarla no confiable — asumir riesgo de bloqueo Meta/ToS, documentar sesión QR, reconexión y backup; documentado en DD-10, RN-WA-01 y C-15/C-17).
 
 ---
 
