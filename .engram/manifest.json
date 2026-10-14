@@ -16,6 +16,14 @@
       "sessions": 0,
       "memories": 0,
       "prompts": 0
+    },
+    {
+      "id": "736d3e92",
+      "created_by": "Buri",
+      "created_at": "2026-10-14T01:33:49Z",
+      "sessions": 0,
+      "memories": 1,
+      "prompts": 0
     }
   ]
 }
