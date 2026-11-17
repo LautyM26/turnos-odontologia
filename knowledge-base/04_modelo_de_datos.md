@@ -45,9 +45,9 @@ Usuario *──* Rol (RBAC) ; Evolucion *──1 Usuario (autor) ; AuditoriaHC r
 - Constraints: **anti-solapamiento duro**: no hay dos turnos activos con mismo (sillón, rango) ni mismo (profesional, rango). Ver RN-AG-01.
 
 ### Turno
-- Atributos: id, clinica_id, profesional_id, sillon_id, paciente_id, prestacion, duracion_min (por prestación), inicio, fin, estado (reservado/confirmado/asistido/ausente/cancelado/sobreturno), origen (enlace/mostrador/WhatsApp/lista_espera), seña_exigida, seña_pagada
+- Atributos: id, clinica_id, profesional_id, sillon_id, paciente_id, prestacion, duracion_min (por prestación), inicio, fin, estado (reservado/confirmado/asistido/ausente/cancelado; el valor `sobreturno` queda en desuso desde C-05c), es_sobreturno + motivo_sobreturno (marca, C-05c), origen (enlace/mostrador/WhatsApp/lista_espera), seña_exigida, seña_pagada
 - Relaciones: *──1 Presupuesto/Plan (cuando nace de un plan), 1──* Cobro, 1──* MensajeWhatsApp
-- Constraints: duracion por prestación; sobreturno solo con rol autorizado; transición de estados explícita
+- Constraints: duracion por prestación; sobreturno solo con rol autorizado y con motivo (marca `es_sobreturno`, exceptuada del anti-solapamiento pero no de los bloqueos, C-05c); transición de estados explícita
 - Índices: (profesional_id, inicio), (sillon_id, inicio), (paciente_id, inicio), (estado)
 
 ### Paciente

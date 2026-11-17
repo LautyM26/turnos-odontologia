@@ -20,7 +20,7 @@ Este change es el último recorte de C-05 (governance CRÍTICO), registrado como
   - Mantiene el resto de las validaciones del alta.
 - **Modelo**: marca `es_sobreturno` + `motivo_sobreturno` en `turno`. El sobreturno sigue el ciclo de estados normal de C-05b (confirmar, asistido, ausente, cancelar), y las exclusion constraints ignoran los turnos marcados.
 - `TurnoOut` expone `es_sobreturno` y `motivo_sobreturno`.
-- Migración `007_sobreturno_huecos` (`down_revision = "006_turno_transicion"`): columnas, CHECK de coherencia y exclusion constraints recreadas con `AND NOT es_sobreturno`.
+- Migración `011_sobreturno_huecos` (`down_revision = "010_recetas_externas"`; renumerada en el apply, ver `design.md` §Migration Plan): columnas, CHECK de coherencia y exclusion constraints recreadas con `AND NOT es_sobreturno`.
 
 ### Decisiones de dominio tomadas con el usuario (2026-11-16)
 
@@ -53,7 +53,7 @@ Están justificadas en `design.md` (D1–D3):
   - `backend/app/domain/agenda/huecos.py`: servicio `buscar_huecos` (una consulta con multirangos de PostgreSQL);
   - `backend/app/api/agenda.py`: router `/api/agenda`;
   - schemas `HuecosQuery`/`HuecoOut`;
-  - `backend/alembic/versions/007_sobreturno_huecos.py`.
+  - `backend/alembic/versions/011_sobreturno_huecos.py`.
 - Código modificado:
   - `turnos.py`: modelo, predicado activo y `crear_turno`;
   - `schemas.py`: `TurnoCreate` y `TurnoOut`;

@@ -20,6 +20,7 @@ BACKEND_REQUIRED = [
     "RECETAS_PARTNER_KEY",
     "ARS_PRECIO_MENSAJE",
     "RESERVA_PREBLOQUEO_MIN",
+    "AGENDA_PASO_MIN",
     "APP_BASE_URL",
     # Auth JWT (C-03, D9; solo backend, nunca VITE_).
     "JWT_SECRET_KEY",

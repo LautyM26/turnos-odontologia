@@ -11,7 +11,7 @@ Escrito el 2026-11-16 por Matheo (con Claude Code). Explica el estado actual, c�
 | C-01, C-02, C-03, C-04, C-08 | ✅ archivados | `openspec/changes/archive/` |
 | `crear-turno-sin-solapamientos` (recorte C-05) | ✅ archivado | ídem |
 | **C-05b `transiciones-estado-turno`** | ✅ archivado (615 tests en verde) | `openspec/changes/archive/2026-11-16-transiciones-estado-turno/` |
-| C-05c `huecos-y-sobreturnos` | 📝 propuesto, **sin implementar** (lo sigue Matheo) | `openspec/changes/huecos-y-sobreturnos/` |
+| C-05c `huecos-y-sobreturnos` | ✅ archivado 2026-11-17 (C-05 completo) | `openspec/changes/archive/2026-11-17-huecos-y-sobreturnos/` |
 | C-05d `horario-atencion` | ⏳ en el roadmap, sin proponer (Matheo) | `CHANGES.md` |
 | **C-09 `odontograma-evolucion`** | ✅ archivado 2026-11-17 (813 tests) | `openspec/changes/archive/2026-11-17-odontograma-evolucion/` |
 | **C-10 `clinica-frontend`** | ✅ archivado 2026-11-17 (vitest 202 + E2E Playwright con capturas) | `openspec/changes/archive/2026-11-17-clinica-frontend/` |
@@ -21,7 +21,7 @@ Escrito el 2026-11-16 por Matheo (con Claude Code). Explica el estado actual, c�
 
 **TPI:** con 3 integrantes el mínimo es de 6 changes. Ya hay **11 archivados**. Cada change nuevo suma, y todos tenemos que poder explicar el que hicimos.
 
-**Migraciones tomadas:** 007 reservada (C-05c), 008 C-09, 009 C-18, 010 C-19 (head actual: `010_recetas_externas`). Si C-05c mergea, re-apuntar el `down_revision` de su 007 o de la 008 para que `python -m alembic -c backend/alembic.ini heads` muestre un único head (correrlo desde la raíz).
+**Migraciones tomadas:** 008 C-09, 009 C-18, 010 C-19, 011 C-05c (head actual: `011_sobreturno_huecos`; la 007 quedó sin usar). La próxima es la 012 con `down_revision` = el head del momento: `python -m alembic -c backend/alembic.ini heads` tiene que mostrar un único head (correrlo desde la raíz).
 
 **Frontend:** C-10 agregó el login, el router de datos (`frontend/src/router.tsx`, ya no existe `App.tsx`) y las rutas protegidas. C-07 (agenda) debe agregar `/agenda` dentro del layout autenticado, reutilizando ese shell. Demo: `backend/scripts/seed_demo_clinica.py` (usuarios `@clinica-piloto.test`, contraseña por `SEED_DEMO_PASSWORD`), ver README §"Demo clínica".
 
@@ -31,7 +31,7 @@ Escrito el 2026-11-16 por Matheo (con Claude Code). Explica el estado actual, c�
 
 ## 2. Reparto propuesto (sin pisarnos)
 
-Matheo sigue con la **cadena de agenda**: C-05c → C-05d → C-06 → C-07. No toquen `backend/app/domain/agenda/turnos.py`, `huecos.py`, `api/turnos.py` ni `api/agenda.py` sin avisar.
+Matheo sigue con la **cadena de agenda**: C-05d → C-06 → C-07 (C-05c ya archivado). No toquen `backend/app/domain/agenda/turnos.py`, `huecos.py`, `api/turnos.py` ni `api/agenda.py` sin avisar.
 
 Changes que **no dependen** de C-05c/C-05d y se pueden hacer ya (sus dependencias están archivadas):
 
@@ -43,7 +43,7 @@ Changes que **no dependen** de C-05c/C-05d y se pueden hacer ya (sus dependencia
 Notas:
 
 - **C-15** usa las transiciones de C-05b: para confirmar o cancelar por WhatsApp hay que llamar a `transicionar_turno(...)` de `backend/app/domain/agenda/turnos.py`. **No dupliquen la tabla de estados.** No necesita huecos, salvo la opción "reprogramar", que queda para C-17.
-- **No tomen todavía** C-11/C-12/C-13/C-14: C-11 genera turnos sugeridos y conviene que exista la consulta de huecos (C-05c). C-16 y C-17 dependen de C-15.
+- **No tomen todavía** C-11/C-12/C-13/C-14: C-11 genera turnos sugeridos; la consulta de huecos (C-05c, `GET /api/agenda/huecos`) ya existe. C-16 y C-17 dependen de C-15.
 - Para C-15, los textos `knowledge-base/04_modelo_de_datos.md:97` y `06_funcionalidades.md:44` todavía dicen "plantillas aprobadas", que contradice DD-10 (WhatsApp por QR). Corríjanlos al generar `dominio-whatsapp`.
 
 ---
@@ -101,8 +101,8 @@ Las 17 reglas duras están en `AGENTS.md` (= `CLAUDE.md`). Las más fáciles de 
 
 Cada change con backend suma una migración Alembic en cadena (`down_revision`). Si dos personas crean "la siguiente" a la vez, quedan **dos heads** y `alembic upgrade head` falla.
 
-- **Reservado:** `007_sobreturno_huecos` (C-05c, Matheo, `down_revision = "006_turno_transicion"`).
-- Quien cree una migración nueva usa un número a partir de 008 y pone como `down_revision` el head **del momento en que mergea**. Antes de mergear: `cd backend && alembic heads` tiene que mostrar un único head. Si hay dos, actualizar el `down_revision` de su migración para colgarla de la otra.
+- **Tomado:** `011_sobreturno_huecos` (C-05c, Matheo, `down_revision = "010_recetas_externas"`). La 007 quedó sin usar: no insertar migraciones en medio de la cadena, porque una base que ya está más adelante las da por aplicadas.
+- Quien cree una migración nueva usa el número siguiente al head (hoy 012) y pone como `down_revision` el head **del momento en que mergea**. Antes de mergear: `cd backend && alembic heads` tiene que mostrar un único head. Si hay dos, actualizar el `down_revision` de su migración para colgarla de la otra.
 - Avisen en el grupo qué número toman.
 
 ---

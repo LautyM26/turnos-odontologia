@@ -73,7 +73,7 @@ def test_exclusiones_son_gist_sobre_rango_y_solo_turnos_activos(postgres_url) ->
     assert "clinica_id WITH =, profesional_id WITH =, rango WITH &&" in defs
     assert "clinica_id WITH =, sillon_id WITH =, rango WITH &&" in defs
     assert defs.count("'reservado'") == 2
-    assert "sobreturno" not in defs
+    assert "'sobreturno'" not in defs  # el estado sobreturno nunca estuvo en el predicado
 
 
 def test_columnas_de_tiempo_son_timestamptz(postgres_url) -> None:  # type: ignore[no-untyped-def]

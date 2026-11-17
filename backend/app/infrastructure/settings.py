@@ -26,6 +26,12 @@ class Settings(BaseSettings):
         le=120,
         description="Expiración del pre-bloqueo de horario sin pago (SU-04).",
     )
+    agenda_paso_min: int = Field(
+        default=15,
+        ge=5,
+        le=60,
+        description="Paso en minutos entre inicios candidatos de huecos (C-05c D1).",
+    )
     # --- Auth JWT (C-03, D9). Secreto requerido sin default: boot falla sin él. ---
     jwt_secret_key: str = Field(
         description="Secreto HS256 256-bit, solo env backend. Sin default.",

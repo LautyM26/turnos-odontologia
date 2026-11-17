@@ -1,6 +1,6 @@
 ---
 name: dominio-agenda
-description: Reglas vigentes de agenda y turnos (RN-AG + RN-TU) con trazabilidad a specs y tests. Usar al programar turnos, huecos, solapamientos, sillones, bloqueos, sobreturnos, estados del turno (reservado, confirmado, asistido, ausente, cancelado), cancelar o reprogramar, reserva online, lista de espera o la agenda del frontend (changes C-05, C-05b transiciones-estado-turno, C-06, C-07, C-16, C-17), y antes de /opsx:propose de cualquier change de agenda.
+description: Reglas vigentes de agenda y turnos (RN-AG + RN-TU) con trazabilidad a specs y tests. Usar al programar turnos, huecos, solapamientos, sillones, bloqueos, sobreturnos, estados del turno (reservado, confirmado, asistido, ausente, cancelado), cancelar o reprogramar, reserva online, lista de espera o la agenda del frontend (changes C-05, C-05b transiciones-estado-turno, C-05c huecos-y-sobreturnos, C-06, C-07, C-16, C-17), y antes de /opsx:propose de cualquier change de agenda.
 ---
 
 # dominio-agenda
@@ -15,7 +15,7 @@ Cubre el corazón operativo de la clínica: cuándo y dónde puede atenderse un 
 
 - Modelo `Turno`, servicio `crear_turno`, transiciones de estado, huecos, sobreturnos, reprogramación.
 - Endpoints `/api/turnos`, `/api/agenda/huecos`, reserva pública (`/api/public/...`), UI `/agenda`.
-- Changes del roadmap: C-05 `motor-turnos` (parcial: recorte `crear-turno-sin-solapamientos` archivado), C-05b `transiciones-estado-turno` (archivado 2026-11-16), C-06 `reserva-online-publica`, C-07 `agenda-frontend`, C-16 `lista-espera-relleno`, C-17 `chatbot-reprogramacion`.
+- Changes del roadmap: C-05 `motor-turnos` (parcial: recorte `crear-turno-sin-solapamientos` archivado), C-05b `transiciones-estado-turno` (archivado 2026-11-16), C-05c `huecos-y-sobreturnos` (2026-11-17), C-06 `reserva-online-publica`, C-07 `agenda-frontend`, C-16 `lista-espera-relleno`, C-17 `chatbot-reprogramacion`.
 
 ## 3. Reglas vigentes
 
@@ -48,8 +48,8 @@ Cubre el corazón operativo de la clínica: cuándo y dónde puede atenderse un 
 
 ## 4. Cómo aplicarlas
 
-- Código existente: `backend/app/domain/agenda/turnos.py` (modelo `Turno`, `ESTADOS_ACTIVOS`, predicado de turno activo, `crear_turno`), `backend/app/domain/agenda/schemas.py`, `backend/app/api/turnos.py`, migración `backend/alembic/versions/005_turnos.py`.
-- "Activo" = `reservado`, `confirmado`, `asistido`. `cancelado`/`ausente` liberan el hueco sin tocar las constraints. `sobreturno` está fuera de las exclusion constraints a propósito (RN-AG-04).
+- Código existente: `backend/app/domain/agenda/turnos.py` (modelo `Turno`, `ESTADOS_ACTIVOS`, predicado de turno activo, `crear_turno`), `backend/app/domain/agenda/schemas.py`, `backend/app/api/turnos.py`, migraciones `backend/alembic/versions/005_turnos.py` y `011_sobreturno_huecos.py`. Huecos: `buscar_huecos` en `backend/app/domain/agenda/huecos.py` (una consulta SQL con multirangos) y `GET /api/agenda/huecos` en `backend/app/api/agenda.py`; paso `AGENDA_PASO_MIN`.
+- "Activo" = `reservado`, `confirmado`, `asistido`. `cancelado`/`ausente` liberan el hueco sin tocar las constraints. Un sobreturno es una **marca** (`es_sobreturno` + `motivo_sobreturno`, C-05c), no un estado: queda fuera de las exclusion constraints y del pre-chequeo, pero respeta los bloqueos y sigue `TRANSICIONES`. El estado `sobreturno` de la 005 está en desuso.
 - Respuestas: solapamiento o bloqueo → `409` "Horario no disponible" sin datos del turno ajeno; referencia inválida/ajena → `422`; rol no autorizado → `403`; turno de otra clínica → `404`.
 - Sobreturno: reutilizar `require_sobreturno()` de `backend/app/api/permissions.py` (admin/recepcionista).
 - Transiciones (C-05b): `TRANSICIONES` + `transicionar_turno` en `backend/app/domain/agenda/turnos.py`; `POST /api/turnos/{id}/transicion`; historial append-only `turno_transicion`. No duplicar la tabla de transiciones: importar `puede_transicionar`.
@@ -60,8 +60,8 @@ Cubre el corazón operativo de la clínica: cuándo y dónde puede atenderse un 
 |---|---|---|---|
 | RN-AG-01 | `openspec/specs/appointments/spec.md` · "Sin solapamiento de turnos por profesional", "Sin solapamiento de turnos por sillón", "Concurrencia sobre el mismo hueco", "Garantía de no solapamiento en la capa de persistencia" | `backend/tests/integration/test_turnos_db_constraints.py` · `test_superpuesto_por_profesional_en_otro_sillon_23P01`, `test_superpuesto_por_sillon_con_otro_profesional_23P01`; `backend/tests/integration/test_turnos_concurrencia.py` · `test_cinco_pedidos_identicos_un_201_y_cuatro_409`; `backend/tests/integration/test_turnos_api.py` · `test_profesional_ocupado_en_otro_sillon_409`, `test_sillon_ocupado_por_otro_profesional_409` | cubierta |
 | RN-AG-02 | `openspec/specs/clinic-catalog/spec.md` · "Prestación con duración propia", "Fin de turno calculado solo en servidor"; `openspec/specs/appointments/spec.md` · "Alta de turno con duración calculada en servidor" | `backend/tests/unit/test_agenda_duracion.py` · `test_suma_duracion_conservando_offset`; `backend/tests/integration/test_turnos_api.py` · `test_recepcionista_crea_turno_201_con_fin_calculado_y_get`, `test_fin_o_duracion_en_body_422_sin_fila` | cubierta |
-| RN-AG-03 | `openspec/specs/appointments/spec.md` · "Los bloqueos impiden reservas"; `openspec/specs/schedule-blocks/spec.md` · "Consulta de bloqueos que impiden una reserva" | `backend/tests/integration/test_turnos_api.py` · `test_bloqueo_del_profesional_409_y_contiguo_201`, `test_bloqueo_del_sillon_409`, `test_bloqueo_de_clinica_409_para_cualquier_recurso`; `backend/tests/integration/test_bloqueos_solapados.py` · `test_devuelve_bloqueo_del_profesional_que_se_superpone` | cubierta |
-| RN-AG-04 | `openspec/specs/access-control/spec.md` · "Sobreturnos y anulaciones chequeados por rol" (solo el permiso) | `backend/tests/integration/test_rbac.py` · `test_sobreturno_sin_rol_403`; `backend/tests/integration/test_turnos_db_constraints.py` · `test_sobreturno_puede_superponerse_a_un_turno_activo` | parcial: falta crear sobreturno con motivo (endpoint) |
+| RN-AG-03 | `openspec/specs/appointments/spec.md` · "Los bloqueos impiden reservas"; `openspec/specs/schedule-blocks/spec.md` · "Consulta de bloqueos que impiden una reserva"; `openspec/specs/schedule-availability/spec.md` · "Turnos y bloqueos restan huecos" | `backend/tests/integration/test_turnos_api.py` · `test_bloqueo_del_profesional_409_y_contiguo_201`, `test_bloqueo_del_sillon_409`, `test_bloqueo_de_clinica_409_para_cualquier_recurso`; `backend/tests/integration/test_bloqueos_solapados.py` · `test_devuelve_bloqueo_del_profesional_que_se_superpone`; `backend/tests/integration/test_huecos_servicio.py` · `test_bloqueo_de_clinica`, `test_bloqueo_del_profesional_y_del_sillon`; `backend/tests/integration/test_sobreturnos_api.py` · `test_sobreturno_sobre_un_feriado_409` | cubierta |
+| RN-AG-04 | `openspec/specs/access-control/spec.md` · "Sobreturnos y anulaciones chequeados por rol" (permiso); `openspec/specs/appointments/spec.md` · "Sobreturno por rol con motivo", "El sobreturno respeta los bloqueos", "El sobreturno sigue el ciclo de estados del turno" | `backend/tests/integration/test_sobreturnos_api.py` · `test_recepcionista_da_un_sobreturno_sobre_un_horario_ocupado`, `test_sobreturno_y_motivo_van_juntos_422_sin_fila`, `test_sobreturno_sobre_un_feriado_409`, `test_sobreturno_superpuesto_pasa_a_asistido`, `test_odontologo_no_puede_dar_sobreturno_403`; `backend/tests/integration/test_turnos_db_constraints.py` · `test_sobreturno_puede_superponerse_a_un_turno_activo`, `test_check_de_coherencia_del_sobreturno_23514`; `backend/tests/integration/test_rbac.py` · `test_sobreturno_sin_rol_403` | cubierta |
 | RN-AG-05 | `openspec/specs/patients/spec.md` · "Paciente no requiere cuenta de usuario" | `backend/tests/integration/test_pacientes_servicio.py` · `test_crear_paciente_persiste_audita_y_no_crea_usuario` | parcial: falta el enlace público de reserva (C-06) |
 | RN-AG-06 | — | — | pendiente (C-16) |
 | RN-TU-01 | `openspec/specs/appointments/spec.md` · "Alta de turno con duración calculada en servidor" (solo el estado inicial `reservado`) | `backend/tests/integration/test_turnos_db_constraints.py` · `test_checks_rechazan_valores_invalidos_23514`, `test_turno_no_activo_no_ocupa_el_horario` | parcial: faltan transiciones y auditoría (C-05b) |
@@ -69,7 +69,7 @@ Cubre el corazón operativo de la clínica: cuándo y dónde puede atenderse un 
 | RN-TU-03 | — | — | pendiente (C-15/C-17) |
 | RN-TU-04 | `openspec/specs/patients/spec.md` · "Riesgo de ausencia de solo lectura" (solo el campo) | `backend/tests/integration/test_pacientes_api.py` · `test_patch_riesgo_ausencia_422` | parcial: falta que el ausente alimente el score y el seguimiento |
 
-Resumen: 10 reglas · 4 cubiertas · 3 parciales · 3 pendientes. Ningún test cita el código RN: la trazabilidad se hizo por significado (requirement → escenario → test).
+Resumen: 10 reglas · 5 cubiertas · 2 parciales · 3 pendientes. Ningún test cita el código RN: la trazabilidad se hizo por significado (requirement → escenario → test).
 
 ### Conflictos detectados
 

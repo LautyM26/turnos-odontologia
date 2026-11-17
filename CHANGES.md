@@ -215,7 +215,7 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
 ---
 
 ### [C-05] `motor-turnos`
-- **Estado**: `[~]` parcial — recorte archivado como `crear-turno-sin-solapamientos` (2026-10-13): alta de turno + anti-solapamiento profesional/sillón + bloqueos + rechazo de turnos en el pasado. Máquina de estados archivada como C-05b `transiciones-estado-turno` (2026-11-16). Pendiente: sobreturnos, huecos (→ C-05c), reprogramar.
+- **Estado**: `[x]` completado — en tres recortes archivados: `crear-turno-sin-solapamientos` (2026-10-13: alta + anti-solapamiento + bloqueos), C-05b `transiciones-estado-turno` (2026-11-16) y C-05c `huecos-y-sobreturnos` (2026-11-17). Reprogramar pasa a C-17.
 - **Scope**: Motor de turnos con anti-solapamiento duro + máquina de estados + sobreturnos por rol (corazón del DD-04, US-001/US-002, Flujo 1)
   - Modelo `Turno` (clinica_id, profesional_id, sillon_id, paciente_id, prestacion_id, inicio, fin calculado = inicio + duracion prestacion, estado reservado/confirmado/asistido/ausente/cancelado/sobreturno, origen enlace/mostrador/WhatsApp/lista_espera, seña_exigida, seña_pagada, motivo_sobreturno)
   - Anti-solapamiento DURO a nivel DB: exclusion constraints PostgreSQL (rango tstzrange) en `(sillon_id, rango)` y `(profesional_id, rango)` solo turnos activos + chequeo de bloqueos en servicio de dominio; doble-clic concurrente → gana primera escritura, segunda recibe 409 "horario no disponible"
@@ -258,13 +258,13 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
 ---
 
 ### [C-05c] `huecos-y-sobreturnos`
-- **Estado**: `[ ]` pendiente — en propuesta 2026-11-16
+- **Estado**: `[x]` completado — archivado 2026-11-17 (`openspec/changes/archive/2026-11-17-huecos-y-sobreturnos/`, 1232 tests en verde, ver `verify.md`; migración renumerada a `011_sobreturno_huecos`)
 - **Propósito**: cerrar C-05 con los huecos libres reales y los sobreturnos por rol (RN-AG-04 parcial según `dominio-agenda`).
 - **Scope**:
   - `GET /api/agenda/huecos?profesional_id&prestacion_id&desde&hasta`: inicios dentro de la ventana pedida por la recepción, cada `AGENDA_PASO_MIN` (default 15), donde un turno normal se podría crear (profesional libre, algún sillón habilitado libre, sin bloqueos, no en el pasado). Ventana máxima 7 días. Odontólogo solo su agenda (`require_own_agenda`).
   - Sobreturno en `POST /api/turnos` con `sobreturno: true` + `motivo_sobreturno` obligatorio (admin/recepcionista): puede superponerse a otros turnos pero **respeta bloqueos** (409) (decisión usuario 2026-11-16).
   - Modelado (decisión usuario 2026-11-16): marca `es_sobreturno` + `motivo_sobreturno` en `turno` y el turno sigue el ciclo normal de estados (C-05b); las exclusion constraints ignoran los turnos marcados. El estado `sobreturno` queda sin uso (se conserva en el CHECK).
-  - Migración 007: columnas nuevas + exclusion constraints recreadas con `AND NOT es_sobreturno`.
+  - Migración 011 (`011_sobreturno_huecos`, `down_revision = "010_recetas_externas"`; iba a ser la 007, pero 008–010 ya estaban encadenadas): columnas nuevas + exclusion constraints recreadas con `AND NOT es_sobreturno`.
 - **Exclusiones**: horario de atención por profesional (→ C-05d), reprogramar (C-17), UI (C-07).
 - **Adelanta / reduce**: con C-05b y C-05c, C-05 queda `[x]` (reprogramar pasa a C-17).
 - **Dependencias**: C-05b ✓
@@ -288,7 +288,7 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
   - Endpoints públicos (sin auth, con rate limit + captcha/Turnstile): `GET /api/public/disponibilidad?prestacion_id&profesional_id`, `POST /api/public/reservas` (DNI + email/teléfono, crea/encuentra Paciente sin Usuario), `GET /api/public/reservas/{token}` (token único por reserva para ver/cancelar)
   - Pre-bloqueo: crea Turno `reservado` con `hold_expires_at = now() + RESERVA_PREBLOQUEO_MIN` (default 15, SU-04 a validar con piloto); job expira holds sin seña y libera hueco; si `seña_exigida` (riesgo alto o prestación lo exige) → el horario se bloquea recién al confirmar pago (callback de C-12), si no → reserva directa
   - Enlace compartible `/{clinica_slug}/reservar/{token}`; validación DNI/email/tel normalizados en servidor
-  - Migración (número asignado al implementar: el siguiente libre — 006 ya es de C-05b; 007 C-05c, 008 C-09, 009 C-18 y 010 C-19 ya están tomados; verificar `alembic heads` con un único head): `hold_expires_at`, `public_token` único en turnos
+  - Migración (número asignado al implementar: el siguiente libre — 006 ya es de C-05b; 008 C-09, 009 C-18, 010 C-19 y 011 C-05c ya están tomados (la 007 quedó sin usar); verificar `alembic heads` con un único head): `hold_expires_at`, `public_token` único en turnos
   - Tests: reservar sin cuenta OK, pago no completado libera hueco tras timeout, doble reserva concurrente → 1 gana, sin CUIT no bloquea reserva (factura queda pendiente — RN-AF-02)
 - **Dependencias**: C-05, C-05d (horario de atención para los huecos públicos)
 - **Governance**: ALTO
@@ -327,7 +327,7 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
   - Modelos: `Odontograma` (paciente_id, fecha, dentición permanente/temporal/mixta, piezas/caras/estados JSONB versionado básico), `Evolucion` (paciente_id, profesional_id autor obligatorio, fecha_hora, texto, pieza_relacionada nullable — SIN update ni delete; corrección = nueva fila con `corrige_a_id`), `AuditoriaHC` extendida a evoluciones/odontograma
   - Endpoints: `GET/POST /api/pacientes/{id}/odontograma`, `GET /api/pacientes/{id}/odontograma/actual`, `GET/POST /api/pacientes/{id}/evoluciones` (autor = usuario logueado profesional, 403 si no; 422 sin autor); `GET /api/pacientes/{id}/historia` (ficha + odontograma actual + evoluciones ordenadas)
   - Reglas duras: guardar evolución sin autor → 422 (RN-CL-01); edición muda imposible (sin endpoint PUT/DELETE, RN-CL-02); FDI básico MVP (mixta fina y BOP son F2, RN-CL-03)
-  - Migración 008 (`008_odontograma_evolucion`, `down_revision = "006_turno_transicion"`; re-apuntar a `007_sobreturno_huecos` si C-05c mergea antes — `alembic heads` con un único head): tablas odontograma/evolución + triggers con `fn_rechazar_mutacion()` de la 004 + CHECKs de `auditoria_hc` ampliados. El 007 está reservado para C-05c (`docs/CONTINUAR.md` §5)
+  - Migración 008 (`008_odontograma_evolucion`, `down_revision = "006_turno_transicion"`; C-05c terminó como `011_sobreturno_huecos` al final de la cadena): tablas odontograma/evolución + triggers con `fn_rechazar_mutacion()` de la 004 + CHECKs de `auditoria_hc` ampliados.
   - Tests: evolución sin autor rechazada, intento de PUT → 405, historia ordenada, tenant aislado
 - **Dependencias**: C-08
 - **Governance**: CRITICO
@@ -366,7 +366,7 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
   - Endpoints: CRUD `/api/presupuestos`, `POST /api/presupuestos/{id}/aceptar` (genera Plan + turnos sugeridos vía motor C-05 respetando bloqueos/solapamientos), `GET /api/seguimiento/no-convertidos|no-agendados|inactivos` (con monto recuperable visible — alimenta C-14)
   - Presupuesto vencido/rechazado sale del seguimiento activo (métrica no-convertido); cambio de plan = nuevo presupuesto versionado (`version`, `reemplaza_a_id`), turnos tomados se re-imputan
   - Montos SIEMPRE ARS, precio público sin packs (RN-PR-03)
-  - Migración (número asignado al implementar: el siguiente libre — 007 C-05c, 008 C-09, 009 C-18 y 010 C-19 ya están tomados; verificar `alembic heads` con un único head): tablas presupuesto/plan + índices `(paciente_id, estado)`
+  - Migración (número asignado al implementar: el siguiente libre — 008 C-09, 009 C-18, 010 C-19 y 011 C-05c ya están tomados (la 007 quedó sin usar); verificar `alembic heads` con un único head): tablas presupuesto/plan + índices `(paciente_id, estado)`
   - Tests: aceptado genera N turnos sugeridos sin solaparse, no-agendado aparece en seguimiento con monto, versionado re-imputa
 - **Dependencias**: C-09, C-05
 - **Governance**: ALTO
@@ -384,7 +384,7 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
   - Modelos: `Cobro` (turno_id/presupuesto_id, tipo seña/saldo, monto ARS, medio MP, estado pendiente/aprobado/rechazado/reembolsado, id_externo_MP único), `CajaMovimiento` (clinica_id, fecha, concepto, monto, usuario), `RiesgoAusencia` (paciente_id, score, causas: ausencias/cancelaciones tardías)
   - Endpoints: `POST /api/cobros/preferencia` (crea preferencia MP imputada a turno/presupuesto), `POST /api/webhooks/mercadopago` (firma `MP_WEBHOOK_SECRET`, idempotencia por `id_externo_MP`), `POST /api/cobros/{id}/anular` (solo rol autorizado + traza, RN-CA-03), `GET /api/caja/resumen?fecha`
   - Seña bloquea horario (callback confirma Turno reservado); seña obligatoria solo si score alto o prestación lo exige (RN-CA-02); política de reembolso ante cancelación según SU-07/PA-06 (documentar supuesto elegido)
-  - Migración (número asignado al implementar: el siguiente libre — 007 C-05c, 008 C-09, 009 C-18 y 010 C-19 ya están tomados; verificar `alembic heads` con un único head): tablas cobro/caja/riesgo + constraint único `id_externo_MP`
+  - Migración (número asignado al implementar: el siguiente libre — 008 C-09, 009 C-18, 010 C-19 y 011 C-05c ya están tomados (la 007 quedó sin usar); verificar `alembic heads` con un único head): tablas cobro/caja/riesgo + constraint único `id_externo_MP`
   - Tests: webhook duplicado no duplica cobro, firma inválida → 401, anulación sin rol → 403, score sube tras ausencia
 - **Dependencias**: C-05, C-11
 - **Governance**: CRITICO
@@ -404,7 +404,7 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
   - Servicio `infrastructure/fiscal/arca_client` (WSFE homologación primero): `emitir_desde_cobro(cobro_id)`; sin CUIT configurado → 422 y factura `pendiente` (RN-AF-02); ante caída ARCA → `pendiente` + job con backoff y estado visible (PA-07 a validar)
   - Endpoints: `POST /api/cobros/{id}/facturar`, `GET /api/facturas`, `GET /api/facturas/{id}/pdf` (comprobante con QR)
   - Job `jobs/reintentos_arca.py` + bandeja visible de pendientes/errores
-  - Migración (número asignado al implementar: el siguiente libre — 007 C-05c, 008 C-09, 009 C-18 y 010 C-19 ya están tomados; verificar `alembic heads` con un único head): tabla facturas + índice `(estado)`
+  - Migración (número asignado al implementar: el siguiente libre — 008 C-09, 009 C-18, 010 C-19 y 011 C-05c ya están tomados (la 007 quedó sin usar); verificar `alembic heads` con un único head): tabla facturas + índice `(estado)`
   - Tests: sin CUIT → 422, cobro emite 1 factura (idempotente), caída ARCA simulada → pendiente + reintento OK
 - **Dependencias**: C-12
 - **Governance**: CRITICO
@@ -445,7 +445,7 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
   - Sesión QR (DD-10): `GET /api/whatsapp/sesion` (estado) y `POST /api/whatsapp/sesion/reconectar` (nuevo QR), monitoreo con alerta a admin si cae, backup/restauración cifrada de la sesión (vault/env backend, nunca en repo ni browser), límite de ritmo de envío, fallback a email/recordatorio manual desde la bandeja de fallos; documentar riesgo de bloqueo Meta/ToS
   - Job `jobs/recordatorios.py` (cron 24 h antes, reintentos con backoff); respuestas actualizan agenda de verdad (RN-TU-03); fallo (número bloqueado/sesión caída) → bandeja de fallos para recepcionista + endpoint `GET /api/whatsapp/fallos`, `GET /api/whatsapp/costos?desde&hasta`
   - Seed: 5 textos base (recordatorio 24 h, confirmación, cancelación, reprogramación, oferta de hueco)
-  - Migración (número asignado al implementar: el siguiente libre — 007 C-05c, 008 C-09, 009 C-18 y 010 C-19 ya están tomados; verificar `alembic heads` con un único head): tablas mensajes/plantillas + índice `(turno_id, estado)`
+  - Migración (número asignado al implementar: el siguiente libre — 008 C-09, 009 C-18, 010 C-19 y 011 C-05c ya están tomados (la 007 quedó sin usar); verificar `alembic heads` con un único head): tablas mensajes/plantillas + índice `(turno_id, estado)`
   - Tests: respuesta "SI" confirma turno, duplicado de evento no duplica transición, costo registrado en ARS, sesión caída → fallo en bandeja y fallback
 - **Dependencias**: C-05
 - **Governance**: ALTO
@@ -465,7 +465,7 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
   - Servicio: ante cancelación/ausencia/reprogramación (evento de dominio desde C-05) → busca cola por (prestación/profesional/sillón) en prioridad → envía oferta por WA (C-15) "Jue 16:30 con Dra. X, ¿lo tomás? [Sí/No]" → Sí con un tap reasigna Turno (transfiere/exige seña según política) → si expira (timeout SU-04 a definir) ofrece al siguiente; nadie acepta → hueco libre + métrica hora-perdida
   - Endpoints: CRUD `/api/lista-espera`, `POST /api/lista-espera/{id}/ofertar`, bandeja recepcionista `GET /api/lista-espera/bandeja`
   - Idempotencia: doble aceptación simultánea → una sola reasignación efectiva (lock por turno)
-  - Migración (número asignado al implementar: el siguiente libre — 007 C-05c, 008 C-09, 009 C-18 y 010 C-19 ya están tomados; verificar `alembic heads` con un único head): tabla lista_espera + índice `(prestacion_id, estado, prioridad)`
+  - Migración (número asignado al implementar: el siguiente libre — 008 C-09, 009 C-18, 010 C-19 y 011 C-05c ya están tomados (la 007 quedó sin usar); verificar `alembic heads` con un único head): tabla lista_espera + índice `(prestacion_id, estado, prioridad)`
   - Tests: cancelación dispara oferta al primero, aceptar reasigna, expirar pasa al siguiente, doble aceptar → 1 efectivo
 - **Dependencias**: C-05, C-15
 - **Governance**: MEDIO
@@ -503,7 +503,7 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
 - Modelo `Consentimiento` (paciente_id, tipo, texto versionado, firma: fecha/IP/dispositivo/hash, documento_bloqueado bool, pdf_path); endpoint `POST /api/pacientes/{id}/consentimientos/{cid}/firmar` (registra constancia, bloquea documento — sin endpoint de edición post-firma, RN-CU-02); firma incompleta → 422 reintentable (Flujo 8)
   - Admin: `GET/POST /api/admin/usuarios`, `PATCH /api/admin/usuarios/{id}/roles` (RBAC de C-03 aplicado), `GET /api/admin/exportacion?formato=csv` (ZIP de CSV + adjuntos + manifest, respaldo completo sin costo, RN-CU-04; PDF diferido → 422, decisión DT-3 del design)
   - Páginas públicas: `/cumplimiento` + `/privacidad` (textos base de seed legal de `04`, a adaptar con asesoría — PA-04/SU-08)
-  - Migración 009 (`009_consentimientos_cumplimiento`, `down_revision = "008_odontograma_evolucion"`): tablas `consentimiento` + `consentimiento_firma` (append-only con `fn_rechazar_mutacion()`) + `auditoria_admin`, índice `(clinica_id, paciente_id, tipo)` y CHECKs de `auditoria_hc` ampliados. Si C-05c (007) mergea, `alembic heads` debe mostrar un único head
+  - Migración 009 (`009_consentimientos_cumplimiento`, `down_revision = "008_odontograma_evolucion"`): tablas `consentimiento` + `consentimiento_firma` (append-only con `fn_rechazar_mutacion()`) + `auditoria_admin`, índice `(clinica_id, paciente_id, tipo)` y CHECKs de `auditoria_hc` ampliados.
   - Tests: firmado no editable, firma incompleta → 422, exportación incluye HC/agenda/catálogo/usuarios del tenant y nada de otros (caja/facturas aún no existen: declaradas como excluidas en el manifest)
 - **Dependencias**: C-03, C-09
 - **Governance**: ALTO
@@ -523,7 +523,7 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
   - Modelo `RecetaExterna` (paciente_id, evolucion_id, partner, id_externo, tipo receta/orden, estado, pdf_path)
   - Endpoints: `POST /api/pacientes/{id}/recetas`, `GET /api/pacientes/{id}/recetas` (lista con links a PDF del partner)
   - Credencial `RECETAS_PARTNER_KEY` solo en vault/env; ningún secreto en repo
-  - Migración 010 (`010_recetas_externas`, `down_revision = "009_consentimientos_cumplimiento"`): tabla `receta_externa` append-only + FK compuesta a `evolucion`. Si C-05c (007) mergea, `alembic heads` debe mostrar un único head
+  - Migración 010 (`010_recetas_externas`, `down_revision = "009_consentimientos_cumplimiento"`): tabla `receta_externa` append-only + FK compuesta a `evolucion`.
   - Tests: sin partner → 501 claro, con mock de partner → receta vinculada a evolución, credencial ausente no tumba boot
 - **Dependencias**: C-08, C-09, C-18 (cadena de migraciones 009 → 010 y registro de exportación)
 - **Governance**: ALTO

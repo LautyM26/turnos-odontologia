@@ -11,6 +11,7 @@ def _clean_env(monkeypatch: pytest.MonkeyPatch) -> None:
         "DATABASE_URL",
         "APP_BASE_URL",
         "RESERVA_PREBLOQUEO_MIN",
+        "AGENDA_PASO_MIN",
         "JWT_SECRET_KEY",
         "JWT_ALGORITHM",
         "JWT_ACCESS_MIN",
@@ -37,6 +38,7 @@ def test_settings_loads_with_minimal_dev_env(monkeypatch: pytest.MonkeyPatch) ->
     assert settings.database_url.startswith("postgresql")
     assert settings.app_base_url != ""
     assert settings.reserva_prebloqueo_min == 15
+    assert settings.agenda_paso_min == 15
 
 
 def test_settings_respects_env_override(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -202,3 +204,14 @@ def test_settings_entorno_valores_permitidos(
     from app.infrastructure.settings import Settings
 
     assert Settings().entorno == entorno
+
+
+@pytest.mark.parametrize("valor", ["4", "61", "abc"])
+def test_agenda_paso_min_fuera_de_rango_falla(monkeypatch: pytest.MonkeyPatch, valor: str) -> None:
+    """C-05c D1: paso de huecos configurable entre 5 y 60 minutos."""
+    _clean_env(monkeypatch)
+    monkeypatch.setenv("AGENDA_PASO_MIN", valor)
+    from app.infrastructure.settings import Settings
+
+    with pytest.raises(ValidationError):
+        Settings()

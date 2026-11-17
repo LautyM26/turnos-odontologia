@@ -13,6 +13,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    StrictBool,
     StrictInt,
     field_validator,
     model_validator,
@@ -229,11 +230,25 @@ class TurnoCreate(EntradaBase):
     paciente_id: StrictInt
     prestacion_id: StrictInt
     inicio: AwareDatetime
+    sobreturno: StrictBool = False
+    motivo_sobreturno: str | None = Field(default=None, max_length=500)
 
     @field_validator("inicio")
     @classmethod
     def _utc(cls, value: datetime) -> datetime:
         return value.astimezone(UTC)
+
+    @field_validator("motivo_sobreturno")
+    @classmethod
+    def _motivo(cls, value: str | None) -> str | None:
+        return (value.strip() or None) if value is not None else None
+
+    @model_validator(mode="after")
+    def _motivo_sii_sobreturno(self) -> Self:
+        """RN-AG-04 (C-05c D4): el motivo es obligatorio con sobreturno y prohibido sin él."""
+        if self.sobreturno != (self.motivo_sobreturno is not None):
+            raise ValueError("motivo_sobreturno es obligatorio si y solo si sobreturno=true")
+        return self
 
 
 class TurnoTransicionIn(EntradaBase):
@@ -262,4 +277,17 @@ class TurnoOut(SalidaBase):
     duracion_min: int
     estado: str
     origen: str
+    es_sobreturno: bool
+    motivo_sobreturno: str | None
     created_at: datetime
+
+
+# --- Huecos (C-05c D6) ---------------------------------------------------------------------
+
+
+class HuecoOut(SalidaBase):
+    """Inicio libre para un turno normal; ``fin`` = inicio + duración (servidor, regla 6)."""
+
+    inicio: datetime
+    fin: datetime
+    sillon_ids: list[int]

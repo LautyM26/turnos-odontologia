@@ -7,12 +7,14 @@ import zipfile
 from datetime import UTC, datetime, timedelta
 
 import pytest
+from alembic.script import ScriptDirectory
 from sqlalchemy import select, text
 
 from app.domain.agenda.turnos import Turno, TurnoTransicion
 from app.domain.auditoria.models import AuditoriaAdmin
 from app.domain.core.models import Clinica
 from tests.integration.conftest import (
+    BACKEND_DIR,
     bearer,
     crear_usuario,
     nuevo_paciente_c09,
@@ -154,7 +156,7 @@ def test_manifest_con_clinica_fecha_con_zona_esquema_y_excluidas(  # type: ignor
     m = json.loads(zf.read("manifest.json"))
     assert m["clinica_id"] == seed["a"] and m["formato"] == "csv"
     assert datetime.fromisoformat(m["generado_en"]).utcoffset() is not None
-    assert m["version_esquema"] == "010_recetas_externas"
+    assert m["version_esquema"] == ScriptDirectory(str(BACKEND_DIR / "alembic")).get_current_head()
     assert {e["entidad"] for e in m["excluidas"]} == {"caja", "facturas"}
     assert all(e["motivo"] for e in m["excluidas"])
     assert isinstance(m["faltantes"], list)

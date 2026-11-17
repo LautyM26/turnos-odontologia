@@ -32,9 +32,9 @@ Estado observado:
 
 - Columnas `es_sobreturno BOOLEAN NOT NULL DEFAULT false` y `motivo_sobreturno TEXT NULL`.
 - CHECK `es_sobreturno = (motivo_sobreturno IS NOT NULL)` y `length(motivo_sobreturno) <= 500`.
-- El predicado de las exclusion constraints pasa a `is_active AND NOT es_sobreturno AND estado IN (...)`. La migración 007 hace `DROP` y re-`ADD` de las dos constraints con el predicado nuevo.
+- El predicado de las exclusion constraints pasa a `is_active AND NOT es_sobreturno AND estado IN (...)`. La migración 011 hace `DROP` y re-`ADD` de las dos constraints con el predicado nuevo.
 - El turno marcado sigue `TRANSICIONES` de C-05b sin cambios. Un sobreturno `asistido` no viola la constraint porque está excluido del predicado.
-- El estado `sobreturno` queda en el CHECK (no se reescribe la 005) pero ningún código lo asigna. Antes de recrear las constraints, la 007 migra las filas que hubiera con `estado='sobreturno'` (no debería haber ninguna) a `estado='reservado', es_sobreturno=true, motivo='(migrado desde estado sobreturno)'`.
+- El estado `sobreturno` queda en el CHECK (no se reescribe la 005) pero ningún código lo asigna. Antes de recrear las constraints, la 011 migra las filas que hubiera con `estado='sobreturno'` (no debería haber ninguna) a `estado='reservado', es_sobreturno=true, motivo='(migrado desde estado sobreturno)'`.
 - **Por qué no el estado:** con el estado, el sobreturno no puede pasar por `confirmado`, y al pasar a `asistido` entraría al predicado activo y la base lo rechazaría (23P01) aunque fuera un sobreturno legítimo.
 - La KB `04` (Turno) se actualiza al archivar: `estado` sin `sobreturno` + atributos `es_sobreturno`/`motivo_sobreturno`.
 
@@ -80,5 +80,5 @@ Estado observado:
 
 ## Migration Plan
 
-1. `007_sobreturno_huecos`: `ADD COLUMN`s, migración de filas `estado='sobreturno'`, CHECKs, `DROP CONSTRAINT` + `ADD CONSTRAINT ... EXCLUDE ... WHERE (is_active AND NOT es_sobreturno AND estado IN (...))`.
+1. `011_sobreturno_huecos` (`down_revision = "010_recetas_externas"`; renumerada en el apply del 2026-11-17: C-09/C-18/C-19 ya habían encadenado 006 → 008 → 009 → 010, e insertar una 007 en el medio rompería bases que ya están en la 010): `ADD COLUMN`s, migración de filas `estado='sobreturno'`, CHECKs, `DROP CONSTRAINT` + `ADD CONSTRAINT ... EXCLUDE ... WHERE (is_active AND NOT es_sobreturno AND estado IN (...))`.
 2. Downgrade: recrear las constraints con el predicado de la 005, convertir los sobreturnos marcados que sigan activos a `estado='sobreturno'` para no violar el predicado viejo, y borrar las columnas.

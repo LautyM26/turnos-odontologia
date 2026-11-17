@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.api.deps import AuthContext, require_tenant_checked
-from app.api.permissions import require_role
+from app.api.permissions import require_role, require_sobreturno
 from app.domain.agenda import turnos
 from app.domain.agenda.schemas import TurnoCreate, TurnoOut, TurnoTransicionIn
 from app.domain.agenda.servicio import PermisoDenegado, profesional_de_usuario
@@ -35,6 +35,8 @@ Ahora = Annotated[datetime, Depends(get_ahora)]
 
 @router.post("", response_model=TurnoOut, status_code=201)
 def crear(body: TurnoCreate, auth: Escritura, session: Sesion, tenant: Tenant, ahora: Ahora):  # type: ignore[no-untyped-def]
+    if body.sobreturno:
+        require_sobreturno()(auth)  # RN-AG-04: el permiso de sobreturno vive en un solo lugar
     return turnos.crear_turno(session, tenant, body.model_dump(), ahora)
 
 

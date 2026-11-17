@@ -9,6 +9,7 @@ from slowapi.errors import RateLimitExceeded
 
 from app.api.admin_catalogo import router as admin_catalogo_router
 from app.api.admin_cumplimiento import router as admin_cumplimiento_router
+from app.api.agenda import router as agenda_router
 from app.api.auth import router as auth_router
 from app.api.bloqueos_propios import router as bloqueos_propios_router
 from app.api.catalogo import router as catalogo_router
@@ -87,6 +88,7 @@ def create_app() -> FastAPI:
     app.include_router(admin_cumplimiento_router)
     app.include_router(recetas_router)
     app.include_router(turnos_router)
+    app.include_router(agenda_router)
     return app
 
 

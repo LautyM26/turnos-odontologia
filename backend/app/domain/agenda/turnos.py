@@ -12,6 +12,7 @@ from typing import Any
 
 from sqlalchemy import (
     BigInteger,
+    Boolean,
     CheckConstraint,
     Computed,
     DateTime,
@@ -21,6 +22,7 @@ from sqlalchemy import (
     Integer,
     Text,
     UniqueConstraint,
+    false,
     func,
     or_,
     select,
@@ -51,10 +53,13 @@ ESTADOS_TURNO = ("reservado", "confirmado", "asistido", "ausente", "cancelado", 
 ESTADOS_ACTIVOS = ("reservado", "confirmado", "asistido")
 ORIGENES_TURNO = ("enlace", "mostrador", "whatsapp", "lista_espera")
 HORARIO_NO_DISPONIBLE = "Horario no disponible"
-_PREDICADO_ACTIVO = "is_active AND estado IN ('reservado','confirmado','asistido')"
+#: Un sobreturno (marca, C-05c D2) no ocupa el horario: queda fuera de las exclusion constraints.
+_PREDICADO_ACTIVO = (
+    "is_active AND NOT es_sobreturno AND estado IN ('reservado','confirmado','asistido')"
+)
 
-#: Única fuente de verdad de RN-TU-01 (C-05b D1). Estados sin entrada son terminales;
-#: ``sobreturno`` no transiciona hasta C-05c.
+#: Única fuente de verdad de RN-TU-01 (C-05b D1). Estados sin entrada son terminales.
+#: El estado ``sobreturno`` de la 005 queda sin uso desde C-05c (se modela con la marca).
 TRANSICIONES: dict[str, frozenset[str]] = {
     "reservado": frozenset({"confirmado", "cancelado", "asistido", "ausente"}),
     "confirmado": frozenset({"asistido", "ausente", "cancelado"}),
@@ -78,7 +83,7 @@ def _fk(col: str, tabla: str) -> ForeignKeyConstraint:
 
 
 class Turno(Base, TenantMixin, AuditMixin):
-    """Turno de un paciente con un profesional en un sillon; espejo de la migracion 005."""
+    """Turno de un paciente con un profesional en un sillon; espejo de las migraciones 005/011."""
 
     __tablename__ = "turno"
     __table_args__ = (
@@ -95,6 +100,13 @@ class Turno(Base, TenantMixin, AuditMixin):
         ),
         CheckConstraint(
             "origen IN ('enlace','mostrador','whatsapp','lista_espera')", name="origen_valido"
+        ),
+        CheckConstraint(
+            "es_sobreturno = (motivo_sobreturno IS NOT NULL)", name="sobreturno_coherente"
+        ),
+        CheckConstraint(
+            "motivo_sobreturno IS NULL OR length(motivo_sobreturno) <= 500",
+            name="motivo_sobreturno_largo",
         ),
         ExcludeConstraint(
             ("clinica_id", "="),
@@ -135,6 +147,10 @@ class Turno(Base, TenantMixin, AuditMixin):
     origen: Mapped[str] = mapped_column(
         Text, nullable=False, default="mostrador", server_default="mostrador"
     )
+    es_sobreturno: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=false()
+    )
+    motivo_sobreturno: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
 _ESTADOS_SQL = "('reservado','confirmado','asistido','ausente','cancelado','sobreturno')"
@@ -240,6 +256,7 @@ def _hay_turno_solapado(
         .where(
             Turno.clinica_id == clinica_id,
             Turno.is_active.is_(True),
+            Turno.es_sobreturno.is_(False),
             Turno.estado.in_(ESTADOS_ACTIVOS),
             Turno.rango.op("&&")(ventana),
             or_(Turno.profesional_id == profesional_id, Turno.sillon_id == sillon_id),
@@ -259,6 +276,8 @@ def crear_turno(
 
     Orden: pasado (422) -> referencias (422) -> bloqueos/solapamiento (409) -> INSERT; la
     exclusion constraint resuelve la carrera entre requests concurrentes (409 al perdedor).
+    Sobreturno (``datos["sobreturno"]``, C-05c D3): respeta bloqueos pero saltea el chequeo de
+    solapamiento con otros turnos; queda marcado con su motivo (RN-AG-04).
     ``ahora`` se inyecta para tests deterministas (D-A4: ``inicio == ahora`` se acepta).
     """
     inicio: datetime = datos["inicio"]
@@ -269,7 +288,10 @@ def crear_turno(
     prof_id, sillon_id = datos["profesional_id"], datos["sillon_id"]
     if bloqueos_solapados(session, clinica_id, inicio, fin, prof_id, sillon_id):
         raise TurnoNoDisponible()
-    if _hay_turno_solapado(session, clinica_id, inicio, fin, prof_id, sillon_id):
+    es_sobreturno = bool(datos.get("sobreturno", False))
+    if not es_sobreturno and _hay_turno_solapado(
+        session, clinica_id, inicio, fin, prof_id, sillon_id
+    ):
         raise TurnoNoDisponible()
     turno = Turno(
         profesional_id=prof_id,
@@ -281,6 +303,8 @@ def crear_turno(
         fin=fin,
         estado="reservado",
         origen="mostrador",
+        es_sobreturno=es_sobreturno,
+        motivo_sobreturno=datos.get("motivo_sobreturno") if es_sobreturno else None,
     )
     BaseRepository(session, Turno, clinica_id).add(turno)
     commit_turno(session)

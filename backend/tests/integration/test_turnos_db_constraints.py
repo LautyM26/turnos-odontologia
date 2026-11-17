@@ -14,8 +14,8 @@ from app.infrastructure.persistence.repository import BaseRepository
 
 SQL_INSERT = (
     "INSERT INTO turno (clinica_id, profesional_id, sillon_id, paciente_id, prestacion_id, "
-    "duracion_min, inicio, fin, estado, origen, is_active) "
-    "VALUES (:c, :p, :s, :pac, :pre, :dur, :ini, :fin, :est, :ori, :act) RETURNING id"
+    "duracion_min, inicio, fin, estado, origen, is_active, es_sobreturno, motivo_sobreturno) "
+    "VALUES (:c, :p, :s, :pac, :pre, :dur, :ini, :fin, :est, :ori, :act, :es, :mot) RETURNING id"
 )
 
 
@@ -28,7 +28,7 @@ def _a(td, **over):  # type: ignore[no-untyped-def]
     base = {
         "c": td["a"], "p": td["p"], "s": td["s1"], "pac": td["pac_a"], "pre": td["prest_a"],
         "dur": 30, "ini": _t(1, 10), "fin": _t(1, 10, 30), "est": "reservado",
-        "ori": "mostrador", "act": True,
+        "ori": "mostrador", "act": True, "es": False, "mot": None,
     }  # fmt: skip
     base.update(over)
     return base
@@ -77,7 +77,7 @@ def test_turnos_contiguos_no_se_superponen(session_factory, turnos_data) -> None
     [
         (5, {"est": "cancelado"}),
         (6, {"est": "ausente"}),
-        (7, {"est": "sobreturno"}),
+        (7, {"es": True, "mot": "urgencia sintética"}),
         (8, {"act": False}),
     ],
     ids=["cancelado", "ausente", "sobreturno", "baja_logica"],
@@ -90,9 +90,27 @@ def test_turno_no_activo_no_ocupa_el_horario(session_factory, turnos_data, dia, 
 
 
 def test_sobreturno_puede_superponerse_a_un_turno_activo(session_factory, turnos_data) -> None:  # type: ignore[no-untyped-def]
+    """C-05c D2: el sobreturno es una marca; queda fuera de las exclusion constraints."""
     td = turnos_data
+    sobre = {"es": True, "mot": "urgencia sintética"}
     _ok(session_factory, **_a(td, ini=_t(9, 10), fin=_t(9, 10, 30)))
-    _ok(session_factory, **_a(td, ini=_t(9, 10), fin=_t(9, 10, 30), est="sobreturno"))
+    _ok(session_factory, **_a(td, ini=_t(9, 10), fin=_t(9, 10, 30), **sobre))
+    # Un sobreturno ya atendido (asistido) tampoco choca con el turno al que se superpone.
+    _ok(session_factory, **_a(td, ini=_t(9, 10, 15), fin=_t(9, 10, 45), est="asistido", **sobre))
+
+
+@pytest.mark.parametrize(
+    "cambio",
+    [
+        {"es": True, "mot": None},
+        {"es": False, "mot": "motivo sin marca"},
+        {"es": True, "mot": "x" * 501},
+    ],
+    ids=["marca_sin_motivo", "motivo_sin_marca", "motivo_501"],
+)
+def test_check_de_coherencia_del_sobreturno_23514(session_factory, turnos_data, cambio) -> None:  # type: ignore[no-untyped-def]
+    td = turnos_data
+    _falla(session_factory, "23514", **_a(td, ini=_t(12, 10), fin=_t(12, 10, 30), **cambio))
 
 
 def test_mismo_rango_en_otra_clinica_es_valido(session_factory, turnos_data) -> None:  # type: ignore[no-untyped-def]

@@ -59,3 +59,40 @@ def test_rechaza_ids_faltantes_o_no_enteros(campo) -> None:  # type: ignore[no-u
         TurnoCreate(**faltante)
     with pytest.raises(ValidationError):
         TurnoCreate(**{**BASE, campo: "abc"})
+
+
+# --- Sobreturno (C-05c D4) -----------------------------------------------------------------
+
+
+def test_sobreturno_con_motivo_se_acepta_y_recorta() -> None:
+    body = TurnoCreate(**BASE, sobreturno=True, motivo_sobreturno="  urgencia, dolor agudo  ")
+    assert body.sobreturno is True
+    assert body.motivo_sobreturno == "urgencia, dolor agudo"
+
+
+def test_por_defecto_no_es_sobreturno() -> None:
+    body = TurnoCreate(**BASE)
+    assert body.sobreturno is False
+    assert body.motivo_sobreturno is None
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [
+        {"sobreturno": True},
+        {"sobreturno": True, "motivo_sobreturno": None},
+        {"sobreturno": True, "motivo_sobreturno": "   "},
+        {"motivo_sobreturno": "motivo sin marca"},
+        {"sobreturno": False, "motivo_sobreturno": "motivo sin marca"},
+        {"sobreturno": True, "motivo_sobreturno": "x" * 501},
+        {"sobreturno": "true", "motivo_sobreturno": "urgencia"},
+        {"sobreturno": 1, "motivo_sobreturno": "urgencia"},
+    ],
+    ids=[
+        "sin_motivo", "motivo_null", "motivo_en_blanco", "motivo_sin_marca",
+        "marca_false_con_motivo", "motivo_501", "marca_string", "marca_int",
+    ],
+)  # fmt: skip
+def test_sobreturno_invalido(extra) -> None:  # type: ignore[no-untyped-def]
+    with pytest.raises(ValidationError):
+        TurnoCreate(**BASE, **extra)

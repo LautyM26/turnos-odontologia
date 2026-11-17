@@ -88,7 +88,7 @@ def test_check_de_auditoria_hc_incluye_receta(postgres_url) -> None:  # type: ig
 
 def test_un_unico_head_y_encadenado_a_la_009() -> None:
     script = ScriptDirectory(str(BACKEND_DIR / "alembic"))
-    assert script.get_heads() == ["010_recetas_externas"]
+    assert len(script.get_heads()) == 1  # un único head; la 011 (C-05c) se encadena después
     assert script.get_revision("010_recetas_externas").down_revision == (
         "009_consentimientos_cumplimiento"
     )

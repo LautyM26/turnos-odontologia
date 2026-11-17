@@ -86,6 +86,12 @@ Tests del change C-05b `transiciones-estado-turno` (estados del turno, historial
 python -m pytest backend/tests/unit/test_turno_transiciones.py backend/tests/integration/test_migracion_006.py   backend/tests/integration/test_turno_transicion_db.py backend/tests/integration/test_turno_transiciones_api.py   backend/tests/integration/test_turno_transiciones_concurrencia.py -v
 ```
 
+Tests del change C-05c `huecos-y-sobreturnos` (sobreturno con motivo y `GET /api/agenda/huecos`; Docker Desktop corriendo):
+
+```bash
+python -m pytest backend/tests/unit/test_turno_schemas.py backend/tests/integration/test_migracion_011.py backend/tests/integration/test_turnos_db_constraints.py backend/tests/integration/test_sobreturnos_api.py backend/tests/integration/test_huecos_servicio.py backend/tests/integration/test_huecos_api.py -v
+```
+
 Tests del change C-09 `odontograma-evolucion` (odontograma FDI, evoluciones append-only, historia consolidada; Docker Desktop corriendo):
 
 ```bash
@@ -205,4 +211,4 @@ claude mcp add --scope user --transport http context7 https://mcp.context7.com/m
 
 ## Estado
 
-Archivados: C-01, C-02, C-03, C-04, C-08, `crear-turno-sin-solapamientos` (recorte de C-05) y C-05b `transiciones-estado-turno`. Ver `CHANGES.md` y `openspec/changes/archive/`.
+Archivados: C-01, C-02, C-03, C-04, C-05 completo (`crear-turno-sin-solapamientos`, C-05b `transiciones-estado-turno` y C-05c `huecos-y-sobreturnos`), C-08, C-09, C-10, C-18 y C-19. Ver `CHANGES.md` y `openspec/changes/archive/`.
