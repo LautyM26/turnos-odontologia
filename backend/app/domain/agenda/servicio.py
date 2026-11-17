@@ -48,6 +48,12 @@ class ReferenciaInvalida(CatalogoError):
     status_code = 422
 
 
+class PermisoDenegado(CatalogoError):
+    """403 de autorización fina que depende del recurso (p. ej. agenda propia, C-05b D2)."""
+
+    status_code = 403
+
+
 def _commit(session: Session, mensaje_conflicto: str) -> None:
     """Commit; una violacion de unicidad se traduce a 409, el resto se propaga."""
     try:

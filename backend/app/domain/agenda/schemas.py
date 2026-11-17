@@ -236,6 +236,21 @@ class TurnoCreate(EntradaBase):
         return value.astimezone(UTC)
 
 
+class TurnoTransicionIn(EntradaBase):
+    """Cambio de estado (C-05b D6): solo destinos alcanzables; ``motivo`` operativo, no clínico."""
+
+    estado: Literal["confirmado", "cancelado", "asistido", "ausente"]
+    motivo: str | None = Field(default=None, max_length=500)
+
+    @field_validator("motivo")
+    @classmethod
+    def _motivo(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        limpio = value.strip()
+        return limpio or None
+
+
 class TurnoOut(SalidaBase):
     id: int
     profesional_id: int

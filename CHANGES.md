@@ -215,7 +215,7 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
 ---
 
 ### [C-05] `motor-turnos`
-- **Estado**: `[~]` parcial — recorte archivado como `crear-turno-sin-solapamientos` (2026-10-13): alta de turno + anti-solapamiento profesional/sillón + bloqueos + rechazo de turnos en el pasado. Pendiente: máquina de estados, sobreturnos, huecos, reprogramar/cancelar.
+- **Estado**: `[~]` parcial — recorte archivado como `crear-turno-sin-solapamientos` (2026-10-13): alta de turno + anti-solapamiento profesional/sillón + bloqueos + rechazo de turnos en el pasado. Máquina de estados archivada como C-05b `transiciones-estado-turno` (2026-11-16). Pendiente: sobreturnos, huecos (→ C-05c), reprogramar.
 - **Scope**: Motor de turnos con anti-solapamiento duro + máquina de estados + sobreturnos por rol (corazón del DD-04, US-001/US-002, Flujo 1)
   - Modelo `Turno` (clinica_id, profesional_id, sillon_id, paciente_id, prestacion_id, inicio, fin calculado = inicio + duracion prestacion, estado reservado/confirmado/asistido/ausente/cancelado/sobreturno, origen enlace/mostrador/WhatsApp/lista_espera, seña_exigida, seña_pagada, motivo_sobreturno)
   - Anti-solapamiento DURO a nivel DB: exclusion constraints PostgreSQL (rango tstzrange) en `(sillon_id, rango)` y `(profesional_id, rango)` solo turnos activos + chequeo de bloqueos en servicio de dominio; doble-clic concurrente → gana primera escritura, segunda recibe 409 "horario no disponible"
@@ -232,6 +232,28 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
   - `knowledge-base/08_arquitectura_propuesta.md` §Patrones (Recurso de agenda + anti-solapamiento, Score de riesgo)
 
 ---
+
+### [C-05b] `transiciones-estado-turno`
+- **Estado**: `[x]` completado — archivado 2026-11-16 (`openspec/changes/archive/2026-11-16-transiciones-estado-turno/`, 615 tests en verde, ver `verify.md`)
+- **Propósito**: completar la parte "máquina de estados" de C-05. Hoy el turno solo nace en `reservado` y no hay forma de confirmarlo, cancelarlo ni marcar asistencia o ausencia (RN-TU-01 parcial según `dominio-agenda`).
+- **Scope**:
+  - Endpoint `POST /api/turnos/{id}/transicion` con tabla de transiciones explícita: `reservado → confirmado | cancelado | asistido | ausente`, `confirmado → asistido | ausente | cancelado`; `asistido`, `ausente` y `cancelado` son terminales. Transición ilegal → 422.
+  - `asistido`/`ausente` solo desde la hora de inicio del turno (antes → 422); confirmar/cancelar en cualquier momento mientras el turno no esté en un estado terminal.
+  - RBAC: admin y recepcionista cualquier transición; odontólogo solo `asistido`/`ausente` en turnos de su propia agenda (403 en otro caso).
+  - Historial append-only `turno_transicion` (desde, hacia, actor, motivo opcional, fecha servidor) con el trigger `fn_rechazar_mutacion` de la migración 004: cada transición queda auditada (RN-TU-01).
+  - Concurrencia: bloqueo de fila (`SELECT … FOR UPDATE`) para que dos transiciones simultáneas sobre el mismo turno no se pisen.
+  - `cancelado`/`ausente` liberan el hueco (ya lo garantiza el predicado activo de las exclusion constraints de la migración 005).
+  - Migración 006: tabla `turno_transicion` + índice `(clinica_id, turno_id)` + trigger append-only.
+- **Exclusiones**: reprogramar, sobreturnos y huecos (C-05c), score de riesgo y seguimiento de ausentes (RN-TU-04, fórmula no definida en la KB), WhatsApp (C-15), lista de espera (C-16), UI (C-07).
+- **Adelanta / reduce**: adelanta la máquina de estados de C-05; C-05 queda `[x]` recién cuando también se archive C-05c.
+- **Dependencias**: C-05 recorte `crear-turno-sin-solapamientos` ✓
+- **Governance**: CRITICO (heredado de C-05)
+- **Skills**: `dominio-agenda` (reglas + matriz) · MCP Context7 (SQLAlchemy `with_for_update`)
+- **Leer antes**:
+  - `.claude/skills/dominio-agenda/SKILL.md`
+  - `knowledge-base/05_reglas_de_negocio.md` §RN-TU-01
+  - `knowledge-base/07_flujos_principales.md` §Flujo 2 (paso 3) + §Flujo 5 (disparador)
+  - `knowledge-base/03_actores_y_roles.md` §RBAC
 
 ### [C-06] `reserva-online-publica`
 - **Estado**: `[ ]` pendiente

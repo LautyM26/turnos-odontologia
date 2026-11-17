@@ -21,7 +21,7 @@
 | Rol → Recurso | Agenda/turnos | Pacientes/fichas | HC/odontograma/evolución | Presupuesto/plan | Caja/seña/factura | Configuración/usuarios | Reportes/exportación |
 |---------------|---------------|------------------|--------------------------|------------------|--------------------|------------------------|----------------------|
 | Administrador | CRUD + reglas y bloqueos | CRUD | Lectura (auditoría) | CRUD | CRUD + arqueo | CRUD | Totales |
-| Odontólogo | Lectura + bloqueos propios; sobreturnos según rol | Lectura/escritura de sus pacientes | CRUD propias (autor/fecha) | CRUD propios | Cobrar sus prácticas | Sin acceso | Propios |
+| Odontólogo | Lectura + bloqueos propios; sobreturnos según rol; marca asistido/ausente en turnos de su agenda (C-05b, decisión usuario 2026-11-16) | Lectura/escritura de sus pacientes | CRUD propias (autor/fecha) | CRUD propios | Cobrar sus prácticas | Sin acceso | Propios |
 | Recepcionista | CRUD turnos; sobreturnos si el rol lo autoriza (confirmado ronda 1: admin/recepcionista manejan sobreturnos) | CRUD | Sin acceso clínico (solo datos contacto/OS) | Crear/seguimiento, no modificar clínica | Cobrar/seña, no anular sin rol | Sin acceso | Operativos |
 | Paciente (enlace) | Crear/cancelar/reprogramar los suyos vía enlace + WhatsApp | Solo sus datos | Sin acceso | Ver/aceptar los suyos | Pagar seña/saldo | Sin acceso | Solo sus comprobantes |
 

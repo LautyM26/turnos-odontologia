@@ -20,6 +20,7 @@ from sqlalchemy import (
     Index,
     Integer,
     Text,
+    UniqueConstraint,
     func,
     or_,
     select,
@@ -32,7 +33,12 @@ from sqlalchemy.orm import Mapped, Session, mapped_column
 from app.domain.agenda.bloqueos import bloqueos_solapados
 from app.domain.agenda.duracion import calcular_fin
 from app.domain.agenda.models import Prestacion, Profesional, ProfesionalSillon, SillonRecurso
-from app.domain.agenda.servicio import Conflicto, NoEncontrado, ReferenciaInvalida
+from app.domain.agenda.servicio import (
+    Conflicto,
+    NoEncontrado,
+    PermisoDenegado,
+    ReferenciaInvalida,
+)
 from app.domain.pacientes.models import Paciente
 from app.infrastructure.persistence.base import Base
 from app.infrastructure.persistence.mixins import AuditMixin, TenantMixin
@@ -46,6 +52,20 @@ ESTADOS_ACTIVOS = ("reservado", "confirmado", "asistido")
 ORIGENES_TURNO = ("enlace", "mostrador", "whatsapp", "lista_espera")
 HORARIO_NO_DISPONIBLE = "Horario no disponible"
 _PREDICADO_ACTIVO = "is_active AND estado IN ('reservado','confirmado','asistido')"
+
+#: Única fuente de verdad de RN-TU-01 (C-05b D1). Estados sin entrada son terminales;
+#: ``sobreturno`` no transiciona hasta C-05c.
+TRANSICIONES: dict[str, frozenset[str]] = {
+    "reservado": frozenset({"confirmado", "cancelado", "asistido", "ausente"}),
+    "confirmado": frozenset({"asistido", "ausente", "cancelado"}),
+}
+#: Destinos que exigen ``ahora >= inicio`` (C-05b D3).
+DESTINOS_DESDE_INICIO = frozenset({"asistido", "ausente"})
+
+
+def puede_transicionar(desde: str, hacia: str) -> bool:
+    """True solo si ``desde -> hacia`` está en la tabla de transiciones."""
+    return hacia in TRANSICIONES.get(desde, frozenset())
 
 
 def _fk(col: str, tabla: str) -> ForeignKeyConstraint:
@@ -66,6 +86,7 @@ class Turno(Base, TenantMixin, AuditMixin):
         _fk("sillon_id", "sillon_recurso"),
         _fk("paciente_id", "paciente"),
         _fk("prestacion_id", "prestacion"),
+        UniqueConstraint("clinica_id", "id", name="uq_turno_clinica_id"),  # FK de 006
         CheckConstraint("fin > inicio", name="fin_posterior"),
         CheckConstraint("duracion_min BETWEEN 5 AND 480", name="duracion_rango"),
         CheckConstraint(
@@ -113,6 +134,47 @@ class Turno(Base, TenantMixin, AuditMixin):
     )
     origen: Mapped[str] = mapped_column(
         Text, nullable=False, default="mostrador", server_default="mostrador"
+    )
+
+
+_ESTADOS_SQL = "('reservado','confirmado','asistido','ausente','cancelado','sobreturno')"
+
+
+class TurnoTransicion(Base, TenantMixin):
+    """Historial append-only de cambios de estado (C-05b D4); espejo de la migración 006.
+
+    Sin ``AuditMixin``: un registro inmutable no tiene baja lógica ni ``updated_at``. La base
+    rechaza UPDATE/DELETE/TRUNCATE con ``fn_rechazar_mutacion()`` (migración 004).
+    """
+
+    __tablename__ = "turno_transicion"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["clinica_id", "turno_id"],
+            ["turno.clinica_id", "turno.id"],
+            name="fk_turno_transicion_turno",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["clinica_id", "actor_usuario_id"],
+            ["usuario.clinica_id", "usuario.id"],
+            name="fk_turno_transicion_actor_usuario_id",
+            ondelete="RESTRICT",
+        ),
+        CheckConstraint(f"desde IN {_ESTADOS_SQL}", name="desde_valido"),
+        CheckConstraint(f"hacia IN {_ESTADOS_SQL}", name="hacia_valido"),
+        CheckConstraint("motivo IS NULL OR length(motivo) <= 500", name="motivo_largo"),
+        Index("ix_turno_transicion_clinica_turno_id", "clinica_id", "turno_id", "id"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
+    turno_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    desde: Mapped[str] = mapped_column(Text, nullable=False)
+    hacia: Mapped[str] = mapped_column(Text, nullable=False)
+    actor_usuario_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    motivo: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
 
@@ -222,6 +284,56 @@ def crear_turno(
     )
     BaseRepository(session, Turno, clinica_id).add(turno)
     commit_turno(session)
+    session.refresh(turno)
+    return turno
+
+
+def transicionar_turno(
+    session: Session,
+    clinica_id: int,
+    turno_id: int,
+    destino: str,
+    actor_id: int,
+    motivo: str | None,
+    ahora: datetime,
+    solo_agenda_de: int | None = None,
+    destinos_permitidos: frozenset[str] | None = None,
+) -> Turno:
+    """Cambia el estado según ``TRANSICIONES`` y registra el historial (RN-TU-01, C-05b).
+
+    Orden: lock de fila (D5) -> 404 (ajeno/inexistente/baja) -> 403 fino (D2: destino o
+    agenda no permitidos para el actor) -> 422 transición ilegal (D1) -> 422 ventana horaria
+    (D3) -> UPDATE + INSERT historial -> commit. ``SELECT ... FOR UPDATE`` con
+    ``populate_existing`` (doc SQLAlchemy 2.0 vía Context7): una transición concurrente espera
+    y se evalúa contra el estado ya confirmado, nunca contra una copia vieja.
+    ``solo_agenda_de``/``destinos_permitidos`` los fija la ruta para el odontólogo.
+    """
+    stmt = (
+        select(Turno)
+        .where(Turno.id == turno_id, Turno.clinica_id == clinica_id, Turno.is_active.is_(True))
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    turno = session.scalars(stmt).first()
+    if turno is None:
+        raise NoEncontrado("No encontrado")
+    if destinos_permitidos is not None and destino not in destinos_permitidos:
+        raise PermisoDenegado("Transición no autorizada para el rol")
+    if solo_agenda_de is not None and turno.profesional_id != solo_agenda_de:
+        raise PermisoDenegado("Agenda no autorizada")
+    desde = turno.estado
+    if not puede_transicionar(desde, destino):
+        raise ReferenciaInvalida(f"Transición no permitida: {desde} → {destino}")
+    if destino in DESTINOS_DESDE_INICIO and ahora < turno.inicio:
+        raise ReferenciaInvalida(f"No se puede marcar {destino} antes del inicio del turno")
+    turno.estado = destino
+    session.add(
+        TurnoTransicion(
+            clinica_id=clinica_id, turno_id=turno.id, desde=desde, hacia=destino,
+            actor_usuario_id=actor_id, motivo=motivo,
+        )  # fmt: skip
+    )
+    session.commit()
     session.refresh(turno)
     return turno
 
