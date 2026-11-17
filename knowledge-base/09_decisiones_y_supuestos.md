@@ -69,7 +69,7 @@
 **Contexto**: el discovery exige capacidades en la nube pero no impone tecnología (PA-01); la ronda de respuestas usuario 1 (2026-10-07) propone avanzar con este stack y queda DECIDIDO.
 **Alternativas consideradas**: (a) seguir con stack indefinido; (b) otra combinación — no propuesta en la ronda.
 **Justificación**: el Discovery exige capacidades en la nube sin imponer tecnología; decidir ahora desbloquea `02`, `08` y el Sprint 1.
-**Trade-offs aceptados**: compromiso con este stack para el MVP; integraciones no negociables sin cambio (WhatsApp oficial + Mercado Pago + ARCA + partner ReNaPDiS).
+**Trade-offs aceptados**: compromiso con este stack para el MVP; integraciones no negociables sin cambio (WhatsApp + Mercado Pago + ARCA + partner ReNaPDiS). *Nota 2026-11-16: el texto original decía "WhatsApp oficial"; desde DD-10 el canal es sesión QR con número dedicado.*
 
 ### DD-09 — Nube multi-tenant confirmada (un tenant por clínica, datos aislados)
 **Decisión**: SaaS multi-tenant en la nube, un tenant por clínica con datos aislados.

@@ -14,7 +14,7 @@
 ## Dominio: Turnos y asistencia (RN-TU)
 
 - **RN-TU-01**: estados de turno: reservado → confirmado → asistido | ausente | cancelado; las transiciones son explícitas y auditadas.
-- **RN-TU-02**: el recordatorio sale por WhatsApp oficial (plantilla aprobada) con ventana de confirmación.
+- **RN-TU-02** (modificada 2026-11-16, ver DD-10): el recordatorio sale por WhatsApp (sesión QR con número dedicado, texto base interno) con ventana de confirmación; si la sesión cae, el turno queda sin confirmar y se escala por email/recordatorio manual (RN-WA-01). *Antes decía "WhatsApp oficial (plantilla aprobada)", texto previo a DD-10 detectado por la skill `crear-skill-de-dominio` al generar `dominio-agenda`.*
 - **RN-TU-03**: confirmar, cancelar y reprogramar por WhatsApp actualiza la agenda (bidireccional real, no aviso de una vía).
 - **RN-TU-04**: todo ausente entra a recuperación (seguimiento con monto visible) y alimenta el score de riesgo del paciente.
 
