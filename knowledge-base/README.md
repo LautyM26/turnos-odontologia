@@ -26,6 +26,8 @@ Base de conocimiento generada desde `discovery/Discovery Consolidado Turnos Odon
 5. Implementar → [07](07_flujos_principales.md), [06](06_funcionalidades.md)
 6. Antes de codificar → [10](10_preguntas_abiertas.md)
 
+> **Resumen por área:** antes de programar un área, leé su skill de dominio en `.claude/skills/dominio-<área>/SKILL.md` (hoy: `dominio-agenda` = RN-AG + RN-TU, `dominio-caja` = RN-CA). Resume las RN de `05` filtradas por las DD vigentes de `09`, con matriz RN → spec → test. Si un área no tiene skill, generala con `crear-skill-de-dominio`. Esta KB sigue siendo la fuente de verdad.
+
 ## Resumen Ejecutivo
 
 Sistema de turnos y gestión odontológica para Argentina que ocupa el cuadrante vacío del mercado: profundidad clínica (odontograma FDI + HC auditada) + circuito local (ARCA, Mercado Pago, obras sociales por etapas) + WhatsApp bidireccional por QR con número dedicado (DD-10, riesgo de bloqueo/ToS asumido) con costo transparente. MVP de 17 historias en 5 épicas con reglas de agenda (sillón como recurso, anti-solapamiento duro) como vacío diferencial; stack técnico y 6 gaps operativos quedan en `10_preguntas_abiertas.md` para cerrar sin asumir.

@@ -38,11 +38,11 @@ La fuente de verdad del dominio vive en `knowledge-base/`. **Leé el archivo rel
 | [02_descripcion_general.md](knowledge-base/02_descripcion_general.md) | Stack DECIDIDO, arquitectura SaaS + integraciones |
 | [03_actores_y_roles.md](knowledge-base/03_actores_y_roles.md) | 4 roles, matriz RBAC, rutas públicas |
 | [04_modelo_de_datos.md](knowledge-base/04_modelo_de_datos.md) | 6 dominios, ERD, 12 entidades, seed data |
-| [05_reglas_de_negocio.md](knowledge-base/05_reglas_de_negocio.md) | 30 reglas RN-AG/TU/WA/CL/PR/CA/AF/OS/CU/GL |
+| [05_reglas_de_negocio.md](knowledge-base/05_reglas_de_negocio.md) | 37 reglas RN-AG/TU/WA/CL/PR/CA/AF/OS/CU/GL (resumidas por área en las skills `dominio-*`) |
 | [06_funcionalidades.md](knowledge-base/06_funcionalidades.md) | 17 US en 5 épicas + 6 US-F2 |
 | [07_flujos_principales.md](knowledge-base/07_flujos_principales.md) | 9 flujos E2E |
 | [08_arquitectura_propuesta.md](knowledge-base/08_arquitectura_propuesta.md) | 8 patrones, estructura FastAPI + React/Vite, 12 env vars |
-| [09_decisiones_y_supuestos.md](knowledge-base/09_decisiones_y_supuestos.md) | 9 decisiones DD-01…DD-09 + supuestos SU/PA |
+| [09_decisiones_y_supuestos.md](knowledge-base/09_decisiones_y_supuestos.md) | 10 decisiones DD-01…DD-10 (DD-02 reemplazada por DD-10) + supuestos SU/PA |
 | [10_preguntas_abiertas.md](knowledge-base/10_preguntas_abiertas.md) | 16 inconsistencias IN + 12 preguntas PA (⚠️ ver abajo) |
 
 **Quick start para desarrolladores** (desde `knowledge-base/README.md`):
@@ -60,7 +60,7 @@ La fuente de verdad del dominio vive en `knowledge-base/`. **Leé el archivo rel
 
 ## Skills Disponibles
 
-Fuente de verdad: `.atl/skill-registry.md` (generado por `skill-registry`; no versionado). Solo las 13 in-scope para este roadmap (backend PG/FastAPI, auth, frontend React/Vite, testing, docs). El resto va on-demand.
+Fuente de verdad: `.atl/skill-registry.md` (generado por `skill-registry`; versionado en el repo). Las 13 skills externas viven en la PC de quien las instaló (ver `skills-lock.json`); las **skills del proyecto** (tabla de abajo) viven en el repo. Solo las 13 in-scope para este roadmap (backend PG/FastAPI, auth, frontend React/Vite, testing, docs). El resto va on-demand.
 
 | Agente | Rol | Skills que carga |
 |--------|-----|------------------|
@@ -71,11 +71,35 @@ Fuente de verdad: `.atl/skill-registry.md` (generado por `skill-registry`; no ve
 | **QA / E2E** | Verificación en browser local (screenshots, logs, flujos 409/422) | `webapp-testing` |
 | **Transversal** | Cualquier bug/fallo antes de proponer fixes | `systematic-debugging` |
 
-> Los compact rules de cada skill los resuelve el orquestador desde `.atl/skill-registry.md` (generado por `skill-registry`; no versionado — no está en el repo). Esta tabla solo mapea skill→rol.
+> Los compact rules de cada skill los resuelve el orquestador desde `.atl/skill-registry.md` (generado por `skill-registry`; versionado en el repo). Esta tabla solo mapea skill→rol.
 
 > **Nota find-skill 2026-10-08 (confirmado por usuario):** 13 adoptar (las de arriba); resto no/on-demand — Spring/Java fuera de scope (stack es FastAPI), animación/pick-ui/prototype/SEO/Redis/Swift solo on-demand. Gaps de integración sin skill confiable (WhatsApp, Mercado Pago, ARCA, ReNaPDiS partner, FastAPI backend) → `context7-mcp` + docs oficiales (ver "Integration Gaps" del registry).
 
 Cargá la skill correspondiente al contexto ANTES de escribir código (ver matriz Change → Skills del registry).
+
+### Skills del proyecto (versionadas en el repo)
+
+Fuente: `.claude/skills/<nombre>/SKILL.md` (Claude Code las descubre solas). Copias idénticas para GitHub Copilot en `.github/skills/` y para OpenCode en `.opencode/skills/`. Detalle y evidencias: [docs/skills-mcp/](docs/skills-mcp/).
+
+| Skill | Cuándo usarla | Qué necesita | Cómo revisar el resultado |
+|-------|---------------|--------------|---------------------------|
+| `crear-skill-de-dominio` | "Creá la skill del dominio X", o antes de `/opsx:propose` de un change cuya área no tiene skill `dominio-*` | Prefijo(s) RN (ej. `RN-CA`) + change del roadmap (ej. C-12) | Los 6 criterios de su sección 6: toda RN en la matriz, nada contradice una DD vigente, rutas citadas existen, `description` con las palabras del área, registrada en los 3 índices y `diff AGENTS.md CLAUDE.md` vacío, sin datos reales |
+| `dominio-agenda` | Turnos, huecos, solapamientos, bloqueos, sobreturnos, estados del turno, reserva online, agenda frontend (C-05, C-05b, C-06, C-07, C-16, C-17) | Nada: leerla antes de `/opsx:propose` o de codificar | Cada RN tocada tiene escenario y test; actualizar su matriz RN → spec → test al archivar |
+| `dominio-caja` | Cobros, seña, saldo, anulaciones, Mercado Pago, score de riesgo (C-12, seña de C-06, `/caja` de C-14) | Nada: leerla antes de `/opsx:propose` o de codificar | Idem; montos `NUMERIC`, secretos MP solo en backend |
+
+> Las skills de dominio **no reemplazan** la KB: la resumen y filtran por DD vigentes. Si una RN o DD cambia, regenerar la skill con `crear-skill-de-dominio`.
+
+---
+
+## Integraciones MCP
+
+Un servidor MCP es una **integración**, no una skill: da herramientas al agente, no instrucciones.
+
+| Servidor | Propósito | Herramientas que usamos | Cuándo | Límites |
+|----------|-----------|-------------------------|--------|---------|
+| **Context7** (`https://mcp.context7.com/mcp`, config en [`.mcp.json`](.mcp.json)) | Documentación vigente de librerías (FastAPI, SQLAlchemy, Pydantic, Alembic, Mercado Pago, React/Vite) en vez de responder de memoria | `resolve-library-id` (nombre → id `/org/proyecto`) y `query-docs` (id + pregunta puntual) | Al diseñar o implementar algo que depende de la API de una librería o integración externa (ej. bloqueo de filas en SQLAlchemy para C-05b, webhooks de Mercado Pago para C-12) | Solo lectura de docs públicas. **Nunca** enviar secretos, tokens, datos de pacientes ni código privado en la consulta. Máx. ~3 consultas por pregunta. Contrastar con la doc oficial ante dudas |
+
+Configuración, verificación y solución de problemas: [README.md §Skills propias y MCP](README.md#skills-propias-y-mcp).
 
 ---
 

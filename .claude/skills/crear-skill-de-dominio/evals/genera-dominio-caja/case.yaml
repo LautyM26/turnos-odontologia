@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: genera-dominio-caja
+expected_outcome: |
+  Se crea .claude/skills/dominio-caja/SKILL.md con RN-CA-01..03, reglas duras de montos NUMERIC/secretos, supuestos abiertos SU-07/PA-06, matriz sin trazabilidad inventada y description con caja, seña, cobro y Mercado Pago.

@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: genera-dominio-agenda
+expected_outcome: |
+  Se crea .claude/skills/dominio-agenda/SKILL.md con las 10 reglas RN-AG-01..06 y RN-TU-01..04 en la matriz, RN-TU-02 reescrita según DD-10 y marcada como conflicto, filas AG-01/02/03 con spec y test reales, copias en .github y .opencode y registro en AGENTS.md, CLAUDE.md y .atl/skill-registry.md.

@@ -2,7 +2,7 @@
 
 **Delegator use only.** Any agent that launches sub-agents reads this registry to resolve compact rules, then injects them directly into sub-agent prompts. Sub-agents do NOT read this registry or individual SKILL.md files.
 
-Project: **Turnos Odontología (SaaS multi-tenant AR)** — Stack: Python + FastAPI + PostgreSQL + React/Vite (DD-08). Roadmap: CHANGES.md (C-01…C-19). Domain KB: knowledge-base/ (11 files).
+Project: **Turnos Odontología (SaaS multi-tenant AR)** — Stack: Python + FastAPI + PostgreSQL + React/Vite (DD-08). Roadmap: CHANGES.md (C-01…C-19). Domain KB: knowledge-base/ (11 files). Project skills: `.claude/skills/` (versioned; mirrored to `.github/skills/` and `.opencode/skills/`). MCP integrations: `.mcp.json` (see "MCP Integrations" below; not skills).
 
 > Scoping note: the User Skills table catalogs ALL installed skills (one line each). Compact Rules blocks are provided only for skills in scope for this roadmap (backend PG/FastAPI, auth, React/Vite frontend, testing, docs). Out-of-scope skills are marked `—` and resolved on demand.
 
@@ -20,7 +20,7 @@ Project: **Turnos Odontología (SaaS multi-tenant AR)** — Stack: Python + Fast
 | Verifying a running web app via browser (Playwright): screenshots, logs, UI behavior | webapp-testing | C:\Users\Lautaro\.agents\skills\webapp-testing\SKILL.md |
 | PG integration tests with real Docker DBs, pytest + testcontainers (C-02, C-05) | docker-testcontainers | C:\Users\Lautaro\.agents\skills\docker-testcontainers\SKILL.md |
 | Any bug, test failure, or unexpected behavior — before proposing fixes | systematic-debugging | C:\Users\Lautaro\.agents\skills\systematic-debugging\SKILL.md |
-| Need current docs for FastAPI, Meta WhatsApp API, Mercado Pago SDK, ARCA/WSFE | context7-mcp | C:\Users\Lautaro\.agents\skills\context7-mcp\SKILL.md |
+| Need current docs for FastAPI, SQLAlchemy, WhatsApp QR client (DD-10), Mercado Pago SDK, ARCA/WSFE (tools from the Context7 MCP server) | context7-mcp | C:\Users\Lautaro\.agents\skills\context7-mcp\SKILL.md |
 | Reviewing/auditing UI code for guidelines/accessibility/UX compliance | web-design-guidelines | C:\Users\Lautaro\.agents\skills\web-design-guidelines\SKILL.md |
 | Append-only clinical history / immutable audit log design (C-09, C-18) | event-store-design | C:\Users\Lautaro\.agents\skills\event-store-design\SKILL.md |
 | — (out of scope: Java/Spring stack — this project is FastAPI) | 302-frameworks-spring-boot-rest | C:\Users\Lautaro\.agents\skills\302-frameworks-spring-boot-rest\SKILL.md |
@@ -58,6 +58,14 @@ Project: **Turnos Odontología (SaaS multi-tenant AR)** — Stack: Python + Fast
 | — (on demand: Redis/serverless KV — not in stack) | upstash-redis-js | C:\Users\Lautaro\.agents\skills\upstash-redis-js\SKILL.md |
 | — (on demand: dense data-UI palettes) | ui-ux-pro-max | C:\Users\Lautaro\.agents\skills\ui-ux-pro-max\SKILL.md |
 | — (on demand: Swift — not in stack) | write-swift | C:\Users\Lautaro\.agents\skills\write-swift\SKILL.md |
+
+## Project Skills (versioned in this repo)
+
+| Trigger | Skill | Purpose | Path |
+|---------|-------|---------|------|
+| "Creá la skill del dominio X"; before `/opsx:propose` of a change whose area has no `dominio-*` skill; after an RN/DD of an area changes | crear-skill-de-dominio | Generates `dominio-<área>` from KB 05 (RN) filtered by current DDs (09) + hard rules (AGENTS.md), with RN → spec → test traceability matrix | `.claude/skills/crear-skill-de-dominio/SKILL.md` (+ `templates/dominio-template.md`) |
+| Turnos, huecos, solapamientos, bloqueos, sobreturnos, estados del turno, reserva online, agenda UI | dominio-agenda | Current RN-AG + RN-TU rules, hard rules 6/7/8/9/10/13, traceability (4 covered · 3 partial · 3 pending) | `.claude/skills/dominio-agenda/SKILL.md` |
+| Cobros, seña, saldo, anulaciones, Mercado Pago, score de riesgo | dominio-caja | Current RN-CA rules, hard rules 4/7/10/12/17, open assumptions PA-06/SU-07 | `.claude/skills/dominio-caja/SKILL.md` |
 
 ## Compact Rules
 
@@ -135,14 +143,30 @@ Pre-digested rules per skill. Delegators copy matching blocks into sub-agent pro
 - Four phases in order: reproduce → isolate root cause → fix → verify (tests + regression check).
 
 ### context7-mcp
-- Use for CURRENT library docs whenever touching: FastAPI (deps, background jobs, validation), Meta WhatsApp Cloud API (templates, webhooks), Mercado Pago SDK (preferencias, webhooks), ARCA WSFE (homologación, CAE/QR).
-- Flow: `resolve-library-id` first (exact `/org/project`), then `query-docs` with one scoped concept per call (max 3 calls/question).
+- Use for CURRENT library docs whenever touching: FastAPI (deps, background jobs, validation), SQLAlchemy/Alembic, Mercado Pago SDK (preferencias, webhooks), ARCA WSFE (homologación, CAE/QR), the WhatsApp QR-session client chosen for C-15 (DD-10; Meta Cloud API docs only as F2 migration reference).
+- Flow: `resolve-library-id` first (exact `/org/project`), then `query-docs` with one scoped concept per call (max 3 calls/question). These tools come from the **Context7 MCP server** configured in `.mcp.json` (see MCP Integrations); this skill only describes how to use them.
 - Prefer over web search for API syntax/config/migration questions; never send secrets/keys in queries.
 - No ecosystem skill exists for Mercado Pago / ARCA / ReNaPDiS partner — Context7 + official docs are the source of truth (see Integration Gaps).
 
 ### web-design-guidelines
 - Audit clinical UIs (agenda, odontograma, caja, seguimiento) against guidelines: accessibility (keyboard nav, focus states, contrast), error states, empty states, loading states.
 - Data-dense screens first: agenda día/semana, ficha/odontograma tabs, presupuestos editor — clarity over decoration.
+
+### crear-skill-de-dominio
+- Inputs: RN prefix(es) + roadmap change. Steps: read RN (05) → filter by current DDs (09; skip titles with REEMPLAZADA/Histórico) → add applicable hard rules (AGENTS.md) → trace by meaning spec requirement → test function → write from template → copy to `.github/skills` + `.opencode/skills` → register in AGENTS.md, CLAUDE.md and this registry.
+- Never invent traceability: empty cell = `—` + estado `pendiente`. RN that contradicts a current DD → rewrite coherently, mark ⚠️, list under "Conflictos detectados".
+- Done only when its 6 review criteria pass (see SKILL.md §6, each with a command).
+
+### dominio-agenda
+- Active turn = `reservado|confirmado|asistido`; `cancelado`/`ausente` free the slot; `sobreturno` is outside the GiST exclusions on purpose (RN-AG-04, `require_sobreturno()`).
+- Overlap/blocked → 409 "Horario no disponible" without leaking the other turn; invalid/foreign refs → 422; wrong role → 403; other tenant → 404.
+- WhatsApp reminders/confirmations = QR session with dedicated number (DD-10), never "official API/approved templates".
+- Timeouts (SU-04) are config, never constants.
+
+### dominio-caja
+- Money `NUMERIC` ARS; MP credentials backend-only; webhook = public route, signature with `MP_WEBHOOK_SECRET` (invalid → 401), idempotent by unique `id_externo_MP`.
+- Anulación only via `require_anulacion_caja()` (admin) with trace; seña only when risk score demands it (threshold undefined in KB → ask).
+- MP account/refund policy is an open assumption (PA-06/SU-07): document the chosen assumption in design.md.
 
 ### event-store-design
 - Evolución (C-09) is append-only: no UPDATE/DELETE endpoints; corrections are new rows with `corrige_a_id` — same pattern as event-sourced logs.
@@ -151,32 +175,39 @@ Pre-digested rules per skill. Delegators copy matching blocks into sub-agent pro
 
 ## Change → Skills Matrix
 
-| Change | Skills to resolve into sub-agent prompt |
-|--------|------------------------------------------|
-| C-01 foundation-setup | typescript-dev, docker-testcontainers, vitest |
-| C-02 core-models-multitenancy | supabase-postgres-best-practices, postgresql-table-design, docker-testcontainers |
-| C-03 auth-rbac | auth-implementation-patterns, supabase-postgres-best-practices (RLS tests), docker-testcontainers |
-| C-04 clinica-catalogo | postgresql-table-design, supabase-postgres-best-practices |
-| C-05 motor-turnos | postgresql-table-design (EXCLUDE), postgresql-optimization (ranges), docker-testcontainers (concurrency), systematic-debugging |
-| C-06 reserva-online-publica | auth-implementation-patterns (public routes/rate-limit), postgresql-optimization, vitest |
-| C-07 agenda-frontend | typescript-dev, vercel-react-best-practices, vitest, webapp-testing, web-design-guidelines |
-| C-08 pacientes-ficha | postgresql-table-design, postgresql-optimization (trgm search), auth-implementation-patterns (RBAC clínico) |
-| C-09 odontograma-evolucion | postgresql-optimization (JSONB), event-store-design, docker-testcontainers |
-| C-10 clinica-frontend | typescript-dev, vercel-react-best-practices, vitest, webapp-testing |
-| C-11 presupuesto-plan | postgresql-table-design, postgresql-optimization (tableros) |
-| C-12 caja-mercadopago | context7-mcp (MP SDK), auth-implementation-patterns (webhook firma/idempotencia), docker-testcontainers |
-| C-13 factura-arca | context7-mcp (WSFE), postgresql-table-design |
-| C-14 comercial-frontend | typescript-dev, vercel-react-best-practices, vitest, webapp-testing |
-| C-15 whatsapp-bidireccional | context7-mcp (Meta Cloud API), docker-testcontainers (webhook idempotencia) |
-| C-16 lista-espera-relleno | postgresql-optimization, context7-mcp, docker-testcontainers |
-| C-17 chatbot-reprogramacion | context7-mcp, postgresql-optimization |
-| C-18 consentimientos-cumplimiento | event-store-design, auth-implementation-patterns (admin RBAC) |
-| C-19 recetas-partner-renapdis | context7-mcp, auth-implementation-patterns (vault/env, 501 sin partner) |
+| Change | Skills to resolve into sub-agent prompt | Domain skill (project) |
+|--------|------------------------------------------|------------------------|
+| C-01 foundation-setup | typescript-dev, docker-testcontainers, vitest | — (archived) |
+| C-02 core-models-multitenancy | supabase-postgres-best-practices, postgresql-table-design, docker-testcontainers | — (archived) |
+| C-03 auth-rbac | auth-implementation-patterns, supabase-postgres-best-practices (RLS tests), docker-testcontainers | — (archived) |
+| C-04 clinica-catalogo | postgresql-table-design, supabase-postgres-best-practices | — (archived) |
+| C-05 motor-turnos | postgresql-table-design (EXCLUDE), postgresql-optimization (ranges), docker-testcontainers (concurrency), systematic-debugging | dominio-agenda |
+| C-05b transiciones-estado-turno | docker-testcontainers (concurrency), systematic-debugging; Context7 MCP (SQLAlchemy row locking) | dominio-agenda |
+| C-06 reserva-online-publica | auth-implementation-patterns (public routes/rate-limit), postgresql-optimization, vitest | dominio-agenda, dominio-caja (seña) |
+| C-07 agenda-frontend | typescript-dev, vercel-react-best-practices, vitest, webapp-testing, web-design-guidelines | dominio-agenda |
+| C-08 pacientes-ficha | postgresql-table-design, postgresql-optimization (trgm search), auth-implementation-patterns (RBAC clínico) | — (archived) |
+| C-09 odontograma-evolucion | postgresql-optimization (JSONB), event-store-design, docker-testcontainers | — (generate with crear-skill-de-dominio before propose) |
+| C-10 clinica-frontend | typescript-dev, vercel-react-best-practices, vitest, webapp-testing | — (generate with crear-skill-de-dominio before propose) |
+| C-11 presupuesto-plan | postgresql-table-design, postgresql-optimization (tableros) | — (generate with crear-skill-de-dominio before propose) |
+| C-12 caja-mercadopago | context7-mcp (MP SDK), auth-implementation-patterns (webhook firma/idempotencia), docker-testcontainers | dominio-caja |
+| C-13 factura-arca | context7-mcp (WSFE), postgresql-table-design | — (generate with crear-skill-de-dominio before propose) |
+| C-14 comercial-frontend | typescript-dev, vercel-react-best-practices, vitest, webapp-testing | dominio-caja (/caja) |
+| C-15 whatsapp-bidireccional | context7-mcp (WhatsApp QR client, DD-10), docker-testcontainers (webhook idempotencia) | — (generate with crear-skill-de-dominio before propose) |
+| C-16 lista-espera-relleno | postgresql-optimization, context7-mcp, docker-testcontainers | dominio-agenda |
+| C-17 chatbot-reprogramacion | context7-mcp, postgresql-optimization | dominio-agenda |
+| C-18 consentimientos-cumplimiento | event-store-design, auth-implementation-patterns (admin RBAC) | — (generate with crear-skill-de-dominio before propose) |
+| C-19 recetas-partner-renapdis | context7-mcp, auth-implementation-patterns (vault/env, 501 sin partner) | — (generate with crear-skill-de-dominio before propose) |
+
+## MCP Integrations (not skills)
+
+| Server | Config | Tools | Use for | Limits |
+|--------|--------|-------|---------|--------|
+| Context7 | `.mcp.json` → `https://mcp.context7.com/mcp` (HTTP, API key optional) | `resolve-library-id`, `query-docs` | Current docs of FastAPI, SQLAlchemy, Pydantic, Alembic, Mercado Pago, React/Vite | Read-only public docs; never send secrets, tokens, patient data or private code |
 
 ## Integration Gaps (no trustworthy skill available)
 
 Verified via `npx skills find` (2026-10-07). Do NOT install low-install-count (<100) skills for these — use Context7 + official docs instead.
-- **WhatsApp Cloud API**: no dedicated skill ≥1K installs (only `gokapso/observe-whatsapp` 3.2K = observability, not integration; rest <150). Source of truth: Meta Cloud API docs via context7-mcp. Constraints: solo API oficial (DD-02, RN-WA-01), QR prohibido, costo ARS transparente (RN-WA-02).
+- **WhatsApp**: no dedicated skill ≥1K installs (only `gokapso/observe-whatsapp` 3.2K = observability, not integration; rest <150). Constraints (DD-10, RN-WA-01 modified 2026-10-08): QR session with a dedicated number behind `MensajeriaPort` (official API only as F2 migration), session monitoring/reconnect/backup, internal ARS cost `ARS_PRECIO_MENSAJE` (RN-WA-02). Docs of the chosen QR client via Context7. *(Corrected 2026-11-16: this line previously required the official API only and forbade the QR session, superseded by DD-10.)*
 - **Mercado Pago**: zero skills found. Source of truth: MP SDK docs via context7-mcp. Constraints: firma `MP_WEBHOOK_SECRET`, idempotencia por `id_externo_MP` (C-12).
 - **ARCA WSFE**: zero skills found. Source of truth: ARCA docs. Constraints: homologación primero, CAE+QR, cola con backoff (C-13, DD-01, PA-07).
 - **ReNaPDiS partner**: zero skills found. Adapter intercambiable (Farmalink/Innovamed/otro, PA-08); sin partner → 501 claro (C-19, DD-06).
@@ -186,6 +217,8 @@ Verified via `npx skills find` (2026-10-07). Do NOT install low-install-count (<
 
 | File | Path | Notes |
 |------|------|-------|
-| (none) | — | No AGENTS.md / CLAUDE.md / .cursorrules / GEMINI.md / copilot-instructions.md at project root yet. Domain conventions live in knowledge-base/ (11 files) + CHANGES.md "Leer antes" per change. Re-scan on registry updates. |
+| AGENTS.md | `AGENTS.md` | Agent instructions: 17 hard rules, skills, MCP integrations, workflow. Must stay identical to CLAUDE.md. |
+| CLAUDE.md | `CLAUDE.md` | Copy of AGENTS.md read by Claude Code (`diff AGENTS.md CLAUDE.md` must be empty). |
+| Domain KB | `knowledge-base/` | 11 files; per-area digests in `.claude/skills/dominio-*`. |
 
 Read the convention files listed above for project-specific patterns and rules. All referenced paths have been extracted — no need to read index files to discover more.
