@@ -20,6 +20,9 @@ BACKEND_REQUIRED = [
     # Lista de espera (C-16).
     "LISTA_ESPERA_OFERTA_MIN",
     "LISTA_ESPERA_ANTICIPACION_MIN",
+    # Reprogramación (C-17).
+    "CHATBOT_TIMEOUT_MIN",
+    "REPROGRAMACION_ANTICIPACION_MIN",
     "ARCA_CUIT",
     "ARCA_CERT",
     "ARCA_KEY",

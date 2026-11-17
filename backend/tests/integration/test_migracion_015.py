@@ -86,7 +86,7 @@ def _oferta(td, entrada_id: int, turno_id: int, **kw) -> OfertaListaEspera:  # t
 def test_tablas_indices_y_textos(postgres_url) -> None:  # type: ignore[no-untyped-def]
     tablas = set(_all(postgres_url, "SELECT tablename FROM pg_tables WHERE schemaname='public'"))
     assert {"lista_espera", "oferta_lista_espera"} <= tablas
-    assert set(_all(postgres_url, "SELECT clave FROM plantilla_wa")) == TEXTOS
+    assert set(_all(postgres_url, "SELECT clave FROM plantilla_wa")) >= TEXTOS
     indices = set(_all(postgres_url, "SELECT indexname FROM pg_indexes"))
     assert {"ix_lista_espera_cola", "uq_lista_espera_activa", "uq_oferta_pendiente_por_hueco",
             "uq_oferta_pendiente_por_entrada"} <= indices  # fmt: skip
@@ -168,4 +168,4 @@ def test_downgrade_a_014_y_reupgrade_en_base_limpia() -> None:
         assert not {"lista_espera", "oferta_lista_espera"} & tablas
         assert len(_all(url, "SELECT clave FROM plantilla_wa")) == 5
         command.upgrade(config, "head")
-        assert set(_all(url, "SELECT clave FROM plantilla_wa")) == TEXTOS
+        assert set(_all(url, "SELECT clave FROM plantilla_wa")) >= TEXTOS

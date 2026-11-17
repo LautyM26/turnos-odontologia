@@ -36,6 +36,7 @@ from app.domain.cumplimiento.models import Consentimiento, ConsentimientoFirma
 from app.domain.lista_espera.models import ListaEspera, OfertaListaEspera
 from app.domain.pacientes.models import Adjunto, FichaVersion, Paciente
 from app.domain.recetas.models import RecetaExterna
+from app.domain.reprogramacion.models import ConversacionWA
 from app.domain.whatsapp.models import MensajeWhatsApp, WhatsappSesion
 from app.infrastructure.storage.adjuntos import AdjuntoStorage
 
@@ -68,6 +69,7 @@ ENTIDADES_EXPORTABLES: dict[str, Any] = {
     "whatsapp_sesiones": WhatsappSesion,
     "lista_espera": ListaEspera,
     "ofertas_lista_espera": OfertaListaEspera,
+    "conversaciones_whatsapp": ConversacionWA,
 }
 
 #: ``password_hash``: secreto; ``rango``: columna derivada de inicio/fin (tstzrange);

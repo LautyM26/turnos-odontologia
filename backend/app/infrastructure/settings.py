@@ -132,6 +132,14 @@ class Settings(BaseSettings):
         default=120, ge=0, le=1440, description="Anticipación mínima de un hueco ofrecible."
     )
 
+    # --- Reprogramación por chatbot y enlace (C-17, D6). ---
+    chatbot_timeout_min: int = Field(
+        default=30, ge=5, le=240, description="Minutos de vida de la conversación de WhatsApp."
+    )
+    reprogramacion_anticipacion_min: int = Field(
+        default=120, ge=0, le=1440, description="Anticipación mínima de un horario ofrecido."
+    )
+
     @field_validator("recetas_partner", "whatsapp_gateway", mode="before")
     @classmethod
     def _normalizar_partner(cls, value: object) -> object:

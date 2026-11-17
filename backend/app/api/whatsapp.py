@@ -24,6 +24,7 @@ from app.api.deps import AuthContext, require_tenant_checked
 from app.api.permissions import require_role
 from app.domain.agenda.turnos import obtener_turno
 from app.domain.core.models import Clinica
+from app.domain.reprogramacion.servicios import Ajustes
 from app.domain.whatsapp import servicios
 from app.domain.whatsapp.models import WhatsappSesion, nombre_sesion
 from app.domain.whatsapp.schemas import (
@@ -85,7 +86,7 @@ def _aplicar(
             return "ignorado"
         return servicios.procesar_mensaje_entrante(
             session, clinica_id, evento.id_externo, telefono, evento.texto, ahora, mensajeria,
-            settings.ars_precio_mensaje,
+            settings.ars_precio_mensaje, Ajustes.desde(settings),
         )  # fmt: skip
     if isinstance(evento, EventoAck):
         servicios.procesar_ack(session, clinica_id, evento.id_externo, evento.ack)

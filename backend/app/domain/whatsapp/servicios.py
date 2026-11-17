@@ -22,6 +22,7 @@ from app.domain.pacientes.normalizacion import (
     normalizar_telefono,
     normalizar_texto,
 )
+from app.domain.reprogramacion.servicios import Ajustes
 from app.domain.whatsapp.models import (
     MensajeWhatsApp,
     PlantillaWA,
@@ -235,9 +236,32 @@ def _responder(
                       precio, turno_id=turno_id)  # fmt: skip
 
 
+def _registrar_entrante(
+    session: Session, clinica_id: int, id_externo: str, telefono: str, texto: str,
+    intencion: str, paciente_id: int | None, turno_id: int | None, requiere_atencion: bool,
+) -> MensajeWhatsApp | None:  # fmt: skip
+    """Insert-first idempotente (C-15 D7): ``None`` si el evento ya se procesó."""
+    msg = MensajeWhatsApp(
+        clinica_id=clinica_id, turno_id=turno_id, paciente_id=paciente_id,
+        direccion="entrante", estado="recibido", intencion=intencion, id_externo=id_externo,
+        telefono=telefono, texto=texto[:2000], requiere_atencion=requiere_atencion,
+    )  # fmt: skip
+    session.add(msg)
+    try:
+        session.flush()
+    except IntegrityError as exc:
+        session.rollback()
+        if getattr(exc.orig, "sqlstate", None) == UNIQUE_VIOLATION:
+            return None
+        raise
+    session.commit()
+    return msg
+
+
 def procesar_mensaje_entrante(
     session: Session, clinica_id: int, id_externo: str, telefono: str, texto: str,
     ahora: datetime, mensajeria: Mensajeria | NoConfigurado, precio: Decimal,
+    ajustes: Ajustes | None = None,
 ) -> str:  # fmt: skip
     """Registra la respuesta y mueve la agenda (RN-TU-03). Devuelve el resultado:
     ``duplicado`` | ``confirmado`` | ``cancelado`` | ``bandeja``.
@@ -248,6 +272,21 @@ def procesar_mensaje_entrante(
     paciente sale después del commit y, si falla, queda en la bandeja sin deshacer el turno.
     """
     intencion = interpretar(texto)
+    ajustes = ajustes or Ajustes()
+    # Import diferido: el chatbot (C-17) usa este módulo para enviar y renderizar textos.
+    from app.domain.reprogramacion import chatbot
+
+    conv = chatbot.conversacion_abierta(session, clinica_id, telefono)
+    if conv is not None:  # C-17 D4: dentro de la conversación un número es una opción
+        msg = _registrar_entrante(session, clinica_id, id_externo, telefono, texto, intencion,
+                                  conv.paciente_id, conv.turno_id, False)  # fmt: skip
+        if msg is None:
+            return "duplicado"
+        resultado = chatbot.responder(session, conv, texto, ahora, mensajeria, precio, ajustes)
+        if resultado == "bandeja":
+            msg.requiere_atencion = True
+            session.commit()
+        return resultado
     vigente = _recordatorio_vigente(session, clinica_id, telefono, ahora)
     oferta = _oferta_vigente(session, clinica_id, telefono, ahora)
     if oferta is not None and (vigente is None or oferta[2:] > vigente[2:]):
@@ -286,6 +325,14 @@ def procesar_mensaje_entrante(
         else:  # transición imposible (p. ej. confirmar un cancelado): a la bandeja
             msg.requiere_atencion = True
     session.commit()
+    if (
+        turno_id is not None and paciente_id is not None and intencion == "reprogramar"
+        and chatbot.iniciar(session, clinica_id, turno_id, paciente_id, telefono, ahora,
+                            mensajeria, precio, ajustes)
+    ):  # fmt: skip
+        msg.requiere_atencion = False  # lo atiende el chatbot (C-17), no recepción
+        session.commit()
+        return "chatbot"
     if turno_id is not None and paciente_id is not None and (
         resultado != "bandeja" or intencion == "reprogramar"
     ):
@@ -302,20 +349,10 @@ def _procesar_respuesta_oferta(
     """Respuesta a una oferta de lista de espera (C-16 D5): mismo insert-first idempotente;
     aceptar/rechazar los resuelve ``lista_espera.servicios``."""
     oferta_id, paciente_id = oferta[0], oferta[1]
-    msg = MensajeWhatsApp(
-        clinica_id=clinica_id, paciente_id=paciente_id, direccion="entrante", estado="recibido",
-        intencion=intencion, id_externo=id_externo, telefono=telefono, texto=texto[:2000],
-        requiere_atencion=intencion not in _DESTINO,
-    )  # fmt: skip
-    session.add(msg)
-    try:
-        session.flush()
-    except IntegrityError as exc:
-        session.rollback()
-        if getattr(exc.orig, "sqlstate", None) == UNIQUE_VIOLATION:
-            return "duplicado"
-        raise
-    session.commit()
+    msg = _registrar_entrante(session, clinica_id, id_externo, telefono, texto, intencion,
+                              paciente_id, None, intencion not in _DESTINO)  # fmt: skip
+    if msg is None:
+        return "duplicado"
     if intencion not in _DESTINO:
         return "bandeja"
     # Import diferido: lista_espera depende de este módulo (despachar, textos), no al revés.

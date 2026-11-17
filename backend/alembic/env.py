@@ -43,6 +43,7 @@ try:  # C-02: metadata core para `alembic check` y autogenerate-compare.
     from app.domain.lista_espera import models as _lista_espera_models  # noqa: F401
     from app.domain.pacientes import models as _pacientes_models  # noqa: F401
     from app.domain.recetas import models as _recetas_models  # noqa: F401
+    from app.domain.reprogramacion import models as _reprogramacion_models  # noqa: F401
     from app.domain.whatsapp import models as _whatsapp_models  # noqa: F401
     from app.infrastructure.persistence.base import Base
 

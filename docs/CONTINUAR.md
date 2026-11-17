@@ -20,11 +20,12 @@ Escrito el 2026-11-16 por Matheo (con Claude Code). Explica el estado actual, c�
 | C-06 `reserva-online-publica` | ✅ archivado 2026-11-17 (sin seña → C-12) | `openspec/changes/archive/2026-11-17-reserva-online-publica/` |
 | **C-15 `whatsapp-bidireccional`** | ✅ archivado 2026-11-17 (gateway QR WAHA + fake, runbook `docs/whatsapp-sesion.md`) | `openspec/changes/archive/2026-11-17-whatsapp-bidireccional/` |
 | **C-16 `lista-espera-relleno`** | ✅ archivado 2026-11-17 (cron `app.jobs.lista_espera` cada 5 min) | `openspec/changes/archive/2026-11-17-lista-espera-relleno/` |
-| Resto (C-07, C-11 … C-14, C-17) | ⏳ pendientes | `CHANGES.md` |
+| **C-17 `chatbot-reprogramacion`** | ✅ archivado 2026-11-17 (chatbot WhatsApp + API por token; pantalla → C-07) | `openspec/changes/archive/2026-11-17-chatbot-reprogramacion/` |
+| Resto (C-07, C-11 … C-14) | ⏳ pendientes | `CHANGES.md` |
 
 **TPI:** con 3 integrantes el mínimo es de 6 changes. Ya hay **11 archivados**. Cada change nuevo suma, y todos tenemos que poder explicar el que hicimos.
 
-**Migraciones tomadas:** 008 C-09, 009 C-18, 010 C-19, 011 C-05c, 012 C-05d, 013 C-06, 014 C-15, 015 C-16 (head actual: `015_lista_espera`; la 007 quedó sin usar). La próxima es la 016 con `down_revision` = el head del momento: `python -m alembic -c backend/alembic.ini heads` tiene que mostrar un único head (correrlo desde la raíz).
+**Migraciones tomadas:** 008 C-09, 009 C-18, 010 C-19, 011 C-05c, 012 C-05d, 013 C-06, 014 C-15, 015 C-16, 016 C-17 (head actual: `016_reprogramacion`; la 007 quedó sin usar). La próxima es la 017 con `down_revision` = el head del momento: `python -m alembic -c backend/alembic.ini heads` tiene que mostrar un único head (correrlo desde la raíz).
 
 **Frontend:** C-10 agregó el login, el router de datos (`frontend/src/router.tsx`, ya no existe `App.tsx`) y las rutas protegidas. C-07 (agenda) debe agregar `/agenda` dentro del layout autenticado, reutilizando ese shell. Demo: `backend/scripts/seed_demo_clinica.py` (usuarios `@clinica-piloto.test`, contraseña por `SEED_DEMO_PASSWORD`), ver README §"Demo clínica".
 
@@ -104,6 +105,7 @@ Las 17 reglas duras están en `AGENTS.md` (= `CLAUDE.md`). Las más fáciles de 
 
 Cada change con backend suma una migración Alembic en cadena (`down_revision`). Si dos personas crean "la siguiente" a la vez, quedan **dos heads** y `alembic upgrade head` falla.
 
+- **Tomado:** `016_reprogramacion` (C-17, `down_revision = "015_lista_espera"`). **C-07:** la pantalla `/reprogramar/{token}` consume `GET /api/public/reservas/{token}/opciones` y `POST …/reprogramar {inicio}` (409 trae `alternativas`). **C-12:** al reprogramar, enlazar la seña del turno viejo con el nuevo.
 - **Tomado:** `015_lista_espera` (C-16, `down_revision = "014_whatsapp"`). Suma `horario_libre(...)` público en `backend/app/domain/agenda/turnos.py` (envuelve el pre-chequeo de `crear_turno`; **pendiente avisarle a Matheo**). **C-17:** una respuesta se asocia al saliente vigente más reciente (recordatorio u oferta) en `procesar_mensaje_entrante`; sumen ahí la conversación de reprogramación.
 - **Tomado:** `014_whatsapp` (C-15, `down_revision = "013_reserva_online"`). **C-16/C-17:** para mandar un WhatsApp usen `despachar(...)` de `backend/app/domain/whatsapp/servicios.py` (registra costo, estado y bandeja) y extiendan `procesar_mensaje_entrante` para asociar respuestas a su oferta/conversación; ver la skill `dominio-whatsapp`.
 - **Tomado:** `013_reserva_online` (C-06, Matheo, `down_revision = "012_horario_atencion"`). **C-12 (caja):** la rama "seña exigida" se engancha en `backend/app/domain/agenda/reserva_publica.py::reservar`, antes de crear el turno; hoy la reserva es directa.

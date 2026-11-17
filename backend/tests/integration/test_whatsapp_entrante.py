@@ -95,15 +95,16 @@ def test_dos_cancela_y_libera_el_hueco(session_factory, turnos_data) -> None:  #
         assert nuevo.estado == "reservado"
 
 
-def test_reprogramar_va_a_la_bandeja_con_respuesta(session_factory, turnos_data) -> None:  # type: ignore[no-untyped-def]
+def test_reprogramar_abre_el_chatbot(session_factory, turnos_data) -> None:  # type: ignore[no-untyped-def]
+    """C-17 cambió la spec: con horarios disponibles, "reprogramar" abre el chatbot."""
     ahora, tel, tid = _escenario(session_factory, turnos_data)
     fake = FakeMensajeria()
     resultado = _entrante(session_factory, turnos_data["a"], tel, "reprogramar", ahora, fake)
-    assert resultado == "bandeja"
+    assert resultado == "chatbot"
     assert _estado(session_factory, tid) == "reservado"
     [m] = _entrantes(session_factory, tel)
-    assert m.intencion == "reprogramar" and m.requiere_atencion is True
-    assert _respuestas(session_factory, tel) == ["reprogramacion"]
+    assert m.intencion == "reprogramar" and m.requiere_atencion is False
+    assert _respuestas(session_factory, tel) == ["reprogramacion_opciones"]
 
 
 def test_texto_libre_va_a_la_bandeja_sin_respuesta(session_factory, turnos_data) -> None:  # type: ignore[no-untyped-def]

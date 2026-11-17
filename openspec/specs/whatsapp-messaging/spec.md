@@ -127,7 +127,7 @@ El sistema SHALL aceptar sin JWT en `POST /api/webhooks/whatsapp` solo eventos c
 
 ### Requirement: Interpretación de la respuesta del paciente
 
-El sistema SHALL registrar cada mensaje entrante con costo 0, asociarlo al último saliente vigente a ese número en esa clínica (recordatorio con turno futuro u oferta de lista de espera con hueco futuro) e interpretar su primera palabra ignorando mayúsculas, tildes y signos: `1`/`si`/`confirmo`/`confirmar` → confirmar; `2`/`no`/`cancelo`/`cancelar` → cancelar; `3`/`reprogramar`/`cambiar` → reprogramar; otra → no interpretable. Ante una oferta, confirmar SHALL aceptarla y cancelar, rechazarla.
+El sistema SHALL registrar cada entrante con costo 0. Si hay una conversación de reprogramación sin cerrar con ese número, SHALL tratarlo dentro de ella; si no, SHALL asociarlo al último saliente vigente (recordatorio con turno futuro u oferta con hueco futuro) e interpretar su primera palabra ignorando mayúsculas, tildes y signos: `1`/`si`/`confirmo`/`confirmar` → confirmar; `2`/`no`/`cancelo`/`cancelar` → cancelar; `3`/`reprogramar`/`cambiar` → reprogramar; otra → no interpretable.
 
 #### Scenario: Variantes de confirmación
 
@@ -145,9 +145,15 @@ El sistema SHALL registrar cada mensaje entrante con costo 0, asociarlo al últi
 - **WHEN** responde "1"
 - **THEN** la respuesta acepta la oferta y el turno del recordatorio no cambia.
 
+#### Scenario: Número dentro de la conversación
+
+- **GIVEN** el paciente tiene una conversación de reprogramación eligiendo
+- **WHEN** responde "2"
+- **THEN** se toma como la opción 2 y no como cancelación del turno.
+
 ### Requirement: La respuesta del paciente actualiza la agenda
 
-Confirmar y cancelar SHALL aplicar la transición de estado del turno asociado con actor `paciente_whatsapp`, en la misma transacción que registra el mensaje entrante, y luego SHALL responder al paciente con el texto base correspondiente (RN-TU-03). Reprogramar SHALL dejar el pedido en la bandeja sin cambiar el turno.
+Confirmar y cancelar SHALL aplicar la transición de estado del turno asociado con actor `paciente_whatsapp`, en la misma transacción que registra el mensaje entrante, y luego SHALL responder al paciente con el texto base correspondiente (RN-TU-03). Reprogramar SHALL abrir la conversación de reprogramación cuando haya opciones; sin opciones SHALL dejar el pedido en la bandeja sin cambiar el turno.
 
 #### Scenario: Respuesta "SI" confirma el turno (happy path)
 
@@ -164,7 +170,7 @@ Confirmar y cancelar SHALL aplicar la transición de estado del turno asociado c
 #### Scenario: Pedido de reprogramación
 
 - **WHEN** llega el mensaje "reprogramar"
-- **THEN** T no cambia, el mensaje queda en la bandeja como pedido de reprogramación y el paciente recibe el texto base `reprogramacion`.
+- **THEN** T no cambia y el paciente recibe las opciones de reprogramación, o, si no hay huecos, el mensaje queda en la bandeja y recibe el texto base `reprogramacion`.
 
 ### Requirement: Evento duplicado no repite efectos
 
@@ -252,9 +258,9 @@ Mensajes, sesiones y fallos SHALL estar aislados por clínica: las consultas de 
 
 ### Requirement: Textos base internos sembrados
 
-El sistema SHALL disponer de siete textos base en español rioplatense (`recordatorio_24h`, `confirmacion`, `cancelacion`, `reprogramacion`, `oferta_hueco`, `oferta_aceptada`, `oferta_no_disponible`), propios de la plataforma y sin aprobación de Meta (DD-10), cuyas variables se completan en el servidor.
+El sistema SHALL disponer de doce textos base en español rioplatense (`recordatorio_24h`, `confirmacion`, `cancelacion`, `reprogramacion`, `oferta_hueco`, `oferta_aceptada`, `oferta_no_disponible`, `reprogramacion_opciones`, `reprogramacion_confirmar`, `reprogramacion_hecha`, `reprogramacion_sin_cambios`, `reprogramacion_vencida`), propios de la plataforma y sin aprobación de Meta (DD-10), cuyas variables se completan en el servidor.
 
 #### Scenario: Textos disponibles tras migrar
 
 - **WHEN** se aplican las migraciones sobre una base vacía
-- **THEN** existen exactamente esos siete textos base y el downgrade de cada migración elimina los suyos sin residuos.
+- **THEN** existen exactamente esos doce textos base y el downgrade de cada migración elimina los suyos sin residuos.

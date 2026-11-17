@@ -36,6 +36,7 @@ CSVS = {
     "recetas": "receta_externa",
     "mensajes_whatsapp": "mensaje_whatsapp", "whatsapp_sesiones": "whatsapp_sesion",
     "lista_espera": "lista_espera", "ofertas_lista_espera": "oferta_lista_espera",
+    "conversaciones_whatsapp": "conversacion_wa",
 }  # fmt: skip
 
 
@@ -349,3 +350,30 @@ def test_lista_espera_incluida_y_aislada(client, session_factory, auth_data, tur
     assert len(filas) - 1 == 2
     assert {fila[enc.index("clinica_id")] for fila in filas[1:]} == {str(a)}
     assert json.loads(zf.read("manifest.json"))["conteos"]["lista_espera"] == 2
+
+
+def test_conversaciones_incluidas(client, session_factory, auth_data, turnos_data) -> None:  # type: ignore[no-untyped-def]
+    """C-17 5.1: conversaciones_whatsapp.csv trae solo las de la clínica."""
+    from app.domain.reprogramacion.models import ConversacionWA
+
+    a, b = auth_data["clinica_a"], auth_data["clinica_b"]
+    inicio = datetime(2038, 1, 4, 10, tzinfo=UTC)
+    with session_factory() as s:
+        for clinica, prof, sillon, pac, prest, tel in (
+            (a, turnos_data["p"], turnos_data["s1"], turnos_data["pac_a"], turnos_data["prest_a"],
+             "+5491100000201"),
+            (b, turnos_data["prof_b"], turnos_data["sillon_b"], turnos_data["pac_b"],
+             turnos_data["prest_b"], "+5491100000202"),
+        ):  # fmt: skip
+            t = Turno(clinica_id=clinica, profesional_id=prof, sillon_id=sillon, paciente_id=pac,
+                      prestacion_id=prest, duracion_min=30, inicio=inicio,
+                      fin=inicio + timedelta(minutes=30))  # fmt: skip
+            s.add(t)
+            s.flush()
+            s.add(ConversacionWA(clinica_id=clinica, paciente_id=pac, telefono=tel, turno_id=t.id,
+                                 opciones=[], expira_at=inicio))  # fmt: skip
+        s.commit()
+    zf = _leer_zip(_exportar(client, bearer(client, auth_data["admin_email"])))
+    filas = _filas(zf, "conversaciones_whatsapp")
+    enc = filas[0]
+    assert len(filas) - 1 == 1 and filas[1][enc.index("clinica_id")] == str(a)
