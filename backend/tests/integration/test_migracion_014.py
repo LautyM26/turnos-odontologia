@@ -77,7 +77,8 @@ def _saliente(td, turno_id: int, **over) -> MensajeWhatsApp:  # type: ignore[no-
 
 def test_upgrade_crea_tablas_y_siembra_textos(postgres_url) -> None:  # type: ignore[no-untyped-def]
     assert {"whatsapp_sesion", "mensaje_whatsapp", "plantilla_wa"} <= _tablas(postgres_url)
-    assert set(_all(postgres_url, "SELECT clave FROM plantilla_wa")) == TEXTOS
+    # ">=": migraciones posteriores suman textos (015 de C-16).
+    assert set(_all(postgres_url, "SELECT clave FROM plantilla_wa")) >= TEXTOS
     assert _all(postgres_url, "SELECT DISTINCT idioma FROM plantilla_wa") == ["es_AR"]
     tipo = _all(
         postgres_url,
@@ -218,4 +219,4 @@ def test_downgrade_a_013_y_reupgrade_en_base_limpia() -> None:
         )
         assert "paciente_whatsapp" not in check[0]
         command.upgrade(config, "head")
-        assert set(_all(url, "SELECT clave FROM plantilla_wa")) == TEXTOS
+        assert set(_all(url, "SELECT clave FROM plantilla_wa")) >= TEXTOS

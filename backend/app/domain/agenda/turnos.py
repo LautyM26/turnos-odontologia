@@ -280,6 +280,26 @@ def _hay_turno_solapado(
     return session.scalars(stmt).first() is not None
 
 
+def horario_libre(
+    session: Session,
+    clinica_id: int,
+    inicio: datetime,
+    fin: datetime,
+    profesional_id: int,
+    sillon_id: int,
+) -> bool:
+    """True si un turno normal entraría hoy en ese rango: horario, bloqueos y solapamiento.
+
+    Mismas reglas que el pre-chequeo de ``crear_turno`` (C-16 D9: la lista de espera solo
+    ofrece huecos reservables). La base sigue arbitrando la carrera al crear (409).
+    """
+    return (
+        dentro_de_horario(session, clinica_id, profesional_id, inicio, fin)
+        and not bloqueos_solapados(session, clinica_id, inicio, fin, profesional_id, sillon_id)
+        and not _hay_turno_solapado(session, clinica_id, inicio, fin, profesional_id, sillon_id)
+    )
+
+
 def crear_turno(
     session: Session,
     clinica_id: int,

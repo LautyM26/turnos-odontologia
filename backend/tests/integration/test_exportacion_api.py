@@ -35,6 +35,7 @@ CSVS = {
     "usuarios": "usuario", "usuario_roles": "usuario_rol", "auditoria_hc": "auditoria_hc",
     "recetas": "receta_externa",
     "mensajes_whatsapp": "mensaje_whatsapp", "whatsapp_sesiones": "whatsapp_sesion",
+    "lista_espera": "lista_espera", "ofertas_lista_espera": "oferta_lista_espera",
 }  # fmt: skip
 
 
@@ -327,3 +328,24 @@ def test_mensajes_whatsapp_incluidos_y_aislados(client, session_factory, auth_da
     assert len(filas) - 1 == 2
     assert {fila[enc.index("clinica_id")] for fila in filas[1:]} == {str(a)}
     assert json.loads(zf.read("manifest.json"))["conteos"]["mensajes_whatsapp"] == 2
+
+
+def test_lista_espera_incluida_y_aislada(client, session_factory, auth_data, turnos_data) -> None:  # type: ignore[no-untyped-def]
+    """C-16 7.1: lista_espera.csv trae solo las entradas de la clínica."""
+    from app.domain.lista_espera.models import ListaEspera
+
+    a, b = auth_data["clinica_a"], auth_data["clinica_b"]
+    with session_factory() as s:
+        for clinica, prest, n in ((a, turnos_data["prest_a"], 2), (b, turnos_data["prest_b"], 1)):
+            for _ in range(n):
+                pac = paciente_sintetico(clinica)
+                s.add(pac)
+                s.flush()
+                s.add(ListaEspera(clinica_id=clinica, paciente_id=pac.id, prestacion_id=prest))
+        s.commit()
+    zf = _leer_zip(_exportar(client, bearer(client, auth_data["admin_email"])))
+    filas = _filas(zf, "lista_espera")
+    enc = filas[0]
+    assert len(filas) - 1 == 2
+    assert {fila[enc.index("clinica_id")] for fila in filas[1:]} == {str(a)}
+    assert json.loads(zf.read("manifest.json"))["conteos"]["lista_espera"] == 2

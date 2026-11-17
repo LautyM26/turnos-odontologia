@@ -33,6 +33,7 @@ from app.domain.core.models import Usuario, UsuarioRol
 from app.domain.cumplimiento.errores import FormatoNoSoportado
 from app.domain.cumplimiento.exportacion import escribir_csv
 from app.domain.cumplimiento.models import Consentimiento, ConsentimientoFirma
+from app.domain.lista_espera.models import ListaEspera, OfertaListaEspera
 from app.domain.pacientes.models import Adjunto, FichaVersion, Paciente
 from app.domain.recetas.models import RecetaExterna
 from app.domain.whatsapp.models import MensajeWhatsApp, WhatsappSesion
@@ -65,6 +66,8 @@ ENTIDADES_EXPORTABLES: dict[str, Any] = {
     "recetas": RecetaExterna,
     "mensajes_whatsapp": MensajeWhatsApp,
     "whatsapp_sesiones": WhatsappSesion,
+    "lista_espera": ListaEspera,
+    "ofertas_lista_espera": OfertaListaEspera,
 }
 
 #: ``password_hash``: secreto; ``rango``: columna derivada de inicio/fin (tstzrange);

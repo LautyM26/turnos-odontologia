@@ -8,13 +8,14 @@ import re
 from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import func, select, update
+from sqlalchemy import DateTime, func, literal, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.domain.agenda.models import Profesional
 from app.domain.agenda.turnos import Turno, puede_transicionar, transicionar_turno
 from app.domain.core.models import Clinica
+from app.domain.lista_espera.models import OfertaListaEspera
 from app.domain.pacientes.models import Paciente
 from app.domain.pacientes.normalizacion import (
     NormalizacionError,
@@ -75,32 +76,46 @@ def telefono_de_chat_id(chat: str) -> str | None:
         return None
 
 
-def renderizar(session: Session, clinica_id: int, clave: str, turno_id: int) -> str:
-    """Completa el texto base con datos del turno; fecha y hora en la zona de la clínica."""
-    local = func.timezone(Clinica.zona_horaria, Turno.inicio)
+def variables_horario(
+    session: Session, clinica_id: int, paciente_id: int, profesional_id: int, inicio: datetime
+) -> dict[str, str]:
+    """Variables de los textos base; fecha y hora en la zona de la clínica (SQL, sin tzdata)."""
+    local = func.timezone(Clinica.zona_horaria, literal(inicio, DateTime(timezone=True)))
     fila = session.execute(
         select(
-            PlantillaWA.texto, Paciente.nombre, Profesional.nombre, Clinica.nombre,
+            Paciente.nombre, Profesional.nombre, Clinica.nombre,
             func.to_char(local, "DD/MM"), func.to_char(local, "HH24:MI"),
         )
-        .select_from(Turno)
-        .join(Clinica, Clinica.id == Turno.clinica_id)
-        .join(Paciente, (Paciente.clinica_id == Turno.clinica_id)
-              & (Paciente.id == Turno.paciente_id))
-        .join(Profesional, (Profesional.clinica_id == Turno.clinica_id)
-              & (Profesional.id == Turno.profesional_id))
-        .join(PlantillaWA, PlantillaWA.clave == clave)
-        .where(Turno.clinica_id == clinica_id, Turno.id == turno_id)
+        .select_from(Clinica)
+        .join(Paciente, (Paciente.clinica_id == Clinica.id) & (Paciente.id == paciente_id))
+        .join(Profesional, (Profesional.clinica_id == Clinica.id)
+              & (Profesional.id == profesional_id))
+        .where(Clinica.id == clinica_id)
     ).one()  # fmt: skip
-    texto, paciente, profesional, clinica, fecha, hora = fila
-    variables = {
-        "paciente_nombre": paciente, "profesional": profesional, "clinica": clinica,
-        "fecha": fecha, "hora": hora,
-    }  # fmt: skip
+    paciente, profesional, clinica, fecha, hora = fila
+    return {"paciente_nombre": paciente, "profesional": profesional, "clinica": clinica,
+            "fecha": fecha, "hora": hora}  # fmt: skip
+
+
+def renderizar_texto(session: Session, clave: str, variables: dict[str, str]) -> str:
+    """Completa el texto base ``clave``; una variable faltante es un bug (nunca se envía)."""
+    texto = session.scalars(select(PlantillaWA.texto).where(PlantillaWA.clave == clave)).one()
     try:
         return texto.format_map(variables)
     except (KeyError, IndexError, ValueError) as exc:
         raise TextoIncompleto(f"texto base {clave!r}: {exc}") from exc
+
+
+def renderizar(session: Session, clinica_id: int, clave: str, turno_id: int) -> str:
+    """Texto base con los datos de un turno (paciente, profesional, fecha y hora locales)."""
+    turno = session.scalars(
+        select(Turno).where(Turno.clinica_id == clinica_id, Turno.id == turno_id)
+    ).one()
+    return renderizar_texto(
+        session, clave,
+        variables_horario(session, clinica_id, turno.paciente_id, turno.profesional_id,
+                          turno.inicio),
+    )  # fmt: skip
 
 
 def _fallo(msg: MensajeWhatsApp, motivo: str, intento: bool = True) -> None:
@@ -154,11 +169,12 @@ _ESTADOS_ENVIADO = ("enviado", "entregado", "leido")
 
 def _recordatorio_vigente(
     session: Session, clinica_id: int, telefono: str, ahora: datetime
-) -> tuple[int, int] | None:
-    """(turno_id, paciente_id) del último recordatorio enviado a ese número en esa clínica cuyo
-    turno sigue activo y no empezó."""
+) -> tuple[int, int, datetime, int] | None:
+    """(turno_id, paciente_id, created_at, id) del último recordatorio enviado a ese número en
+    esa clínica cuyo turno sigue activo y no empezó."""
     fila = session.execute(
-        select(MensajeWhatsApp.turno_id, MensajeWhatsApp.paciente_id)
+        select(MensajeWhatsApp.turno_id, MensajeWhatsApp.paciente_id, MensajeWhatsApp.created_at,
+               MensajeWhatsApp.id)
         .join(Turno, (Turno.clinica_id == MensajeWhatsApp.clinica_id)
               & (Turno.id == MensajeWhatsApp.turno_id))
         .where(
@@ -171,21 +187,52 @@ def _recordatorio_vigente(
         .order_by(MensajeWhatsApp.created_at.desc(), MensajeWhatsApp.id.desc())
         .limit(1)
     ).first()  # fmt: skip
-    return (fila[0], fila[1]) if fila else None
+    return (fila[0], fila[1], fila[2], fila[3]) if fila else None
+
+
+def _oferta_vigente(
+    session: Session, clinica_id: int, telefono: str, ahora: datetime
+) -> tuple[int, int, datetime, int] | None:
+    """(oferta_id, paciente_id, created_at, id) de la última oferta de lista de espera enviada a
+    ese número cuyo hueco no empezó, en cualquier estado (C-16 D5: una respuesta tardía recibe
+    ``oferta_no_disponible``)."""
+    fila = session.execute(
+        select(OfertaListaEspera.id, MensajeWhatsApp.paciente_id, MensajeWhatsApp.created_at,
+               MensajeWhatsApp.id)
+        .join(OfertaListaEspera, (OfertaListaEspera.clinica_id == MensajeWhatsApp.clinica_id)
+              & (OfertaListaEspera.mensaje_id == MensajeWhatsApp.id))
+        .where(
+            MensajeWhatsApp.clinica_id == clinica_id, MensajeWhatsApp.telefono == telefono,
+            MensajeWhatsApp.direccion == "saliente", MensajeWhatsApp.plantilla == "oferta_hueco",
+            MensajeWhatsApp.estado.in_(_ESTADOS_ENVIADO), OfertaListaEspera.inicio > ahora,
+        )
+        .order_by(MensajeWhatsApp.created_at.desc(), MensajeWhatsApp.id.desc())
+        .limit(1)
+    ).first()  # fmt: skip
+    return (fila[0], fila[1], fila[2], fila[3]) if fila else None
+
+
+def enviar_texto_base(
+    session: Session, mensajeria: Mensajeria | NoConfigurado, clinica_id: int, clave: str,
+    texto: str, paciente_id: int, telefono: str, precio: Decimal, turno_id: int | None = None,
+) -> tuple[MensajeWhatsApp, bool]:  # fmt: skip
+    """Persiste un saliente ``pendiente`` y lo despacha (costo, estado y bandeja de C-15)."""
+    msg = MensajeWhatsApp(
+        clinica_id=clinica_id, turno_id=turno_id, paciente_id=paciente_id, plantilla=clave,
+        direccion="saliente", telefono=telefono, estado="pendiente", texto=texto,
+    )  # fmt: skip
+    session.add(msg)
+    session.commit()
+    return msg, despachar(session, mensajeria, msg, precio)
 
 
 def _responder(
     session: Session, mensajeria: Mensajeria | NoConfigurado, clinica_id: int, clave: str,
     turno_id: int, paciente_id: int, telefono: str, precio: Decimal,
 ) -> None:  # fmt: skip
-    msg = MensajeWhatsApp(
-        clinica_id=clinica_id, turno_id=turno_id, paciente_id=paciente_id, plantilla=clave,
-        direccion="saliente", telefono=telefono, estado="pendiente",
-        texto=renderizar(session, clinica_id, clave, turno_id),
-    )  # fmt: skip
-    session.add(msg)
-    session.commit()
-    despachar(session, mensajeria, msg, precio)
+    texto = renderizar(session, clinica_id, clave, turno_id)
+    enviar_texto_base(session, mensajeria, clinica_id, clave, texto, paciente_id, telefono,
+                      precio, turno_id=turno_id)  # fmt: skip
 
 
 def procesar_mensaje_entrante(
@@ -202,7 +249,13 @@ def procesar_mensaje_entrante(
     """
     intencion = interpretar(texto)
     vigente = _recordatorio_vigente(session, clinica_id, telefono, ahora)
-    turno_id, paciente_id = vigente if vigente else (None, None)
+    oferta = _oferta_vigente(session, clinica_id, telefono, ahora)
+    if oferta is not None and (vigente is None or oferta[2:] > vigente[2:]):
+        return _procesar_respuesta_oferta(
+            session, clinica_id, id_externo, telefono, texto, intencion, oferta, ahora,
+            mensajeria, precio,
+        )  # fmt: skip
+    turno_id, paciente_id = (vigente[0], vigente[1]) if vigente else (None, None)
     msg = MensajeWhatsApp(
         clinica_id=clinica_id, turno_id=turno_id, paciente_id=paciente_id,
         direccion="entrante", estado="recibido", intencion=intencion, id_externo=id_externo,
@@ -239,6 +292,38 @@ def procesar_mensaje_entrante(
         _responder(session, mensajeria, clinica_id, _RESPUESTA[intencion], turno_id,
                    paciente_id, telefono, precio)  # fmt: skip
     return resultado
+
+
+def _procesar_respuesta_oferta(
+    session: Session, clinica_id: int, id_externo: str, telefono: str, texto: str,
+    intencion: str, oferta: tuple[int, int, datetime, int], ahora: datetime,
+    mensajeria: Mensajeria | NoConfigurado, precio: Decimal,
+) -> str:  # fmt: skip
+    """Respuesta a una oferta de lista de espera (C-16 D5): mismo insert-first idempotente;
+    aceptar/rechazar los resuelve ``lista_espera.servicios``."""
+    oferta_id, paciente_id = oferta[0], oferta[1]
+    msg = MensajeWhatsApp(
+        clinica_id=clinica_id, paciente_id=paciente_id, direccion="entrante", estado="recibido",
+        intencion=intencion, id_externo=id_externo, telefono=telefono, texto=texto[:2000],
+        requiere_atencion=intencion not in _DESTINO,
+    )  # fmt: skip
+    session.add(msg)
+    try:
+        session.flush()
+    except IntegrityError as exc:
+        session.rollback()
+        if getattr(exc.orig, "sqlstate", None) == UNIQUE_VIOLATION:
+            return "duplicado"
+        raise
+    session.commit()
+    if intencion not in _DESTINO:
+        return "bandeja"
+    # Import diferido: lista_espera depende de este módulo (despachar, textos), no al revés.
+    from app.domain.lista_espera.servicios import responder_oferta
+
+    return responder_oferta(
+        session, clinica_id, oferta_id, intencion, telefono, ahora, mensajeria, precio
+    )
 
 
 _ORDEN_ENTREGA = {"enviado": 1, "entregado": 2, "leido": 3}

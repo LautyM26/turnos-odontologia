@@ -16,6 +16,7 @@ from app.api.catalogo import router as catalogo_router
 from app.api.consentimientos import router as consentimientos_router
 from app.api.health import router as health_router
 from app.api.historia_clinica import router as historia_clinica_router
+from app.api.lista_espera import router as lista_espera_router
 from app.api.pacientes import router as pacientes_router
 from app.api.permissions import set_resolver_agenda_propia, set_resolver_vinculo_paciente
 from app.api.publico import router as publico_router
@@ -93,6 +94,7 @@ def create_app() -> FastAPI:
     app.include_router(agenda_router)
     app.include_router(publico_router)
     app.include_router(whatsapp_router)
+    app.include_router(lista_espera_router)
     return app
 
 

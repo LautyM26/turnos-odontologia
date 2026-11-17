@@ -70,6 +70,12 @@ El job envía un recordatorio por turno `reservado` que empiece dentro de la ven
 
 Si dos corridas se pisan no hay problema: la base garantiza **un solo recordatorio por turno**.
 
+**Lista de espera (C-16).** Otro cron, cada **5 minutos**, ofrece los huecos de turnos cancelados a la lista de espera y vence las ofertas no respondidas (`LISTA_ESPERA_OFERTA_MIN`, 30 por defecto; solo huecos con `LISTA_ESPERA_ANTICIPACION_MIN`, 120 por defecto, o más de anticipación). Si el canal está caído, la oferta se anula y la corrida se corta: la cola no se consume.
+
+```bash
+*/5 * * * * cd /srv/turnos/backend && python -m app.jobs.lista_espera
+```
+
 ## 5. Sesión caída: reconexión
 
 Señales:

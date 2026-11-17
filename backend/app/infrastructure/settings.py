@@ -124,6 +124,14 @@ class Settings(BaseSettings):
         description="Costo interno por mensaje saliente en ARS (RN-WA-02, NUMERIC).",
     )
 
+    # --- Lista de espera (C-16, D10, SU-04). ---
+    lista_espera_oferta_min: int = Field(
+        default=30, ge=5, le=240, description="Minutos que tiene el paciente para aceptar."
+    )
+    lista_espera_anticipacion_min: int = Field(
+        default=120, ge=0, le=1440, description="Anticipación mínima de un hueco ofrecible."
+    )
+
     @field_validator("recetas_partner", "whatsapp_gateway", mode="before")
     @classmethod
     def _normalizar_partner(cls, value: object) -> object:
