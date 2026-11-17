@@ -1,6 +1,6 @@
 ---
 name: dominio-agenda
-description: Reglas vigentes de agenda y turnos (RN-AG + RN-TU) con trazabilidad a specs y tests. Usar al programar turnos, huecos, solapamientos, sillones, bloqueos, sobreturnos, estados del turno (reservado, confirmado, asistido, ausente, cancelado), cancelar o reprogramar, reserva online, lista de espera o la agenda del frontend (changes C-05, C-05b transiciones-estado-turno, C-05c huecos-y-sobreturnos, C-06, C-07, C-16, C-17), y antes de /opsx:propose de cualquier change de agenda.
+description: Reglas vigentes de agenda y turnos (RN-AG + RN-TU) con trazabilidad a specs y tests. Usar al programar turnos, huecos, solapamientos, sillones, bloqueos, sobreturnos, estados del turno (reservado, confirmado, asistido, ausente, cancelado), cancelar o reprogramar, reserva online, lista de espera o la agenda del frontend (changes C-05, C-05b transiciones-estado-turno, C-05c huecos-y-sobreturnos, C-05d horario-atencion, C-06, C-07, C-16, C-17), y antes de /opsx:propose de cualquier change de agenda.
 ---
 
 # dominio-agenda
@@ -15,7 +15,7 @@ Cubre el corazón operativo de la clínica: cuándo y dónde puede atenderse un 
 
 - Modelo `Turno`, servicio `crear_turno`, transiciones de estado, huecos, sobreturnos, reprogramación.
 - Endpoints `/api/turnos`, `/api/agenda/huecos`, reserva pública (`/api/public/...`), UI `/agenda`.
-- Changes del roadmap: C-05 `motor-turnos` (parcial: recorte `crear-turno-sin-solapamientos` archivado), C-05b `transiciones-estado-turno` (archivado 2026-11-16), C-05c `huecos-y-sobreturnos` (2026-11-17), C-06 `reserva-online-publica`, C-07 `agenda-frontend`, C-16 `lista-espera-relleno`, C-17 `chatbot-reprogramacion`.
+- Changes del roadmap: C-05 `motor-turnos` (parcial: recorte `crear-turno-sin-solapamientos` archivado), C-05b `transiciones-estado-turno` (archivado 2026-11-16), C-05c `huecos-y-sobreturnos` (2026-11-17), C-05d `horario-atencion` (2026-11-17), C-06 `reserva-online-publica`, C-07 `agenda-frontend`, C-16 `lista-espera-relleno`, C-17 `chatbot-reprogramacion`.
 
 ## 3. Reglas vigentes
 
@@ -50,6 +50,7 @@ Cubre el corazón operativo de la clínica: cuándo y dónde puede atenderse un 
 
 - Código existente: `backend/app/domain/agenda/turnos.py` (modelo `Turno`, `ESTADOS_ACTIVOS`, predicado de turno activo, `crear_turno`), `backend/app/domain/agenda/schemas.py`, `backend/app/api/turnos.py`, migraciones `backend/alembic/versions/005_turnos.py` y `011_sobreturno_huecos.py`. Huecos: `buscar_huecos` en `backend/app/domain/agenda/huecos.py` (una consulta SQL con multirangos) y `GET /api/agenda/huecos` en `backend/app/api/agenda.py`; paso `AGENDA_PASO_MIN`.
 - "Activo" = `reservado`, `confirmado`, `asistido`. `cancelado`/`ausente` liberan el hueco sin tocar las constraints. Un sobreturno es una **marca** (`es_sobreturno` + `motivo_sobreturno`, C-05c), no un estado: queda fuera de las exclusion constraints y del pre-chequeo, pero respeta los bloqueos y sigue `TRANSICIONES`. El estado `sobreturno` de la 005 está en desuso.
+- Horario de atención (C-05d, decisión del usuario, sin RN en la KB): franjas semanales por profesional (`franja_horaria`, minutos locales) en `clinica.zona_horaria`. `SQL_HORARIO_CTE` de `backend/app/domain/agenda/horario.py` es la única definición del horario y la usan huecos y `crear_turno`. Turno normal fuera de horario → `409`; sobreturno exceptuado; **sin franjas el profesional no atiende**. En tests, `turnos_data` da 00:00–24:00 a P, Q, R y al profesional de B.
 - Respuestas: solapamiento o bloqueo → `409` "Horario no disponible" sin datos del turno ajeno; referencia inválida/ajena → `422`; rol no autorizado → `403`; turno de otra clínica → `404`.
 - Sobreturno: reutilizar `require_sobreturno()` de `backend/app/api/permissions.py` (admin/recepcionista).
 - Transiciones (C-05b): `TRANSICIONES` + `transicionar_turno` en `backend/app/domain/agenda/turnos.py`; `POST /api/turnos/{id}/transicion`; historial append-only `turno_transicion`. No duplicar la tabla de transiciones: importar `puede_transicionar`.
@@ -69,7 +70,9 @@ Cubre el corazón operativo de la clínica: cuándo y dónde puede atenderse un 
 | RN-TU-03 | — | — | pendiente (C-15/C-17) |
 | RN-TU-04 | `openspec/specs/patients/spec.md` · "Riesgo de ausencia de solo lectura" (solo el campo) | `backend/tests/integration/test_pacientes_api.py` · `test_patch_riesgo_ausencia_422` | parcial: falta que el ausente alimente el score y el seguimiento |
 
-Resumen: 10 reglas · 5 cubiertas · 2 parciales · 3 pendientes. Ningún test cita el código RN: la trazabilidad se hizo por significado (requirement → escenario → test).
+Resumen: 10 reglas · 5 cubiertas · 2 parciales · 3 pendientes.
+
+Requisito sin RN (decisión del usuario 2026-11-17): **horario de atención** → `openspec/specs/business-hours/spec.md` y "Huecos solo dentro del horario de atención" / "El turno normal respeta el horario de atención" → `backend/tests/integration/test_horario_api.py`, `backend/tests/integration/test_horario_turnos.py`, `backend/tests/integration/test_horario_concurrencia.py`. Ningún test cita el código RN: la trazabilidad se hizo por significado (requirement → escenario → test).
 
 ### Conflictos detectados
 

@@ -4,6 +4,7 @@ Ningun payload acepta ``clinica_id``, ``id``, ``es_seed``, ``is_active`` ni ``ra
 Fechas ``AwareDatetime`` normalizadas a UTC; montos ``Decimal`` exacto (regla dura 7).
 """
 
+import re
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Annotated, Literal, Self
@@ -11,6 +12,7 @@ from typing import Annotated, Literal, Self
 from pydantic import (
     AwareDatetime,
     BaseModel,
+    BeforeValidator,
     ConfigDict,
     Field,
     StrictBool,
@@ -291,3 +293,66 @@ class HuecoOut(SalidaBase):
     inicio: datetime
     fin: datetime
     sillon_ids: list[int]
+
+
+# --- Horario de atención (C-05d D1/D5) -----------------------------------------------------
+
+MAX_FRANJAS = 70  # 10 por día: acota el payload del PUT
+_HHMM = re.compile(r"^(?:[01]\d|2[0-3]):[0-5]\d$|^24:00$")
+
+
+def _a_minutos(value: object) -> int:
+    """``"HH:MM"`` (``"24:00"`` = fin del día) -> minutos desde la medianoche local."""
+    if not isinstance(value, str) or not _HHMM.match(value):
+        raise ValueError("hora en formato HH:MM entre 00:00 y 24:00")
+    horas, minutos = value.split(":")
+    return int(horas) * 60 + int(minutos)
+
+
+def _a_hhmm(value: object) -> object:
+    return f"{value // 60:02d}:{value % 60:02d}" if isinstance(value, int) else value
+
+
+Minutos = Annotated[int, BeforeValidator(_a_minutos)]
+Hhmm = Annotated[str, BeforeValidator(_a_hhmm)]
+
+
+class FranjaIn(EntradaBase):
+    """Franja semanal: día ISO (1 = lunes) y horas locales; internamente en minutos."""
+
+    dia_semana: Annotated[StrictInt, Field(ge=1, le=7)]
+    inicio: Minutos
+    fin: Minutos
+
+    @model_validator(mode="after")
+    def _inicio_antes_de_fin(self) -> Self:
+        if self.inicio >= self.fin:
+            raise ValueError("inicio debe ser anterior a fin (sin cruzar la medianoche)")
+        return self
+
+
+class HorarioIn(EntradaBase):
+    """Horario completo de un profesional; reemplaza al anterior (todo o nada)."""
+
+    franjas: Annotated[list[FranjaIn], Field(max_length=MAX_FRANJAS)]
+
+    @field_validator("franjas")
+    @classmethod
+    def _ordenadas_sin_superposicion(cls, value: list[FranjaIn]) -> list[FranjaIn]:
+        ordenadas = sorted(value, key=lambda f: (f.dia_semana, f.inicio))
+        for previa, actual in zip(ordenadas, ordenadas[1:], strict=False):
+            if previa.dia_semana == actual.dia_semana and actual.inicio < previa.fin:
+                raise ValueError(f"franjas superpuestas el día {actual.dia_semana}")
+        return ordenadas
+
+
+class FranjaOut(SalidaBase):
+    dia_semana: int
+    inicio: Hhmm = Field(validation_alias="inicio_min")
+    fin: Hhmm = Field(validation_alias="fin_min")
+
+
+class HorarioOut(BaseModel):
+    profesional_id: int
+    zona_horaria: str
+    franjas: list[FranjaOut]

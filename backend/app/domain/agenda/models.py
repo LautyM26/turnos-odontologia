@@ -15,6 +15,7 @@ from sqlalchemy import (
     Index,
     Integer,
     Numeric,
+    SmallInteger,
     Text,
     UniqueConstraint,
     text,
@@ -180,3 +181,33 @@ class Bloqueo(Base, TenantMixin, AuditMixin):
     rango: Mapped[Any] = mapped_column(
         TSTZRANGE, Computed("tstzrange(inicio, fin, '[)')", persisted=True), nullable=True
     )
+
+
+class FranjaHoraria(Base, TenantMixin):
+    """Franja semanal de atención de un profesional (C-05d D1); espejo de la migración 012.
+
+    ``dia_semana`` ISO (1 = lunes); minutos desde la medianoche en la zona de la clínica
+    (1440 = 24:00). Sin ``AuditMixin``: el horario se reemplaza entero, no se da de baja.
+    """
+
+    __tablename__ = "franja_horaria"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["clinica_id", "profesional_id"],
+            ["profesional.clinica_id", "profesional.id"],
+            name="fk_franja_horaria_profesional",
+            ondelete="RESTRICT",
+        ),
+        CheckConstraint("dia_semana BETWEEN 1 AND 7", name="dia_valido"),
+        CheckConstraint(
+            "inicio_min >= 0 AND inicio_min < fin_min AND fin_min <= 1440", name="rango_valido"
+        ),
+        Index("ix_franja_horaria_clinica_profesional_dia", "clinica_id", "profesional_id",
+              "dia_semana"),
+    )  # fmt: skip
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
+    profesional_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    dia_semana: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    inicio_min: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    fin_min: Mapped[int] = mapped_column(SmallInteger, nullable=False)

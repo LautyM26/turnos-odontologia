@@ -92,6 +92,14 @@ Tests del change C-05c `huecos-y-sobreturnos` (sobreturno con motivo y `GET /api
 python -m pytest backend/tests/unit/test_turno_schemas.py backend/tests/integration/test_migracion_011.py backend/tests/integration/test_turnos_db_constraints.py backend/tests/integration/test_sobreturnos_api.py backend/tests/integration/test_huecos_servicio.py backend/tests/integration/test_huecos_api.py -v
 ```
 
+Tests del change C-05d `horario-atencion` (franjas por profesional, huecos y alta limitados al horario):
+
+```bash
+python -m pytest backend/tests/unit/test_horario_schemas.py backend/tests/integration/test_migracion_012.py backend/tests/integration/test_horario_api.py backend/tests/integration/test_horario_concurrencia.py backend/tests/integration/test_horario_turnos.py backend/tests/integration/test_seed_catalogo.py -v
+```
+
+> **Horario de atención (C-05d):** un profesional sin franjas no tiene huecos ni acepta turnos normales. Antes de dar turnos, cargale el horario con `PUT /api/admin/profesionales/{id}/horario` (admin). El seed trae lunes a viernes 09–13 y 14–18 para el profesional de ejemplo.
+
 Tests del change C-09 `odontograma-evolucion` (odontograma FDI, evoluciones append-only, historia consolidada; Docker Desktop corriendo):
 
 ```bash
@@ -211,4 +219,4 @@ claude mcp add --scope user --transport http context7 https://mcp.context7.com/m
 
 ## Estado
 
-Archivados: C-01, C-02, C-03, C-04, C-05 completo (`crear-turno-sin-solapamientos`, C-05b `transiciones-estado-turno` y C-05c `huecos-y-sobreturnos`), C-08, C-09, C-10, C-18 y C-19. Ver `CHANGES.md` y `openspec/changes/archive/`.
+Archivados: C-01, C-02, C-03, C-04, C-05 completo (`crear-turno-sin-solapamientos`, C-05b `transiciones-estado-turno` y C-05c `huecos-y-sobreturnos`), C-05d `horario-atencion`, C-08, C-09, C-10, C-18 y C-19. Ver `CHANGES.md` y `openspec/changes/archive/`.

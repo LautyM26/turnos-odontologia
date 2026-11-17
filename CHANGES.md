@@ -275,10 +275,10 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
 ---
 
 ### [C-05d] `horario-atencion`
-- **Estado**: `[ ]` pendiente — agregado 2026-11-16, sin proponer
+- **Estado**: `[x]` completado — archivado 2026-11-17 (`openspec/changes/archive/2026-11-17-horario-atencion/`, 1284 tests en verde, ver `verify.md`). C-06 queda desbloqueado.
 - **Propósito**: la KB no define horario de atención; sin él, los huecos de la reserva pública (C-06) incluirían cualquier hora. Agrega franjas de atención (día de semana + rango) y limita los huecos a esas franjas.
 - **Dependencias**: C-05c. **Bloquea**: C-06 (los huecos públicos deben respetar el horario).
-- **Pendiente de decidir con el usuario**: si el horario es por profesional, por sillón o de la clínica; manejo de feriados (hoy: bloqueos de clínica).
+- **Decidido con el usuario (2026-11-17)**: horario por profesional (franjas semanales); zona horaria en `clinica.zona_horaria`; turno normal fuera de horario → 409, sobreturno exceptuado; profesional sin franjas → sin huecos ni turnos normales; feriados = bloqueos de clínica. Migración `012_horario_atencion`.
 
 ---
 

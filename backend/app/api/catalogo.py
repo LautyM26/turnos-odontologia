@@ -7,9 +7,10 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import require_tenant_checked
 from app.api.permissions import require_role
-from app.domain.agenda import servicio
+from app.domain.agenda import horario, servicio
 from app.domain.agenda.models import Prestacion, Profesional, SillonRecurso
 from app.domain.agenda.schemas import (
+    HorarioOut,
     Pagina,
     PrestacionOut,
     ProfesionalOut,
@@ -57,3 +58,9 @@ def prestaciones(session: Sesion, tenant: Tenant, limit: Limit = 50, after_id: A
     return Pagina[PrestacionOut](
         items=[PrestacionOut.model_validate(i) for i in items], next_cursor=cursor
     )
+
+
+@router.get("/profesionales/{row_id}/horario", response_model=HorarioOut)
+def horario_profesional(row_id: int, session: Sesion, tenant: Tenant):  # type: ignore[no-untyped-def]
+    """Horario de atención (C-05d) con la zona horaria de la clínica; [] si no tiene franjas."""
+    return horario.obtener_horario(session, tenant, row_id)

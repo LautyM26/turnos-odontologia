@@ -12,13 +12,15 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import require_tenant_checked
 from app.api.permissions import require_admin
-from app.domain.agenda import servicio
+from app.domain.agenda import horario, servicio
 from app.domain.agenda.models import Bloqueo, Prestacion, Profesional, SillonRecurso
 from app.domain.agenda.schemas import (
     BloqueoCreate,
     BloqueoOut,
     BloqueoUpdate,
     HabilitacionIn,
+    HorarioIn,
+    HorarioOut,
     Pagina,
     PrestacionCreate,
     PrestacionOut,
@@ -187,6 +189,15 @@ def reemplazar_habilitacion(  # type: ignore[no-untyped-def]
 ):
     fila = servicio.reemplazar_habilitacion(session, tenant, row_id, body.sillon_ids)
     return _profesional_out(session, tenant, fila)
+
+
+@router.put("/profesionales/{row_id}/horario", response_model=HorarioOut)
+def reemplazar_horario(  # type: ignore[no-untyped-def]
+    row_id: int, body: HorarioIn, session: Sesion, tenant: Tenant
+):
+    """Reemplaza el horario de atención completo (C-05d): todo o nada, lista vacía = sin horario."""
+    franjas = [f.model_dump() for f in body.franjas]
+    return horario.reemplazar_horario(session, tenant, row_id, franjas)
 
 
 # --- bloqueos -----------------------------------------------------------------------------

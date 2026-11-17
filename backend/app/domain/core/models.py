@@ -45,6 +45,10 @@ class Clinica(Base, AuditMixin):
     sena_porcentaje: Mapped[float | None] = mapped_column(NumericType(5, 2), nullable=True)
     sena_monto_minimo: Mapped[float | None] = mapped_column(NumericType(12, 2), nullable=True)
     sena_obligatoria: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    #: Zona IANA en que se interpretan las franjas de atención (C-05d D2, migración 012).
+    zona_horaria: Mapped[str] = mapped_column(
+        Text, nullable=False, server_default="America/Argentina/Buenos_Aires"
+    )
     es_seed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     usuarios: Mapped[list["Usuario"]] = relationship(back_populates="clinica")

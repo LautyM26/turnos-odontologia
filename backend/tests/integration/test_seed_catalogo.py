@@ -7,6 +7,7 @@ from sqlalchemy import func, select
 
 from app.domain.agenda.models import (
     Bloqueo,
+    FranjaHoraria,
     Prestacion,
     Profesional,
     ProfesionalSillon,
@@ -44,6 +45,8 @@ def test_seed_doble_deja_1_sillon_1_profesional_y_3_prestaciones(  # type: ignor
             )
         ).all()
         assert list(habilitados) == [sillon.id]
+        # Horario seed (C-05d): lunes a viernes 09–13 y 14–18, sin duplicar al re-ejecutar.
+        assert _contar(session, FranjaHoraria, cid, profesional_id=prof.id) == 10
         assert prof.usuario_id is None and prof.es_seed is True
         duraciones = sorted(
             session.scalars(select(Prestacion.duracion_min).where(Prestacion.clinica_id == cid))
@@ -86,6 +89,7 @@ def test_borrar_seed_conserva_registros_no_seed(session_factory, auth_data) -> N
         assert _contar(session, SillonRecurso, cid, es_seed=True) == 0
         assert _contar(session, Profesional, cid, es_seed=True) == 0
         assert _contar(session, ProfesionalSillon, cid) == 0
+        assert _contar(session, FranjaHoraria, cid) == 0
         assert _contar(session, Bloqueo, cid) == 0
         assert session.get(Prestacion, manual.id).nombre == "Cargada por admin"
 

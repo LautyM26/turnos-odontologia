@@ -34,6 +34,7 @@ from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from app.domain.agenda.bloqueos import bloqueos_solapados
 from app.domain.agenda.duracion import calcular_fin
+from app.domain.agenda.horario import dentro_de_horario
 from app.domain.agenda.models import Prestacion, Profesional, ProfesionalSillon, SillonRecurso
 from app.domain.agenda.servicio import (
     Conflicto,
@@ -276,8 +277,10 @@ def crear_turno(
 
     Orden: pasado (422) -> referencias (422) -> bloqueos/solapamiento (409) -> INSERT; la
     exclusion constraint resuelve la carrera entre requests concurrentes (409 al perdedor).
-    Sobreturno (``datos["sobreturno"]``, C-05c D3): respeta bloqueos pero saltea el chequeo de
-    solapamiento con otros turnos; queda marcado con su motivo (RN-AG-04).
+    Un turno normal además debe caer dentro del horario de atención (C-05d D4; sin franjas no
+    atiende) o responde 409. Sobreturno (``datos["sobreturno"]``, C-05c D3): exceptuado del
+    horario y del solapamiento con otros turnos, pero respeta bloqueos; queda marcado con su
+    motivo (RN-AG-04).
     ``ahora`` se inyecta para tests deterministas (D-A4: ``inicio == ahora`` se acepta).
     """
     inicio: datetime = datos["inicio"]
@@ -286,9 +289,11 @@ def crear_turno(
     prestacion = _validar_referencias(session, clinica_id, datos)
     fin = calcular_fin(inicio, prestacion.duracion_min)
     prof_id, sillon_id = datos["profesional_id"], datos["sillon_id"]
+    es_sobreturno = bool(datos.get("sobreturno", False))
+    if not es_sobreturno and not dentro_de_horario(session, clinica_id, prof_id, inicio, fin):
+        raise TurnoNoDisponible()
     if bloqueos_solapados(session, clinica_id, inicio, fin, prof_id, sillon_id):
         raise TurnoNoDisponible()
-    es_sobreturno = bool(datos.get("sobreturno", False))
     if not es_sobreturno and _hay_turno_solapado(
         session, clinica_id, inicio, fin, prof_id, sillon_id
     ):

@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.domain.agenda.models import (
     Bloqueo,
+    FranjaHoraria,
     Prestacion,
     Profesional,
     ProfesionalSillon,
@@ -26,6 +27,8 @@ from app.infrastructure.persistence.seed_core import SEED_CLINICA_CUIT
 SEED_SILLON_NOMBRE = "Sillón 1 (seed)"
 SEED_PROFESIONAL_NOMBRE = "Profesional Ejemplo (seed)"
 SEED_PROFESIONAL_MATRICULA = "SEED-0001"
+#: Horario seed (C-05d D6): lunes a viernes 09:00–13:00 y 14:00–18:00, en minutos locales.
+SEED_HORARIO = tuple((d, i, f) for d in range(1, 6) for i, f in ((540, 780), (840, 1080)))
 SEED_PRESTACIONES = (
     ("Consulta y diagnóstico (seed)", 30, Decimal("20000.00")),
     ("Limpieza y profilaxis (seed)", 45, Decimal("30000.00")),
@@ -82,6 +85,16 @@ def seed_catalogo(session: Session) -> dict[str, int]:
             ProfesionalSillon(profesional_id=profesional.id, sillon_id=sillon.id, clinica_id=cid)
         )
 
+    tiene_horario = session.scalars(
+        select(FranjaHoraria.id).where(FranjaHoraria.profesional_id == profesional.id)
+    ).first()
+    if tiene_horario is None:  # no pisa un horario que el admin haya cambiado
+        session.add_all(
+            FranjaHoraria(clinica_id=cid, profesional_id=profesional.id, dia_semana=d,
+                          inicio_min=i, fin_min=f)
+            for d, i, f in SEED_HORARIO
+        )  # fmt: skip
+
     for nombre, duracion, precio in SEED_PRESTACIONES:
         existe = session.scalars(
             select(Prestacion.id).where(
@@ -119,6 +132,11 @@ def borrar_seed_catalogo(session: Session, clinica_id: int) -> None:
         delete(Bloqueo).where(
             Bloqueo.clinica_id == clinica_id,
             or_(Bloqueo.profesional_id.in_(ids_prof), Bloqueo.sillon_id.in_(ids_sillon)),
+        )
+    )
+    session.execute(
+        delete(FranjaHoraria).where(
+            FranjaHoraria.clinica_id == clinica_id, FranjaHoraria.profesional_id.in_(ids_prof)
         )
     )
     session.execute(

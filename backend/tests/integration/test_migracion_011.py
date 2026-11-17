@@ -71,9 +71,9 @@ def test_downgrade_a_010_y_reupgrade(cfg, postgres_url) -> None:  # type: ignore
     assert all("NOT es_sobreturno" in d for d in _exclusiones(postgres_url))
 
 
-def test_un_unico_head_encadenado_a_la_010() -> None:
+def test_un_unico_head_y_011_encadenada_a_la_010() -> None:
     from alembic.script import ScriptDirectory
 
     script = ScriptDirectory(str(BACKEND_DIR / "alembic"))
-    assert script.get_heads() == ["011_sobreturno_huecos"]
+    assert len(script.get_heads()) == 1
     assert script.get_revision("011_sobreturno_huecos").down_revision == "010_recetas_externas"

@@ -288,10 +288,17 @@ def turnos_data(session_factory, auth_data, catalogo_data, password_hash):  # ty
     A: P y Q habilitados en S1 y S2 (P NO en S3); R con ``agenda_activa=false`` habilitado en
     S1; pacientes activo/inactivo; prestación inactiva. B: profesional habilitado en su sillón,
     paciente y un recepcionista propio (``recepcion-b@test.test``).
+    Horario (C-05d D6): P, Q, R y el profesional de B atienden 00:00–24:00 los 7 días, así los
+    tests de turnos y huecos no dependen del horario; los de horario usan su propio profesional.
     """
     from decimal import Decimal  # noqa: I001
 
-    from app.domain.agenda.models import Prestacion, Profesional, ProfesionalSillon
+    from app.domain.agenda.models import (
+        FranjaHoraria,
+        Prestacion,
+        Profesional,
+        ProfesionalSillon,
+    )
 
     a, b = catalogo_data["a"], catalogo_data["b"]
     s1, s2, s3 = catalogo_data["sillones"]
@@ -315,6 +322,11 @@ def turnos_data(session_factory, auth_data, catalogo_data, password_hash):  # ty
         session.add_all(
             ProfesionalSillon(clinica_id=c, profesional_id=pr, sillon_id=si)
             for c, pr, si in habilitaciones
+        )
+        session.add_all(
+            FranjaHoraria(clinica_id=c, profesional_id=pr, dia_semana=d, inicio_min=0, fin_min=1440)
+            for c, pr in ((a, p), (a, q), (a, prof_r.id), (b, catalogo_data["prof_b"]))
+            for d in range(1, 8)
         )
         session.commit()
         out = dict(

@@ -1,7 +1,8 @@
 """Huecos libres de un profesional para una prestación (C-05c, design D1/D5, Flujo 1).
 
-Un hueco es un inicio donde un ``POST /api/turnos`` normal respondería 201: profesional libre,
-al menos un sillón habilitado libre, sin bloqueos y no en el pasado. Lo calcula PostgreSQL en
+Un hueco es un inicio donde un ``POST /api/turnos`` normal respondería 201: dentro del horario
+de atención (C-05d), profesional libre, al menos un sillón habilitado libre, sin bloqueos y no
+en el pasado. Lo calcula PostgreSQL en
 una sola consulta con multirangos (``range_agg`` y diferencia de ``tstzmultirange``, PG16 vía
 Context7): misma semántica semiabierta ``[inicio, fin)`` que las exclusion constraints.
 """
@@ -13,6 +14,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.domain.agenda.duracion import calcular_fin
+from app.domain.agenda.horario import SQL_HORARIO_CTE
 from app.domain.agenda.models import Prestacion, Profesional
 from app.domain.agenda.servicio import ReferenciaInvalida
 from app.infrastructure.persistence.repository import BaseRepository
@@ -29,8 +31,9 @@ _DE_CLINICA = "(b.profesional_id IS NULL AND b.sillon_id IS NULL)"
 
 _SQL_HUECOS = text(f"""
 WITH v AS (SELECT tstzrange(:desde, :hasta, '[)') AS r),
+{SQL_HORARIO_CTE},
 libre_prof AS MATERIALIZED (
-    SELECT tstzmultirange(v.r) - coalesce(
+    SELECT (tstzmultirange(v.r) * horario.m) - coalesce(
         (SELECT range_agg(x.rango) FROM (
             SELECT t.rango FROM turno t WHERE {_TURNO_OCUPA} AND t.profesional_id = :p
             UNION ALL
@@ -38,7 +41,7 @@ libre_prof AS MATERIALIZED (
             WHERE {_BLOQUEO_APLICA} AND (b.profesional_id = :p OR {_DE_CLINICA})
         ) x),
         '{{}}'::tstzmultirange) AS m
-    FROM v
+    FROM v, horario
 ),
 libre_sillon AS MATERIALIZED (
     SELECT s.id, tstzmultirange(v.r) - coalesce(

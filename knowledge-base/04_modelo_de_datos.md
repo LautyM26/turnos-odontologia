@@ -30,14 +30,20 @@ Usuario *──* Rol (RBAC) ; Evolucion *──1 Usuario (autor) ; AuditoriaHC r
 ## Entidades
 
 ### Clinica (S)
-- Atributos: id, nombre, CUIT, domicilio, datos fiscales ARCA, moneda (ARS), política de seña
+- Atributos: id, nombre, CUIT, domicilio, datos fiscales ARCA, moneda (ARS), política de seña, zona_horaria (IANA, default America/Argentina/Buenos_Aires; C-05d)
 - Relaciones: 1──* Profesional, Sillon, Paciente, Usuario
 - Constraints: CUIT válido; moneda ARS (precio público en ARS, sin packs)
 
 ### Profesional
 - Atributos: id, clinica_id, nombre, matrícula, especialidad, agenda_activa
-- Relaciones: *──* Sillon (habilitación), 1──* Turno, 1──* Evolucion (autor)
+- Relaciones: *──* Sillon (habilitación), 1──* Turno, 1──* Evolucion (autor), 1──* FranjaHoraria (horario de atención)
 - Índices: (clinica_id, activo)
+
+### FranjaHoraria (C-05d)
+- Atributos: id, clinica_id, profesional_id, dia_semana (1 = lunes … 7 = domingo), inicio_min, fin_min (minutos desde la medianoche local; 1440 = 24:00)
+- Semántica: horario semanal de atención en la zona de la clínica; franjas contiguas forman un tramo. Sin franjas el profesional no atiende (sin huecos ni turnos normales); el sobreturno queda exceptuado. Feriados = bloqueos de clínica.
+- Constraints: 0 ≤ inicio_min < fin_min ≤ 1440; sin superposición en el mismo día (validada al reemplazar el horario completo)
+- Índices: (clinica_id, profesional_id, dia_semana)
 
 ### Sillon/Recurso (recurso de agenda)
 - Atributos: id, clinica_id, nombre, tipo (sillón/box/equipo), activo
