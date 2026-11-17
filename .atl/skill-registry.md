@@ -66,6 +66,8 @@ Project: **Turnos Odontología (SaaS multi-tenant AR)** — Stack: Python + Fast
 | "Creá la skill del dominio X"; before `/opsx:propose` of a change whose area has no `dominio-*` skill; after an RN/DD of an area changes | crear-skill-de-dominio | Generates `dominio-<área>` from KB 05 (RN) filtered by current DDs (09) + hard rules (AGENTS.md), with RN → spec → test traceability matrix | `.claude/skills/crear-skill-de-dominio/SKILL.md` (+ `templates/dominio-template.md`) |
 | Turnos, huecos, solapamientos, bloqueos, sobreturnos, estados del turno, reserva online, agenda UI | dominio-agenda | Current RN-AG + RN-TU rules, hard rules 6/7/8/9/10/13, traceability (4 covered · 3 partial · 3 pending) | `.claude/skills/dominio-agenda/SKILL.md` |
 | Cobros, seña, saldo, anulaciones, Mercado Pago, score de riesgo | dominio-caja | Current RN-CA rules, hard rules 4/7/10/12/17, open assumptions PA-06/SU-07 | `.claude/skills/dominio-caja/SKILL.md` |
+| Historia clínica, ficha, odontograma FDI, evoluciones, correcciones, AuditoriaHC, adjuntos clínicos, RBAC clínico, recall | dominio-clinica | Current RN-CL rules, hard rules 4/7/9/10/14/15/16, open assumption PA-04/SU-08, traceability (1 covered · 1 partial · 3 pending) | `.claude/skills/dominio-clinica/SKILL.md` |
+| Consentimientos firmados, constancia/hash, privacidad, página de cumplimiento, exportación/respaldo, usuarios y roles, receta electrónica vía partner ReNaPDiS | dominio-cumplimiento | Current RN-CU rules, hard rules 4/7/9/10/12/14/15/16/17, open assumptions PA-04/PA-08/SU-08, traceability (0 covered · 2 partial · 3 pending) | `.claude/skills/dominio-cumplimiento/SKILL.md` |
 
 ## Compact Rules
 
@@ -168,6 +170,18 @@ Pre-digested rules per skill. Delegators copy matching blocks into sub-agent pro
 - Anulación only via `require_anulacion_caja()` (admin) with trace; seña only when risk score demands it (threshold undefined in KB → ask).
 - MP account/refund policy is an open assumption (PA-06/SU-07): document the chosen assumption in design.md.
 
+### dominio-clinica
+- HC append-only: no PUT/PATCH/DELETE on evoluciones (405); correction = new row with `corrige_a_id`; author = authenticated odontólogo, timestamp = server (no author → 422).
+- Reuse `fn_rechazar_mutacion()` (migration 004) triggers and extend `AuditoriaHC` CHECKs + writer allowlist; never clinical text in `diff`.
+- RBAC: read `require_clinico()` (admin+odontólogo), write `require_clinico_escritura()` (odontólogo only), `require_vinculo_paciente`; recepción → 403; no consent → 403.
+- FDI MVP: permanent 11–48 (32) + temporary 51–85 (20); fine mixed dentition/BOP are F2.
+
+### dominio-cumplimiento
+- Signed consent = locked document: constancia = server timestamp + IP + user-agent + SHA-256 of the exact versioned text (client never sends hash/date; extra='forbid' → 422); no edit endpoint; DB trigger rejects mutation once `documento_bloqueado`; incomplete signature → 422 retryable, stays pending.
+- No `consentimiento_datos` → 403; recepción → 403 on clinical/consent/receta routes; export and every list = only the caller's tenant (cross-tenant = 0 rows).
+- Receta only via ReNaPDiS-registered partner behind a port/adapter (DD-06): fake adapter for tests/demo, not configured → 501 with clear message; boot never fails without `RECETAS_PARTNER_KEY`; secrets backend env only.
+- Legal texts are seed placeholders marked "a validar con asesoría legal" (PA-04/SU-08). Migrations: 009 = C-18, 010 = C-19, single `alembic heads`.
+
 ### event-store-design
 - Evolución (C-09) is append-only: no UPDATE/DELETE endpoints; corrections are new rows with `corrige_a_id` — same pattern as event-sourced logs.
 - `AuditoriaHC` is an immutable event log (actor, acción, entidad_id, diff, timestamp) with no write endpoint; extend to evoluciones/odontograma via DB trigger/function.
@@ -185,9 +199,9 @@ Pre-digested rules per skill. Delegators copy matching blocks into sub-agent pro
 | C-05b transiciones-estado-turno | docker-testcontainers (concurrency), systematic-debugging; Context7 MCP (SQLAlchemy row locking) | dominio-agenda |
 | C-06 reserva-online-publica | auth-implementation-patterns (public routes/rate-limit), postgresql-optimization, vitest | dominio-agenda, dominio-caja (seña) |
 | C-07 agenda-frontend | typescript-dev, vercel-react-best-practices, vitest, webapp-testing, web-design-guidelines | dominio-agenda |
-| C-08 pacientes-ficha | postgresql-table-design, postgresql-optimization (trgm search), auth-implementation-patterns (RBAC clínico) | — (archived) |
-| C-09 odontograma-evolucion | postgresql-optimization (JSONB), event-store-design, docker-testcontainers | — (generate with crear-skill-de-dominio before propose) |
-| C-10 clinica-frontend | typescript-dev, vercel-react-best-practices, vitest, webapp-testing | — (generate with crear-skill-de-dominio before propose) |
+| C-08 pacientes-ficha | postgresql-table-design, postgresql-optimization (trgm search), auth-implementation-patterns (RBAC clínico) | — (archived; covered by dominio-clinica) |
+| C-09 odontograma-evolucion | postgresql-optimization (JSONB), event-store-design, docker-testcontainers; Context7 MCP (SQLAlchemy JSONB / Alembic) | dominio-clinica |
+| C-10 clinica-frontend | typescript-dev, vercel-react-best-practices, vitest, webapp-testing | dominio-clinica |
 | C-11 presupuesto-plan | postgresql-table-design, postgresql-optimization (tableros) | — (generate with crear-skill-de-dominio before propose) |
 | C-12 caja-mercadopago | context7-mcp (MP SDK), auth-implementation-patterns (webhook firma/idempotencia), docker-testcontainers | dominio-caja |
 | C-13 factura-arca | context7-mcp (WSFE), postgresql-table-design | — (generate with crear-skill-de-dominio before propose) |
@@ -195,8 +209,8 @@ Pre-digested rules per skill. Delegators copy matching blocks into sub-agent pro
 | C-15 whatsapp-bidireccional | context7-mcp (WhatsApp QR client, DD-10), docker-testcontainers (webhook idempotencia) | — (generate with crear-skill-de-dominio before propose) |
 | C-16 lista-espera-relleno | postgresql-optimization, context7-mcp, docker-testcontainers | dominio-agenda |
 | C-17 chatbot-reprogramacion | context7-mcp, postgresql-optimization | dominio-agenda |
-| C-18 consentimientos-cumplimiento | event-store-design, auth-implementation-patterns (admin RBAC) | — (generate with crear-skill-de-dominio before propose) |
-| C-19 recetas-partner-renapdis | context7-mcp, auth-implementation-patterns (vault/env, 501 sin partner) | — (generate with crear-skill-de-dominio before propose) |
+| C-18 consentimientos-cumplimiento | event-store-design, auth-implementation-patterns (admin RBAC), docker-testcontainers; Context7 MCP (FastAPI StreamingResponse / zipfile) | dominio-cumplimiento |
+| C-19 recetas-partner-renapdis | context7-mcp, auth-implementation-patterns (vault/env, 501 sin partner) | dominio-cumplimiento |
 
 ## MCP Integrations (not skills)
 

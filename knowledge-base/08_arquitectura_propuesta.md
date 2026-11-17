@@ -73,6 +73,8 @@ proyecto/
 | `ARCA_CUIT` | CUIT del consultorio para FE | `30-…-…` | N |
 | `ARCA_CERT` / `ARCA_KEY` | Certificado fiscal | ruta/vault | Y |
 | `RECETAS_PARTNER_KEY` | Partner ReNaPDiS (Farmalink/Innovamed/u otro) | `…` | Y |
+| `RECETAS_PARTNER` | Partner de recetas activo: vacío = no configurado (emitir responde 501); `fake` = simulado solo fuera de producción (C-19) | `fake` | N |
+| `ENTORNO` | `desarrollo`/`test`/`demo`/`produccion` (default `produccion`: bloquea el partner simulado) (C-19) | `desarrollo` | N |
 | `ARS_PRECIO_MENSAJE` | Costo de mensajería expuesto en pesos (transparencia §07) | `12.50` | N |
 | `RESERVA_PREBLOQUEO_MIN` | Expiración del pre-bloqueo de horario sin pago (S, a validar) | `15` | N |
 | `APP_BASE_URL` | URL pública (enlaces de reserva, comprobantes, cumplimiento) | `https://…` | N |

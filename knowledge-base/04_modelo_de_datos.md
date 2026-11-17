@@ -58,8 +58,8 @@ Usuario *──* Rol (RBAC) ; Evolucion *──1 Usuario (autor) ; AuditoriaHC r
 
 ### Ficha (anamnesis) + Evolucion + Odontograma
 - Ficha: id, paciente_id, anamnesis, alergias, antecedentes; adjuntos
-- Evolucion: id, paciente_id, profesional_id (autor), fecha_hora, texto, pieza_relacionada; **append-only, sin edición muda** (Ley 26.529)
-- Odontograma: id, paciente_id, fecha, dentición (permanente/temporal/mixta — FDI), piezas/caras/estados, versionado (el versionado fino es posterior; el FDI básico es MVP)
+- Evolucion: id, paciente_id, autor_usuario_id, profesional_id (autor profesional), fecha_hora (TIMESTAMPTZ del servidor), texto (1–10 000), pieza_fdi (opcional, FDI), corrige_a_id + motivo_correccion (corrección); **append-only, sin edición muda** (Ley 26.529). Corregir = fila nueva con `corrige_a_id` (una sola corrección por evolución; `corregida_por_id` se calcula en la lectura, la original nunca se toca). Triggers + FKs compuestas por tenant (C-09)
+- Odontograma: id, paciente_id, version, dentición (permanente/temporal/mixta — FDI), piezas (JSONB), autor_usuario_id, created_at. **Snapshot completo y append-only por versión** (la vigente = mayor `version`; `UNIQUE (clinica_id, paciente_id, version)`). Forma de `piezas`: objeto disperso por código FDI → `{"16": {"estado": {"codigo", "registro"}, "caras": {"V|L|M|D|O": {"codigo", "registro"}}}}`; `registro` = `existente` | `a_realizar`; estados de pieza `ausente|extraida|extraccion_indicada|corona|endodoncia|implante`, de cara `caries|obturacion|sellador|fractura`; GIN `jsonb_path_ops` para recall/presupuesto (C-11/C-14). El versionado fino (por marca) es posterior (C-09 lo resuelve por snapshot)
 - Adjuntos: radiografías/imágenes simples (DICOM es F2)
 
 ### Presupuesto / PlanTratamiento
@@ -78,12 +78,18 @@ Usuario *──* Rol (RBAC) ; Evolucion *──1 Usuario (autor) ; AuditoriaHC r
 - Etapa 2: cobertura, copago, lotes exportables, RNO generado desde odontograma; luego validación en línea por financiador
 
 ### Consentimiento
-- Atributos: id, paciente_id, tipo, texto, firma (fecha, IP, dispositivo, hash), documento_bloqueado
-- Constraints: firma según Ley 25.506 con constancia (modelo Odonthia)
+- Dos tablas append-only (C-18): **`consentimiento`** (documento: id, clinica_id, paciente_id, `tipo` ∈ catálogo cerrado `tratamiento_general|extraccion|endodoncia|implante|anestesia`, `texto` exacto, `texto_version`, `texto_hash` SHA-256 hex, autor_usuario_id, created_at) y **`consentimiento_firma`** (constancia: `firmado_en` TIMESTAMPTZ del servidor, `ip`, `dispositivo` = user-agent, `texto_hash`, firmante_nombre, firmante_dni 7–8 dígitos, asistido_por_usuario_id).
+- `estado` (`pendiente`/`firmado`) y `documento_bloqueado` se **derivan** de que exista la constancia; firmar = INSERT, nunca UPDATE. `UNIQUE (clinica_id, consentimiento_id)` → una sola firma por documento; triggers `fn_rechazar_mutacion()` + FKs compuestas por tenant.
+- Constraints: firma según Ley 25.506 con constancia (modelo Odonthia); firma electrónica simple, PA-04 abierto
 
-### Usuario / Rol + AuditoriaHC
-- Usuario: id, clinica_id, rol, auth; Rol: permisos por recurso (ver `03_actores_y_roles.md`)
-- AuditoriaHC: quién/qué/cuándo por cada escritura clínica; inmutable
+### RecetaExterna
+- Tabla append-only (C-19, RN-CU-03): **`receta_externa`** (id, clinica_id, paciente_id, `evolucion_id` obligatoria — evolución propia del odontólogo —, `tipo` ∈ `receta|orden_estudio`, `partner`, `simulada`, `id_externo`, `pdf_url` https del partner, `diagnostico` ≤ 500, `items` JSONB 1..10, `clave_idempotencia` UUID, `huella_solicitud` SHA-256, autor_usuario_id, profesional_id, `emitida_en` TIMESTAMPTZ del servidor).
+- Se emite solo vía partner registrado en ReNaPDiS; se guarda el enlace al PDF del partner, no el binario. `UNIQUE (clinica_id, clave_idempotencia)` y `UNIQUE (clinica_id, partner, id_externo)`; FK compuesta a `evolucion` (no se vincula una evolución de otro paciente o clínica); triggers `fn_rechazar_mutacion()`. AuditoriaHC suma la entidad `receta`.
+
+### Usuario / Rol + AuditoriaHC + AuditoriaAdmin
+- Usuario: id, clinica_id, rol, auth; Rol: permisos por recurso (ver `03_actores_y_roles.md`). Administración por API (C-18): alta, listado y reemplazo de roles (`usuario_rol` con `is_active`); la clínica nunca queda sin admin activo
+- AuditoriaHC: quién/qué/cuándo por cada escritura clínica; inmutable. C-18 suma la entidad `consentimiento` y la acción `firmar`
+- AuditoriaAdmin (C-18): eventos sin paciente — `usuario_crear`, `usuario_roles`, `exportar` —; id, clinica_id, actor_usuario_id, accion, entidad_id (nullable), diff (sin email ni contraseña), ip, created_at; inmutable
 
 ### MensajeWhatsApp + ListaEspera
 - Mensaje: id, turno_id, plantilla, dirección (entrante/saliente), estado (enviado/entregado/leído), costo ARS

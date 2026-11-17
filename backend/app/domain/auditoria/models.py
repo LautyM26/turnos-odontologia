@@ -27,8 +27,19 @@ ACCIONES = (
     "descargar",
     "consentimiento_otorgado",
     "consentimiento_revocado",
+    "corregir",
+    "firmar",
 )
-ENTIDADES = ("paciente", "ficha", "adjunto")
+ENTIDADES = (
+    "paciente",
+    "ficha",
+    "adjunto",
+    "odontograma",
+    "evolucion",
+    "consentimiento",
+    "receta",
+)
+ACCIONES_ADMIN = ("usuario_crear", "usuario_roles", "exportar")
 
 
 class AuditoriaHC(Base, TenantMixin):
@@ -55,10 +66,14 @@ class AuditoriaHC(Base, TenantMixin):
         ),
         CheckConstraint(
             "accion IN ('crear','actualizar','leer','descargar',"
-            "'consentimiento_otorgado','consentimiento_revocado')",
+            "'consentimiento_otorgado','consentimiento_revocado','corregir','firmar')",
             name="accion_valida",
         ),
-        CheckConstraint("entidad IN ('paciente','ficha','adjunto')", name="entidad_valida"),
+        CheckConstraint(
+            "entidad IN ('paciente','ficha','adjunto','odontograma','evolucion',"
+            "'consentimiento','receta')",
+            name="entidad_valida",
+        ),
         Index("ix_auditoria_hc_clinica_paciente_id", "clinica_id", "paciente_id", text("id DESC")),
         Index("ix_auditoria_hc_clinica_created", "clinica_id", "created_at"),
     )
@@ -70,6 +85,36 @@ class AuditoriaHC(Base, TenantMixin):
     accion: Mapped[str] = mapped_column(Text, nullable=False)
     entidad: Mapped[str] = mapped_column(Text, nullable=False)
     entidad_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    diff: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'{}'::jsonb")
+    )
+    ip: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class AuditoriaAdmin(Base, TenantMixin):
+    """Evento administrativo inmutable sin paciente: alta de usuarios, roles, exportación (C-18)."""
+
+    __tablename__ = "auditoria_admin"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["clinica_id", "actor_usuario_id"],
+            ["usuario.clinica_id", "usuario.id"],
+            name="fk_auditoria_admin_actor_usuario_id",
+            ondelete="RESTRICT",
+        ),
+        CheckConstraint(
+            "accion IN ('usuario_crear','usuario_roles','exportar')", name="accion_valida"
+        ),
+        Index("ix_auditoria_admin_clinica_created", "clinica_id", "created_at"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
+    actor_usuario_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    accion: Mapped[str] = mapped_column(Text, nullable=False)
+    entidad_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     diff: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, server_default=text("'{}'::jsonb")
     )

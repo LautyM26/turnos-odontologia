@@ -2,7 +2,13 @@
 
 import { describe, expect, it, vi } from "vitest";
 
-import { apiFetch, fetchAll, getAccessToken, getClinicaId, setAccessToken } from "@/shared/api/client";
+import {
+  apiFetch,
+  fetchAll,
+  getAccessToken,
+  getClinicaId,
+  setAccessToken,
+} from "@/shared/api/client";
 
 describe("getClinicaId", () => {
   it("lee el tenant desde import.meta.env", () => {
@@ -105,7 +111,9 @@ describe("fetchAll", () => {
   it("carga recursos independientes en paralelo con Promise.all", async () => {
     const fetchMock = vi.fn().mockImplementation((url: string) =>
       Promise.resolve(
-        new Response(JSON.stringify({ url }), { headers: { "Content-Type": "application/json" } }),
+        new Response(JSON.stringify({ url }), {
+          headers: { "Content-Type": "application/json" },
+        }),
       ),
     );
     vi.stubGlobal("fetch", fetchMock);

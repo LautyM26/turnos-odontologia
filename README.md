@@ -18,6 +18,43 @@ cd frontend && npm install && npm run dev          # UI en :5173
 curl http://localhost:8000/api/health             # {"status":"ok"}
 ```
 
+## Demo clínica (C-10): backend + frontend juntos
+
+Requisitos: Python 3.12+, Node 20+, Docker Desktop. Los usuarios y pacientes son **sintéticos** (nada real).
+Elegí vos las contraseñas: no se versionan.
+
+```bash
+# 1) Base de datos PostgreSQL 16 (puerto 55432 para no chocar con una instalación local en :5432)
+docker run -d --name turnos-demo-pg -p 55432:5432 -e POSTGRES_USER=turnos   -e POSTGRES_PASSWORD=<pass-db> -e POSTGRES_DB=turnos postgres:16-alpine
+
+# 2) Variables (bash; en PowerShell usá $env:NOMBRE="valor")
+export DATABASE_URL=postgresql+psycopg://turnos:<pass-db>@localhost:55432/turnos
+export JWT_SECRET_KEY=<secreto-largo-solo-dev>
+export COOKIE_SECURE=false            # solo dev http local: la cookie de refresh sin flag Secure
+export SEED_DEMO_PASSWORD=<pass-demo> # password de los usuarios de demo
+
+# 3) Migraciones + datos de demo (idempotente: se puede repetir)
+python -m alembic -c backend/alembic.ini upgrade head
+python backend/scripts/seed_demo_clinica.py
+
+# 4) API (:8000) y UI (:5173, proxy /api -> :8000)
+uvicorn app.main:app --app-dir backend --port 8000
+cd frontend && npm install && npm run dev
+```
+
+Abrí http://localhost:5173/login. Usuarios de demo (todos con `SEED_DEMO_PASSWORD`, salvo el admin que usa
+`SEED_ADMIN_PASSWORD` o el fallback dev-only de `seed_core`):
+
+| Usuario | Rol | Qué ve |
+|---------|-----|--------|
+| `odontologo@clinica-piloto.test` | Odontólogo | Todo: ficha, odontograma (marcar y guardar), evoluciones (alta y corrección), adjuntos |
+| `recepcion@clinica-piloto.test` | Recepcionista | Pacientes y datos administrativos; las pestañas clínicas muestran "Sin acceso clínico" |
+| `admin@clinica-piloto.test` | Administrador | Historia clínica en solo lectura (sin controles de escritura) |
+
+Pacientes de demo: `Sintético, Demo Uno/Dos` (con consentimiento) y `Demo Tres` (sin consentimiento: la escritura clínica queda bloqueada).
+Login: máximo 5 intentos por minuto. Tests del frontend: `cd frontend && npm test`. E2E con navegador real:
+`E2E_PASSWORD=<pass-demo> python scripts/e2e/clinica_demo.py` (requiere `pip install playwright` y `python -m playwright install chromium`).
+
 ## Cómo correr los tests
 
 Requisitos: Python 3.12+ y **Docker Desktop corriendo** (los tests de integración levantan
@@ -49,7 +86,46 @@ Tests del change C-05b `transiciones-estado-turno` (estados del turno, historial
 python -m pytest backend/tests/unit/test_turno_transiciones.py backend/tests/integration/test_migracion_006.py   backend/tests/integration/test_turno_transicion_db.py backend/tests/integration/test_turno_transiciones_api.py   backend/tests/integration/test_turno_transiciones_concurrencia.py -v
 ```
 
+Tests del change C-09 `odontograma-evolucion` (odontograma FDI, evoluciones append-only, historia consolidada; Docker Desktop corriendo):
+
+```bash
+python -m pytest backend/tests/unit/test_fdi.py backend/tests/unit/test_clinica_schemas.py backend/tests/unit/test_clinica_errores.py backend/tests/integration/test_migracion_008.py backend/tests/integration/test_clinica_db.py backend/tests/integration/test_odontograma_api.py backend/tests/integration/test_odontograma_concurrencia.py backend/tests/integration/test_evoluciones_api.py backend/tests/integration/test_evoluciones_concurrencia.py backend/tests/integration/test_historia_api.py backend/tests/integration/test_rbac_clinica.py backend/tests/integration/test_clinica_aislamiento.py backend/tests/integration/test_auditoria_writer.py -v
+```
+
+## Tests de C-18
+
+Change C-18 `consentimientos-cumplimiento` (consentimientos con firma y constancia, administración de usuarios, exportación del tenant y páginas legales públicas; Docker Desktop corriendo):
+
+```bash
+python -m pytest backend/tests/unit/test_cumplimiento_hash.py backend/tests/unit/test_cumplimiento_textos.py backend/tests/unit/test_cumplimiento_schemas.py backend/tests/unit/test_cumplimiento_errores.py backend/tests/unit/test_exportacion_csv.py backend/tests/unit/test_usuarios_schemas.py backend/tests/integration/test_migracion_009.py backend/tests/integration/test_cumplimiento_db.py backend/tests/integration/test_auditoria_writer.py backend/tests/integration/test_consentimientos_api.py backend/tests/integration/test_consentimientos_concurrencia.py backend/tests/integration/test_rbac_consentimientos.py backend/tests/integration/test_admin_usuarios_api.py backend/tests/integration/test_usuarios_concurrencia.py backend/tests/integration/test_rbac_admin_cumplimiento.py backend/tests/integration/test_exportacion_api.py backend/tests/integration/test_exportacion_aislamiento.py -v
+npm --prefix frontend test -- tests/legal.test.tsx
+```
+
+Rutas nuevas (ver `/docs`): `POST|GET /api/pacientes/{id}/consentimientos`, `GET .../consentimientos/{cid}`, `POST .../consentimientos/{cid}/firmar`, `GET|POST /api/admin/usuarios`, `PATCH /api/admin/usuarios/{id}/roles`, `GET /api/admin/exportacion?formato=csv`; páginas públicas `/cumplimiento` y `/privacidad`. La migración 009 es `009_consentimientos_cumplimiento`.
+
 > Si tenés un PostgreSQL instalado en Windows ocupando el puerto 5432, `docker compose up db` no puede usarlo. Los tests no lo necesitan (testcontainers usa un puerto libre); para levantar la API a mano usá otro puerto, por ejemplo `docker run -d -p 55432:5432 -e POSTGRES_USER=turnos -e POSTGRES_PASSWORD=<pass> -e POSTGRES_DB=turnos postgres:16-alpine` y `DATABASE_URL=postgresql+psycopg://turnos:<pass>@localhost:55432/turnos`.
+
+## Tests de C-19
+
+Change C-19 `recetas-partner-renapdis` (receta electrónica y órdenes de estudio solo vía partner registrado en ReNaPDiS; partner simulado para desarrollo; Docker Desktop corriendo para los tests de integración):
+
+```bash
+python -m pytest backend/tests/test_settings.py backend/tests/test_env_example.py backend/tests/test_health.py backend/tests/unit/test_recetas_partner.py backend/tests/unit/test_recetas_schemas.py backend/tests/unit/test_recetas_errores.py backend/tests/integration/test_migracion_010.py backend/tests/integration/test_recetas_db.py backend/tests/integration/test_auditoria_writer.py backend/tests/integration/test_recetas_api.py backend/tests/integration/test_recetas_concurrencia.py backend/tests/integration/test_rbac_recetas.py backend/tests/integration/test_exportacion_api.py backend/tests/integration/test_exportacion_aislamiento.py -v
+```
+
+Rutas nuevas (ver `/docs`): `POST|GET /api/pacientes/{id}/recetas` y `GET .../recetas/{rid}`. La migración 010 es `010_recetas_externas`.
+
+### Configurar el partner de recetas
+
+Variables de `backend/.env` (solo backend, nunca `VITE_`; el repo no contiene ningún valor real):
+
+| Variable | Valores | Efecto |
+|---|---|---|
+| `RECETAS_PARTNER` | vacío, `fake` | Vacío = no configurado: emitir responde `501` con un mensaje de configuración y el resto del sistema sigue funcionando. `fake` = partner simulado. |
+| `ENTORNO` | `desarrollo`, `test`, `demo`, `produccion` (default) | Con `produccion`, `fake` queda bloqueado (`501`): una receta simulada nunca puede pasar por válida. |
+| `RECETAS_PARTNER_KEY` | credencial del partner real | Solo env/vault del backend; se enmascara en logs y errores. Vacía = sin credencial. |
+
+`fake` es solo para desarrollo y demo: genera ids `FAKE-...` y enlaces `https://partner-simulado.invalid/...`, y cada receta queda marcada `simulada = true`. El adapter del partner real (PA-08) es un change posterior.
 
 > **¿Vas a continuar el proyecto?** Leé primero [`docs/CONTINUAR.md`](docs/CONTINUAR.md): estado, reparto de changes, entorno y flujo de trabajo.
 

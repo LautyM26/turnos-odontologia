@@ -1,5 +1,6 @@
 """Fixtures PG16 + Alembic para tests de integración (NUNCA SQLite)."""
 
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -323,3 +324,118 @@ def turnos_data(session_factory, auth_data, catalogo_data, password_hash):  # ty
         )  # fmt: skip
     crear_usuario(session_factory, password_hash, b, "recepcion-b@test.test", ["recepcionista"])
     return out
+
+
+# --- C-09: odontograma / evoluciones / historia ---------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def staff_c09(session_factory, auth_data, password_hash):  # type: ignore[no-untyped-def]
+    """Personal sintético de A para C-09 y pacientes (con/sin consentimiento, de B).
+
+    ``o``/``p``: odontólogos vinculados a profesionales distintos; ``sin_prof``: odontólogo sin
+    profesional; ``dueno``: admin+odontólogo vinculado; ``admin_solo``: admin sin odontólogo.
+    Pacientes: ``con``/``sin`` consentimiento (clínica A) y ``b`` (clínica B). Solo sintéticos.
+    """
+    from app.domain.agenda.models import Profesional
+
+    a, b = auth_data["clinica_a"], auth_data["clinica_b"]
+    out: dict = {"a": a, "b": b}
+    for clave, email, roles in (
+        ("o", "c09-o@test.test", ["odontologo"]),
+        ("p", "c09-p@test.test", ["odontologo"]),
+        ("sin_prof", "c09-sinprof@test.test", ["odontologo"]),
+        ("dueno", "c09-dueno@test.test", ["admin", "odontologo"]),
+        ("admin_solo", "c09-admin@test.test", ["admin"]),
+        ("enlace", "c09-enlace@test.test", ["paciente-enlace"]),
+    ):
+        out[clave] = crear_usuario(session_factory, password_hash, a, email, roles)
+        out[f"{clave}_email"] = email
+    with session_factory() as session:
+        for clave in ("o", "p", "dueno"):
+            prof = Profesional(
+                clinica_id=a, nombre=f"Profesional C09 {clave}", matricula=f"C09-{clave}",
+                usuario_id=out[clave],
+            )  # fmt: skip
+            session.add(prof)
+            session.flush()
+            out[f"prof_{clave}"] = prof.id
+        pac_con = paciente_sintetico(a, consentimiento_datos=True)
+        pac_con.consentimiento_datos_at = datetime.now(UTC)
+        pac_sin = paciente_sintetico(a)
+        pac_b = paciente_sintetico(b, consentimiento_datos=True)
+        pac_b.consentimiento_datos_at = datetime.now(UTC)
+        session.add_all([pac_con, pac_sin, pac_b])
+        session.flush()
+        out.update(pac_con=pac_con.id, pac_sin=pac_sin.id, pac_b=pac_b.id)
+        session.commit()
+    return out
+
+
+def nuevo_paciente_c09(session_factory, clinica_id: int, consentimiento: bool = True) -> int:  # type: ignore[no-untyped-def]
+    """Paciente sintético fresco (aislado del resto de tests del módulo)."""
+    pac = paciente_sintetico(clinica_id, consentimiento_datos=consentimiento)
+    if consentimiento:
+        pac.consentimiento_datos_at = datetime.now(UTC)
+    with session_factory() as session:
+        session.add(pac)
+        session.commit()
+        return pac.id
+
+
+# --- C-19: partner de recetas simulado --------------------------------------------------------
+
+
+def con_partner(client, partner):  # type: ignore[no-untyped-def]
+    """Reemplaza la dependencia ``partner_recetas`` del cliente por ``partner`` (sin red)."""
+    from app.api.recetas import partner_recetas
+
+    client.app.dependency_overrides[partner_recetas] = lambda: partner
+    return client
+
+
+@pytest.fixture()
+def fake_partner():  # type: ignore[no-untyped-def]
+    from app.infrastructure.recetas.fake import FakePartner
+
+    return FakePartner()
+
+
+@pytest.fixture()
+def client_recetas(client, fake_partner):  # type: ignore[no-untyped-def]
+    return con_partner(client, fake_partner)
+
+
+def evolucion_sintetica(session_factory, clinica_id, paciente_id, autor_id, profesional_id) -> int:  # type: ignore[no-untyped-def]
+    """Evolución sintética insertada directo en DB (la API de C-09 está probada aparte)."""
+    from app.domain.clinica.models import Evolucion
+
+    with session_factory() as session:
+        evo = Evolucion(
+            clinica_id=clinica_id, paciente_id=paciente_id, autor_usuario_id=autor_id,
+            profesional_id=profesional_id, texto="Control sintetico",
+        )  # fmt: skip
+        session.add(evo)
+        session.commit()
+        return evo.id
+
+
+def receta_sintetica(  # type: ignore[no-untyped-def]
+    session_factory, clinica_id, paciente_id, evolucion_id, autor_id, prof_id
+) -> int:
+    """Receta simulada insertada directo en DB (para exportación y aislamiento)."""
+    from uuid import uuid4
+
+    from app.domain.recetas.models import RecetaExterna
+
+    with session_factory() as session:
+        rec = RecetaExterna(
+            clinica_id=clinica_id, paciente_id=paciente_id, evolucion_id=evolucion_id,
+            tipo="receta", partner="fake", simulada=True, id_externo=f"FAKE-{uuid4()}",
+            pdf_url="https://partner-simulado.invalid/r.pdf", diagnostico="Dx sintetico",
+            items=[{"nombre_generico": "ibuprofeno"}], clave_idempotencia=uuid4(),
+            huella_solicitud="a" * 64, autor_usuario_id=autor_id, profesional_id=prof_id,
+        )  # fmt: skip
+        session.add(rec)
+        session.commit()
+        return rec.id

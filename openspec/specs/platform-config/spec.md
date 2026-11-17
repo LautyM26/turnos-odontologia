@@ -36,7 +36,7 @@ El repo SHALL NOT contener secretos (tokens, keys, certificados, URLs con creden
 
 ### Requirement: Tenant header en cliente HTTP
 
-El cliente HTTP del frontend SHALL enviar el header de tenant (`X-Clinica-Id`) en cada request a la API, tomado de configuración `VITE_`-prefixed (nunca tokens), como base del aislamiento multi-tenant de C-02.
+El cliente HTTP del frontend SHALL enviar el header de tenant (`X-Clinica-Id`) en cada request a la API cuando conozca la clínica: primero desde configuración `VITE_`-prefixed (`VITE_CLINICA_ID`, nunca tokens) y, si no está configurada, desde el `tenant_id` de la sesión autenticada. Sin ninguno de los dos SHALL omitir el header; nunca SHALL enviarlo vacío.
 
 #### Scenario: Request incluye tenant header
 
@@ -47,3 +47,44 @@ El cliente HTTP del frontend SHALL enviar el header de tenant (`X-Clinica-Id`) e
 
 - **WHEN** se inspecciona el bundle frontend y sus env vars
 - **THEN** solo existen vars `VITE_`-prefixed (base URL + tenant); ningún secret de backend está presente.
+
+#### Scenario: Tenant desde la sesión
+
+- **GIVEN** `VITE_CLINICA_ID` sin configurar y una sesión cuyo `tenant_id` es 1
+- **WHEN** el frontend pide `/api/pacientes`
+- **THEN** el request incluye `X-Clinica-Id: 1`.
+
+#### Scenario: Sin tenant conocido (borde)
+
+- **GIVEN** `VITE_CLINICA_ID` sin configurar y ninguna sesión iniciada
+- **WHEN** el frontend llama a `POST /api/auth/login`
+- **THEN** el request no incluye el header `X-Clinica-Id`.
+
+### Requirement: Configuración del partner de recetas
+
+El sistema SHALL leer de variables de entorno el partner de recetas (`RECETAS_PARTNER`), su credencial (`RECETAS_PARTNER_KEY`, opcional y tratada como secreta) y el entorno de ejecución (`ENTORNO`, por defecto `produccion`); SHALL arrancar aunque falten la credencial o el partner, y SHALL NOT usar el partner simulado cuando `ENTORNO = produccion`.
+
+#### Scenario: Arranque sin credencial
+
+- **WHEN** el backend arranca sin `RECETAS_PARTNER` ni `RECETAS_PARTNER_KEY`
+- **THEN** la app arranca, `/api/health` responde `200` y solo la emisión de recetas responde `501`.
+
+#### Scenario: Credencial vacía en el archivo de entorno
+
+- **WHEN** el archivo de entorno trae `RECETAS_PARTNER_KEY=` (vacía)
+- **THEN** el arranque no falla y la credencial se considera ausente.
+
+#### Scenario: Credencial nunca expuesta (borde)
+
+- **WHEN** se serializan o loguean los settings
+- **THEN** la credencial aparece enmascarada y nunca en texto plano, y no existe ninguna variable `VITE_` relacionada con recetas.
+
+#### Scenario: Valor de partner desconocido (borde)
+
+- **WHEN** `RECETAS_PARTNER` tiene un valor que no corresponde a ningún adapter
+- **THEN** la app arranca, registra una advertencia y la emisión responde `501`.
+
+#### Scenario: Ejemplo de entorno de desarrollo
+
+- **WHEN** un desarrollador lee `backend/.env.example`
+- **THEN** encuentra `RECETAS_PARTNER=fake`, `ENTORNO=desarrollo` y `RECETAS_PARTNER_KEY` con un placeholder, sin ningún valor real.

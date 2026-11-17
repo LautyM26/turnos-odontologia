@@ -286,7 +286,7 @@ def test_auditoria_checks_y_fk(session_factory, auth_data) -> None:  # type: ign
     for cambio in (
         {"u": None},
         {"ac": "borrar"},
-        {"e": "evolucion"},
+        {"e": "entidad_inexistente"},  # válidas: ver ENTIDADES (C-09, C-18)
         {"at": "bot"},
         {"c": b},
         {"u": actor_b},

@@ -13,9 +13,17 @@ Escrito el 2026-11-16 por Matheo (con Claude Code). Explica el estado actual, c�
 | **C-05b `transiciones-estado-turno`** | ✅ archivado (615 tests en verde) | `openspec/changes/archive/2026-11-16-transiciones-estado-turno/` |
 | C-05c `huecos-y-sobreturnos` | 📝 propuesto, **sin implementar** (lo sigue Matheo) | `openspec/changes/huecos-y-sobreturnos/` |
 | C-05d `horario-atencion` | ⏳ en el roadmap, sin proponer (Matheo) | `CHANGES.md` |
-| Resto (C-06 … C-19) | ⏳ pendientes | `CHANGES.md` |
+| **C-09 `odontograma-evolucion`** | ✅ archivado 2026-11-17 (813 tests) | `openspec/changes/archive/2026-11-17-odontograma-evolucion/` |
+| **C-10 `clinica-frontend`** | ✅ archivado 2026-11-17 (vitest 202 + E2E Playwright con capturas) | `openspec/changes/archive/2026-11-17-clinica-frontend/` |
+| **C-18 `consentimientos-cumplimiento`** | ✅ archivado 2026-11-17 (1057 tests) | `openspec/changes/archive/2026-11-17-consentimientos-cumplimiento/` |
+| **C-19 `recetas-partner-renapdis`** | ✅ archivado 2026-11-17 (1184 tests) | `openspec/changes/archive/2026-11-17-recetas-partner-renapdis/` |
+| Resto (C-06, C-07, C-11 … C-17) | ⏳ pendientes | `CHANGES.md` |
 
-**TPI:** con 3 integrantes el mínimo es de 6 changes. Ya hay **7 archivados**. Cada change nuevo suma, y todos tenemos que poder explicar el que hicimos.
+**TPI:** con 3 integrantes el mínimo es de 6 changes. Ya hay **11 archivados**. Cada change nuevo suma, y todos tenemos que poder explicar el que hicimos.
+
+**Migraciones tomadas:** 007 reservada (C-05c), 008 C-09, 009 C-18, 010 C-19 (head actual: `010_recetas_externas`). Si C-05c mergea, re-apuntar el `down_revision` de su 007 o de la 008 para que `python -m alembic -c backend/alembic.ini heads` muestre un único head (correrlo desde la raíz).
+
+**Frontend:** C-10 agregó el login, el router de datos (`frontend/src/router.tsx`, ya no existe `App.tsx`) y las rutas protegidas. C-07 (agenda) debe agregar `/agenda` dentro del layout autenticado, reutilizando ese shell. Demo: `backend/scripts/seed_demo_clinica.py` (usuarios `@clinica-piloto.test`, contraseña por `SEED_DEMO_PASSWORD`), ver README §"Demo clínica".
 
 **Skill propia y MCP (obligatorios en el TPI):** ya están hechos y documentados en `docs/skills-mcp/`. Cada uno los usa en su change (ver la sección 4). Eso aporta evidencia de uso para el video.
 
@@ -29,11 +37,8 @@ Changes que **no dependen** de C-05c/C-05d y se pueden hacer ya (sus dependencia
 
 | Change | Depende de | Sugerencia | Skill de dominio a generar antes de proponer |
 |---|---|---|---|
-| **C-09 `odontograma-evolucion`** | C-08 ✓ | Integrante A | `dominio-clinica` (RN-CL) |
-| **C-10 `clinica-frontend`** | C-09 | Integrante A (después de C-09) | `dominio-clinica` |
+| ~~C-09, C-10, C-18, C-19~~ | ✅ ya archivados (Lautaro, 2026-11-17) | — | `dominio-clinica` y `dominio-cumplimiento` ya existen |
 | **C-15 `whatsapp-bidireccional`** | C-05 (alta + estados ✓) | Integrante B | `dominio-whatsapp` (RN-WA + RN-TU-02/03) |
-| **C-18 `consentimientos-cumplimiento`** | C-03 ✓ + C-09 | Integrante B (cuando A archive C-09) | `dominio-cumplimiento` (RN-CU) |
-| C-19 `recetas-partner-renapdis` | C-08 ✓ + C-09 | Quien termine primero | `dominio-cumplimiento` |
 
 Notas:
 

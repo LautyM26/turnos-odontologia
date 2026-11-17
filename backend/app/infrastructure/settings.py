@@ -1,8 +1,9 @@
 """Application settings loaded from environment (12 vars documented in .env.example)."""
 
 from pathlib import Path
+from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -65,6 +66,29 @@ class Settings(BaseSettings):
         le=26214400,
         description="Tamaño máximo de un adjunto en bytes (default 10 MiB, tope 25 MiB).",
     )
+    # --- Recetas vía partner ReNaPDiS (C-19, D2). Nada de esto puede impedir el boot. ---
+    recetas_partner: str = Field(
+        default="",
+        description="Partner de recetas: vacío = no configurado (501); 'fake' fuera de producción.",
+    )
+    recetas_partner_key: SecretStr | None = Field(
+        default=None,
+        description="Credencial del partner (solo env backend, enmascarada). Vacía = None.",
+    )
+    entorno: Literal["desarrollo", "test", "demo", "produccion"] = Field(
+        default="produccion",
+        description="Entorno de ejecución; default seguro: el partner simulado queda bloqueado.",
+    )
+
+    @field_validator("recetas_partner", mode="before")
+    @classmethod
+    def _normalizar_partner(cls, value: object) -> object:
+        return value.strip().lower() if isinstance(value, str) else value
+
+    @field_validator("recetas_partner_key", mode="before")
+    @classmethod
+    def _clave_vacia_es_none(cls, value: object) -> object:
+        return None if isinstance(value, str) and not value.strip() else value
 
 
 def get_settings() -> Settings:

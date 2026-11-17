@@ -19,6 +19,9 @@ def _clean_env(monkeypatch: pytest.MonkeyPatch) -> None:
         "RATE_LIMIT_LOGIN",
         "ADJUNTOS_STORAGE_DIR",
         "ADJUNTO_MAX_BYTES",
+        "RECETAS_PARTNER",
+        "RECETAS_PARTNER_KEY",
+        "ENTORNO",
     ):
         monkeypatch.delenv(key, raising=False)
     # Secreto sintético por defecto (32+ chars); los tests de boot-falla lo borran.
@@ -131,3 +134,71 @@ def test_settings_adjunto_max_bytes_fuera_de_rango(
 
     with pytest.raises(ValidationError):
         Settings()
+
+
+# --- C-19 1.1: configuración del partner de recetas (D2) ------------------------------------
+
+
+def test_settings_recetas_defaults_seguros(monkeypatch: pytest.MonkeyPatch) -> None:
+    _clean_env(monkeypatch)
+    from app.infrastructure.settings import Settings
+
+    settings = Settings()
+    assert settings.recetas_partner == ""
+    assert settings.recetas_partner_key is None
+    assert settings.entorno == "produccion"
+
+
+def test_settings_recetas_key_vacia_en_dotenv_es_none(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    _clean_env(monkeypatch)
+    env = tmp_path / "sintetico.env"
+    env.write_text("\n".join(["RECETAS_PARTNER_KEY=", "RECETAS_PARTNER=", "ENTORNO=desarrollo"]))
+    from app.infrastructure.settings import Settings
+
+    settings = Settings(_env_file=env)  # type: ignore[call-arg]
+    assert settings.recetas_partner_key is None
+    assert settings.entorno == "desarrollo"
+
+
+def test_settings_recetas_key_con_valor_no_aparece_en_repr(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _clean_env(monkeypatch)
+    monkeypatch.setenv("RECETAS_PARTNER_KEY", "clave-sintetica-no-real-123")
+    from app.infrastructure.settings import Settings
+
+    settings = Settings()
+    assert settings.recetas_partner_key is not None
+    assert settings.recetas_partner_key.get_secret_value() == "clave-sintetica-no-real-123"
+    assert "clave-sintetica-no-real-123" not in repr(settings)
+    assert "clave-sintetica-no-real-123" not in str(settings)
+
+
+def test_settings_recetas_partner_se_normaliza(monkeypatch: pytest.MonkeyPatch) -> None:
+    _clean_env(monkeypatch)
+    monkeypatch.setenv("RECETAS_PARTNER", "  FAKE ")
+    from app.infrastructure.settings import Settings
+
+    assert Settings().recetas_partner == "fake"
+
+
+def test_settings_entorno_invalido_falla(monkeypatch: pytest.MonkeyPatch) -> None:
+    _clean_env(monkeypatch)
+    monkeypatch.setenv("ENTORNO", "staging")
+    from app.infrastructure.settings import Settings
+
+    with pytest.raises(ValidationError):
+        Settings()
+
+
+@pytest.mark.parametrize("entorno", ["desarrollo", "test", "demo", "produccion"])
+def test_settings_entorno_valores_permitidos(
+    monkeypatch: pytest.MonkeyPatch, entorno: str
+) -> None:
+    _clean_env(monkeypatch)
+    monkeypatch.setenv("ENTORNO", entorno)
+    from app.infrastructure.settings import Settings
+
+    assert Settings().entorno == entorno

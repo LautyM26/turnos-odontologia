@@ -61,3 +61,20 @@ def test_frontend_env_example_only_vite_vars() -> None:
             continue
         key = stripped.split("=", 1)[0].strip()
         assert key.startswith("VITE_"), f"var no-VITE_ en frontend: {key}"
+
+
+def test_backend_env_example_recetas_c19() -> None:
+    """C-19 1.2: partner simulado solo para desarrollo; credencial con placeholder."""
+    lineas = {
+        linea.split("=", 1)[0].strip(): linea.split("=", 1)[1].strip()
+        for linea in BACKEND_EXAMPLE.read_text(encoding="utf-8").splitlines()
+        if "=" in linea and not linea.strip().startswith("#")
+    }
+    assert lineas["RECETAS_PARTNER"] == "fake"
+    assert lineas["ENTORNO"] == "desarrollo"
+    assert "changeme" in lineas["RECETAS_PARTNER_KEY"]
+
+
+def test_frontend_env_example_sin_vars_de_recetas() -> None:
+    content = FRONTEND_EXAMPLE.read_text(encoding="utf-8").upper()
+    assert "RECETA" not in content

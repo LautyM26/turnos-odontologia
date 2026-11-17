@@ -8,12 +8,16 @@ from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 
 from app.api.admin_catalogo import router as admin_catalogo_router
+from app.api.admin_cumplimiento import router as admin_cumplimiento_router
 from app.api.auth import router as auth_router
 from app.api.bloqueos_propios import router as bloqueos_propios_router
 from app.api.catalogo import router as catalogo_router
+from app.api.consentimientos import router as consentimientos_router
 from app.api.health import router as health_router
+from app.api.historia_clinica import router as historia_clinica_router
 from app.api.pacientes import router as pacientes_router
 from app.api.permissions import set_resolver_agenda_propia, set_resolver_vinculo_paciente
+from app.api.recetas import router as recetas_router
 from app.api.turnos import router as turnos_router
 from app.domain.agenda.servicio import CatalogoError, profesional_de_usuario
 from app.domain.auth.ratelimit import RETRY_AFTER_S, LoginEmailMiddleware, limiter
@@ -78,6 +82,10 @@ def create_app() -> FastAPI:
     app.include_router(bloqueos_propios_router)
     app.include_router(catalogo_router)
     app.include_router(pacientes_router)
+    app.include_router(historia_clinica_router)
+    app.include_router(consentimientos_router)
+    app.include_router(admin_cumplimiento_router)
+    app.include_router(recetas_router)
     app.include_router(turnos_router)
     return app
 
