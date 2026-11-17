@@ -9,11 +9,14 @@ BACKEND_REQUIRED = [
     "DATABASE_URL",
     "MP_ACCESS_TOKEN",
     "MP_WEBHOOK_SECRET",
-    # Bloque WhatsApp QR (decisión usuario 2026-10-08, contradice DD-02/API oficial).
-    "WHATSAPP_SESSION_DIR",
-    "WHATSAPP_RECONNECT",
-    "WHATSAPP_BACKUP_DIR",
-    "WHATSAPP_PHONE_NUMBER",
+    # WhatsApp por sesión QR vía gateway (DD-10, C-15 D10).
+    "WHATSAPP_GATEWAY",
+    "WHATSAPP_GATEWAY_URL",
+    "WHATSAPP_GATEWAY_API_KEY",
+    "WHATSAPP_WEBHOOK_HMAC_KEY",
+    "WHATSAPP_RECORDATORIO_HORAS",
+    "WHATSAPP_MAX_INTENTOS",
+    "WHATSAPP_ENVIOS_POR_MINUTO",
     "ARCA_CUIT",
     "ARCA_CERT",
     "ARCA_KEY",
@@ -81,3 +84,28 @@ def test_backend_env_example_recetas_c19() -> None:
 def test_frontend_env_example_sin_vars_de_recetas() -> None:
     content = FRONTEND_EXAMPLE.read_text(encoding="utf-8").upper()
     assert "RECETA" not in content
+
+
+def _lineas_backend() -> dict[str, str]:
+    return {
+        linea.split("=", 1)[0].strip(): linea.split("=", 1)[1].strip()
+        for linea in BACKEND_EXAMPLE.read_text(encoding="utf-8").splitlines()
+        if "=" in linea and not linea.strip().startswith("#")
+    }
+
+
+def test_backend_env_example_whatsapp_c15() -> None:
+    """C-15 1.2: gateway simulado en desarrollo, placeholders y sin las vars muertas."""
+    lineas = _lineas_backend()
+    assert lineas["WHATSAPP_GATEWAY"] == "fake"
+    assert lineas["WHATSAPP_GATEWAY_URL"].startswith("http://")
+    assert "changeme" in lineas["WHATSAPP_GATEWAY_API_KEY"]
+    assert "changeme" in lineas["WHATSAPP_WEBHOOK_HMAC_KEY"]
+    assert lineas["WHATSAPP_RECORDATORIO_HORAS"] == "24"
+    for muerta in ("WHATSAPP_SESSION_DIR", "WHATSAPP_RECONNECT", "WHATSAPP_BACKUP_DIR",
+                   "WHATSAPP_PHONE_NUMBER"):
+        assert muerta not in lineas
+
+
+def test_frontend_env_example_sin_vars_de_whatsapp() -> None:
+    assert "WHATSAPP" not in FRONTEND_EXAMPLE.read_text(encoding="utf-8").upper()

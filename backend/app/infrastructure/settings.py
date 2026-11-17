@@ -1,5 +1,6 @@
 """Application settings loaded from environment (12 vars documented in .env.example)."""
 
+from decimal import Decimal
 from pathlib import Path
 from typing import Literal
 
@@ -94,13 +95,44 @@ class Settings(BaseSettings):
         default="produccion",
         description="Entorno de ejecución; default seguro: el partner simulado queda bloqueado.",
     )
+    # --- WhatsApp por sesión QR vía gateway (C-15, D10, DD-10). Nada impide el boot. ---
+    whatsapp_gateway: str = Field(
+        default="",
+        description="Gateway QR: vacío = no configurado (501); 'fake' fuera de producción; 'waha'.",
+    )
+    whatsapp_gateway_url: str = Field(default="", description="URL base del gateway (WAHA).")
+    whatsapp_gateway_api_key: SecretStr | None = Field(
+        default=None, description="X-Api-Key del gateway (solo env backend). Vacía = None."
+    )
+    whatsapp_webhook_hmac_key: SecretStr | None = Field(
+        default=None, description="Secreto HMAC-SHA512 de los eventos del gateway. Vacío = None."
+    )
+    whatsapp_recordatorio_horas: int = Field(
+        default=24, ge=1, le=72, description="Ventana del recordatorio previo al turno (SU-04)."
+    )
+    whatsapp_max_intentos: int = Field(
+        default=3, ge=1, le=10, description="Intentos máximos de envío de un recordatorio."
+    )
+    whatsapp_envios_por_minuto: int = Field(
+        default=20, ge=1, le=60, description="Ritmo máximo de envío por sesión (riesgo de bloqueo)."
+    )
+    ars_precio_mensaje: Decimal = Field(
+        default=Decimal("0.00"),
+        ge=0,
+        max_digits=12,
+        decimal_places=2,
+        description="Costo interno por mensaje saliente en ARS (RN-WA-02, NUMERIC).",
+    )
 
-    @field_validator("recetas_partner", mode="before")
+    @field_validator("recetas_partner", "whatsapp_gateway", mode="before")
     @classmethod
     def _normalizar_partner(cls, value: object) -> object:
         return value.strip().lower() if isinstance(value, str) else value
 
-    @field_validator("recetas_partner_key", mode="before")
+    @field_validator(
+        "recetas_partner_key", "whatsapp_gateway_api_key", "whatsapp_webhook_hmac_key",
+        mode="before",
+    )  # fmt: skip
     @classmethod
     def _clave_vacia_es_none(cls, value: object) -> object:
         return None if isinstance(value, str) and not value.strip() else value

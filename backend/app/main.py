@@ -21,6 +21,7 @@ from app.api.permissions import set_resolver_agenda_propia, set_resolver_vinculo
 from app.api.publico import router as publico_router
 from app.api.recetas import router as recetas_router
 from app.api.turnos import router as turnos_router
+from app.api.whatsapp import router as whatsapp_router
 from app.domain.agenda.servicio import CatalogoError, profesional_de_usuario
 from app.domain.auth.ratelimit import RETRY_AFTER_S, LoginEmailMiddleware, limiter
 from app.domain.pacientes.servicios import PacienteError
@@ -91,6 +92,7 @@ def create_app() -> FastAPI:
     app.include_router(turnos_router)
     app.include_router(agenda_router)
     app.include_router(publico_router)
+    app.include_router(whatsapp_router)
     return app
 
 

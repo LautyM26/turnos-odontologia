@@ -24,7 +24,7 @@ from tests.integration.conftest import (
 
 PNG = b"\x89PNG\r\n\x1a\n" + b"sintetico" * 20
 
-#: CSV -> tabla (las 17 entidades de D5 + recetas de C-19).
+#: CSV -> tabla (las 17 entidades de D5 + recetas de C-19 + WhatsApp de C-15).
 CSVS = {
     "pacientes": "paciente", "fichas": "ficha_version", "adjuntos": "adjunto",
     "odontogramas": "odontograma", "evoluciones": "evolucion",
@@ -34,6 +34,7 @@ CSVS = {
     "profesional_sillones": "profesional_sillon", "bloqueos": "bloqueo",
     "usuarios": "usuario", "usuario_roles": "usuario_rol", "auditoria_hc": "auditoria_hc",
     "recetas": "receta_externa",
+    "mensajes_whatsapp": "mensaje_whatsapp", "whatsapp_sesiones": "whatsapp_sesion",
 }  # fmt: skip
 
 
@@ -304,3 +305,25 @@ def test_recetas_csv_con_filas_de_la_clinica_y_items_json(client, auth_data, his
     fila = filas[1]
     assert fila[enc.index("simulada")] == "true"
     assert "ibuprofeno" in fila[enc.index("items")]
+
+
+def test_mensajes_whatsapp_incluidos_y_aislados(client, session_factory, auth_data) -> None:  # type: ignore[no-untyped-def]
+    """C-15 8.1: mensajes_whatsapp.csv trae solo los de la clínica, con conteo en el manifest."""
+    from app.domain.whatsapp.models import MensajeWhatsApp
+
+    a, b = auth_data["clinica_a"], auth_data["clinica_b"]
+    with session_factory() as s:
+        for clinica, n in ((a, 2), (b, 1)):
+            for i in range(n):
+                s.add(MensajeWhatsApp(
+                    clinica_id=clinica, direccion="entrante", estado="recibido",
+                    intencion="desconocida", telefono=f"+549110000{clinica:02d}{i:02d}",
+                    texto="hola sintetico",
+                ))  # fmt: skip
+        s.commit()
+    zf = _leer_zip(_exportar(client, bearer(client, auth_data["admin_email"])))
+    filas = _filas(zf, "mensajes_whatsapp")
+    enc = filas[0]
+    assert len(filas) - 1 == 2
+    assert {fila[enc.index("clinica_id")] for fila in filas[1:]} == {str(a)}
+    assert json.loads(zf.read("manifest.json"))["conteos"]["mensajes_whatsapp"] == 2

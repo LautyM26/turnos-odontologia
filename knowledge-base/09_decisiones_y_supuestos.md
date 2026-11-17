@@ -110,7 +110,7 @@
 ### SU-07 — Pagos y mensajes: supuestos Sprint 1 (PA-05/PA-06 ABIERTOS)
 **Supuesto**: quién gestiona y asume el costo del canal WhatsApp (por DD-10 ya no hay BSP/plantillas oficiales: queda el número dedicado y su operación) y la cuenta de Mercado Pago (titularidad, credenciales, reembolsos) queda como supuesto a definir en Sprint 1.
 **Origen**: respuesta usuario ronda 1 — "queda como supuesto para el Sprint 1".
-**Plan de validación (Sprint 1)**: definir BSP y quién paga cada tipo de plantilla (costo ARS a exponer); definir cuenta MP (¿profesional directo?), credenciales y política de reembolso ante cancelación.
+**Plan de validación (Sprint 1)**: definir quién opera y paga el número dedicado y la infraestructura de sesión QR (costo ARS interno a exponer, RN-WA-02; *corregido 2026-11-17: decía "BSP y quién paga cada tipo de plantilla", previo a DD-10*); definir cuenta MP (¿profesional directo?), credenciales y política de reembolso ante cancelación.
 
 ### SU-08 — Legal y recetas: supuestos Sprint 1 (PA-04/PA-08 ABIERTOS)
 **Supuesto**: encuadre normativo (leyes 26.529, 25.326, 25.506, 27.553 + DNU 345/2024, Res. 1959/2024 y 2214/2025, ley 27.706, facturación ARCA) a validar con asesoría legal; receta ReNaPDIS temprana vía partner.

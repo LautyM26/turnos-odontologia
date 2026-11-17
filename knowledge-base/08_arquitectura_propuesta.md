@@ -67,9 +67,11 @@ proyecto/
 | `DATABASE_URL` | Conexión a PostgreSQL (decidido, DD-08) | `postgres://…` | Y |
 | `MP_ACCESS_TOKEN` | Mercado Pago, cobro de seña/saldo a cuenta del profesional | `APP_USR-…` | Y |
 | `MP_WEBHOOK_SECRET` | Firma de webhooks de pago | `whsec_…` | Y |
-| `WHATSAPP_API_TOKEN` | Credencial del cliente de sesión QR (o de la API oficial si se migra en F2); DD-10 | `EAAB…` | Y |
-| `WHATSAPP_PHONE_ID` | Número remitente dedicado (sesión QR) | `54911…` | N |
-| `WHATSAPP_WEBHOOK_VERIFY` | Token de verificación del callback de eventos (sesión QR / futura API oficial) | `…` | Y |
+| `WHATSAPP_GATEWAY` | Gateway de la sesión QR (DD-10, C-15): vacío = apagado, `fake` (no producción), `waha` | `waha` | N |
+| `WHATSAPP_GATEWAY_URL` | URL del gateway QR autoalojado | `http://waha:3000` | N |
+| `WHATSAPP_GATEWAY_API_KEY` | `X-Api-Key` del gateway (= `WAHA_API_KEY`) | `…` | Y |
+| `WHATSAPP_WEBHOOK_HMAC_KEY` | Secreto HMAC-SHA512 con el que el gateway firma los eventos del webhook | `…` | Y |
+| `WHATSAPP_RECORDATORIO_HORAS` / `WHATSAPP_MAX_INTENTOS` / `WHATSAPP_ENVIOS_POR_MINUTO` | Ventana del recordatorio (SU-04), reintentos y ritmo de envío | `24` / `3` / `20` | N |
 | `ARCA_CUIT` | CUIT del consultorio para FE | `30-…-…` | N |
 | `ARCA_CERT` / `ARCA_KEY` | Certificado fiscal | ruta/vault | Y |
 | `RECETAS_PARTNER_KEY` | Partner ReNaPDiS (Farmalink/Innovamed/u otro) | `…` | Y |

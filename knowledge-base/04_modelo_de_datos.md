@@ -99,7 +99,9 @@ Usuario *──* Rol (RBAC) ; Evolucion *──1 Usuario (autor) ; AuditoriaHC r
 - AuditoriaAdmin (C-18): eventos sin paciente — `usuario_crear`, `usuario_roles`, `exportar` —; id, clinica_id, actor_usuario_id, accion, entidad_id (nullable), diff (sin email ni contraseña), ip, created_at; inmutable
 
 ### MensajeWhatsApp + ListaEspera
-- Mensaje: id, turno_id, plantilla, dirección (entrante/saliente), estado (enviado/entregado/leído), costo ARS
+- Mensaje (`mensaje_whatsapp`, C-15): id, clinica_id, turno_id/paciente_id (nullable: una respuesta puede no asociarse a ningún turno), plantilla (texto base), dirección (entrante/saliente), teléfono E.164, texto, estado (pendiente/enviado/entregado/leído/error/recibido), intención (confirmar/cancelar/reprogramar/desconocida, solo entrantes), id_externo (UNIQUE por clínica: idempotencia de eventos), intentos, motivo_error, costo ARS `NUMERIC(12,2)` (entrantes = 0), bandeja (`requiere_atencion`, `resuelto_at/por`)
+- Sesión (`whatsapp_sesion`, C-15): una por clínica (`clinica-<id>`), estado (desconocido/iniciando/escanear_qr/activa/caida/detenida), número vinculado
+- Texto base (`plantilla_wa`, C-15): catálogo global de 5 textos es_AR sembrados por la migración 014
 - ListaEspera: id, prestacion/profesional/sillon, paciente, prioridad, oferta_enviada, estado
 - Constraints: canal WhatsApp por QR con número dedicado (DD-10); costo por mensaje transparente en pesos; estado de sesión QR registrado
 
@@ -107,6 +109,6 @@ Usuario *──* Rol (RBAC) ; Evolucion *──1 Usuario (autor) ; AuditoriaHC r
 
 - Roles base (admin, odontólogo, recepcionista) + matriz mínima de permisos (4 roles confirmados, granularidad tercerizado/sobreturnos — ronda usuario 1, PA-03).
 - Sillón de ejemplo + profesional de ejemplo + prestaciones con duración (fuente: consultorio piloto propio — ronda usuario 1, PA-09; duraciones a cargar desde el piloto).
-- Plantillas WhatsApp aprobadas (recordatorio 24 h, confirmación, cancelación, reprogramación, oferta de hueco).
+- Textos base internos de WhatsApp (recordatorio 24 h, confirmación, cancelación, reprogramación, oferta de hueco); sin aprobación de Meta por DD-10 (sesión QR). *Corregido 2026-11-17: decía "plantillas aprobadas".*
 - Textos legales base: política de privacidad y página de cumplimiento (leyes 26.529, 25.326, 25.506) para adaptar con asesoría legal.
 - Nomenclador base para RNO (etapa 2).

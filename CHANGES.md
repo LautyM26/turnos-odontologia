@@ -288,7 +288,7 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
   - Endpoints públicos (sin auth, con rate limit + captcha/Turnstile): `GET /api/public/disponibilidad?prestacion_id&profesional_id`, `POST /api/public/reservas` (DNI + email/teléfono, crea/encuentra Paciente sin Usuario), `GET /api/public/reservas/{token}` (token único por reserva para ver/cancelar)
   - Pre-bloqueo: crea Turno `reservado` con `hold_expires_at = now() + RESERVA_PREBLOQUEO_MIN` (default 15, SU-04 a validar con piloto); job expira holds sin seña y libera hueco; si `seña_exigida` (riesgo alto o prestación lo exige) → el horario se bloquea recién al confirmar pago (callback de C-12), si no → reserva directa
   - Enlace compartible `/{clinica_slug}/reservar/{token}`; validación DNI/email/tel normalizados en servidor
-  - Migración (número asignado al implementar: el siguiente libre — 006 ya es de C-05b; 008 C-09, 009 C-18, 010 C-19 y 011 C-05c ya están tomados (la 007 quedó sin usar); verificar `alembic heads` con un único head): `hold_expires_at`, `public_token` único en turnos
+  - Migración (número asignado al implementar: el siguiente libre — 006 ya es de C-05b; 008 C-09, 009 C-18, 010 C-19, 011 C-05c, 012 C-05d, 013 C-06 y 014 C-15 ya están tomados (la 007 quedó sin usar); verificar `alembic heads` con un único head): `hold_expires_at`, `public_token` único en turnos
   - Tests: reservar sin cuenta OK, pago no completado libera hueco tras timeout, doble reserva concurrente → 1 gana, sin CUIT no bloquea reserva (factura queda pendiente — RN-AF-02)
 - **Dependencias**: C-05, C-05d (horario de atención para los huecos públicos)
 - **Governance**: ALTO
@@ -366,7 +366,7 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
   - Endpoints: CRUD `/api/presupuestos`, `POST /api/presupuestos/{id}/aceptar` (genera Plan + turnos sugeridos vía motor C-05 respetando bloqueos/solapamientos), `GET /api/seguimiento/no-convertidos|no-agendados|inactivos` (con monto recuperable visible — alimenta C-14)
   - Presupuesto vencido/rechazado sale del seguimiento activo (métrica no-convertido); cambio de plan = nuevo presupuesto versionado (`version`, `reemplaza_a_id`), turnos tomados se re-imputan
   - Montos SIEMPRE ARS, precio público sin packs (RN-PR-03)
-  - Migración (número asignado al implementar: el siguiente libre — 008 C-09, 009 C-18, 010 C-19 y 011 C-05c ya están tomados (la 007 quedó sin usar); verificar `alembic heads` con un único head): tablas presupuesto/plan + índices `(paciente_id, estado)`
+  - Migración (número asignado al implementar: el siguiente libre — 008 C-09, 009 C-18, 010 C-19, 011 C-05c, 012 C-05d, 013 C-06 y 014 C-15 ya están tomados (la 007 quedó sin usar); verificar `alembic heads` con un único head): tablas presupuesto/plan + índices `(paciente_id, estado)`
   - Tests: aceptado genera N turnos sugeridos sin solaparse, no-agendado aparece en seguimiento con monto, versionado re-imputa
 - **Dependencias**: C-09, C-05
 - **Governance**: ALTO
@@ -384,7 +384,7 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
   - Modelos: `Cobro` (turno_id/presupuesto_id, tipo seña/saldo, monto ARS, medio MP, estado pendiente/aprobado/rechazado/reembolsado, id_externo_MP único), `CajaMovimiento` (clinica_id, fecha, concepto, monto, usuario), `RiesgoAusencia` (paciente_id, score, causas: ausencias/cancelaciones tardías)
   - Endpoints: `POST /api/cobros/preferencia` (crea preferencia MP imputada a turno/presupuesto), `POST /api/webhooks/mercadopago` (firma `MP_WEBHOOK_SECRET`, idempotencia por `id_externo_MP`), `POST /api/cobros/{id}/anular` (solo rol autorizado + traza, RN-CA-03), `GET /api/caja/resumen?fecha`
   - Seña bloquea horario (callback confirma Turno reservado); seña obligatoria solo si score alto o prestación lo exige (RN-CA-02); política de reembolso ante cancelación según SU-07/PA-06 (documentar supuesto elegido)
-  - Migración (número asignado al implementar: el siguiente libre — 008 C-09, 009 C-18, 010 C-19 y 011 C-05c ya están tomados (la 007 quedó sin usar); verificar `alembic heads` con un único head): tablas cobro/caja/riesgo + constraint único `id_externo_MP`
+  - Migración (número asignado al implementar: el siguiente libre — 008 C-09, 009 C-18, 010 C-19, 011 C-05c, 012 C-05d, 013 C-06 y 014 C-15 ya están tomados (la 007 quedó sin usar); verificar `alembic heads` con un único head): tablas cobro/caja/riesgo + constraint único `id_externo_MP`
   - Tests: webhook duplicado no duplica cobro, firma inválida → 401, anulación sin rol → 403, score sube tras ausencia
 - **Dependencias**: C-05, C-11
 - **Governance**: CRITICO
@@ -404,7 +404,7 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
   - Servicio `infrastructure/fiscal/arca_client` (WSFE homologación primero): `emitir_desde_cobro(cobro_id)`; sin CUIT configurado → 422 y factura `pendiente` (RN-AF-02); ante caída ARCA → `pendiente` + job con backoff y estado visible (PA-07 a validar)
   - Endpoints: `POST /api/cobros/{id}/facturar`, `GET /api/facturas`, `GET /api/facturas/{id}/pdf` (comprobante con QR)
   - Job `jobs/reintentos_arca.py` + bandeja visible de pendientes/errores
-  - Migración (número asignado al implementar: el siguiente libre — 008 C-09, 009 C-18, 010 C-19 y 011 C-05c ya están tomados (la 007 quedó sin usar); verificar `alembic heads` con un único head): tabla facturas + índice `(estado)`
+  - Migración (número asignado al implementar: el siguiente libre — 008 C-09, 009 C-18, 010 C-19, 011 C-05c, 012 C-05d, 013 C-06 y 014 C-15 ya están tomados (la 007 quedó sin usar); verificar `alembic heads` con un único head): tabla facturas + índice `(estado)`
   - Tests: sin CUIT → 422, cobro emite 1 factura (idempotente), caída ARCA simulada → pendiente + reintento OK
 - **Dependencias**: C-12
 - **Governance**: CRITICO
@@ -438,14 +438,14 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
 > WhatsApp por QR con número dedicado (DD-10, RN-WA-01 modificada 2026-10-08; reemplaza DD-02 "solo API oficial"). Riesgo asumido: bloqueo del número/ToS de Meta, caída de sesión. Mensajería detrás de un puerto/adapter para migrar a API oficial en F2. Costo ARS transparente (RN-WA-02). Operación del número en PA-05/SU-07.
 
 ### [C-15] `whatsapp-bidireccional`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` completado — archivado 2026-11-17 (`openspec/changes/archive/2026-11-17-whatsapp-bidireccional/`, ver `verify.md`). Gateway QR WAHA detrás de `Mensajeria` (fake en tests/demo), migración `014_whatsapp`, runbook `docs/whatsapp-sesion.md`. Variables reales: `WHATSAPP_GATEWAY*` y `WHATSAPP_WEBHOOK_HMAC_KEY` (reemplazan `WHATSAPP_API_TOKEN/PHONE_ID/WEBHOOK_VERIFY` de esta ficha)
 - **Scope**: Recordatorio/confirmación/cancelación bidireccional por WhatsApp (QR, número dedicado) + costos + bandeja de fallos + sesión QR (US-005, Flujo 2, DD-10)
   - Modelos: `MensajeWhatsApp` (turno_id, plantilla, dirección entrante/saliente, estado enviado/entregado/leído/error, costo ARS), `PlantillaWA` (nombre, idioma es_AR, variables; texto base interno, sin aprobación Meta)
   - Puerto `domain/ports/MensajeriaPort` + adapter `infrastructure/whatsapp/qr_client` (sesión QR, número dedicado; env `WHATSAPP_API_TOKEN`, `WHATSAPP_PHONE_ID`): envío de mensajes (recordatorio 24 h — ventana SU-04 a confirmar, confirmación, cancelación); `POST /api/webhooks/whatsapp` (callback de eventos entrantes de la sesión, verificación `WHATSAPP_WEBHOOK_VERIFY`, idempotencia `turno_id + mensaje_id`, interpreta Confirmar/Cancelar/Reprogramar → actualiza Turno + registra costo); adapter intercambiable por API oficial en F2
   - Sesión QR (DD-10): `GET /api/whatsapp/sesion` (estado) y `POST /api/whatsapp/sesion/reconectar` (nuevo QR), monitoreo con alerta a admin si cae, backup/restauración cifrada de la sesión (vault/env backend, nunca en repo ni browser), límite de ritmo de envío, fallback a email/recordatorio manual desde la bandeja de fallos; documentar riesgo de bloqueo Meta/ToS
   - Job `jobs/recordatorios.py` (cron 24 h antes, reintentos con backoff); respuestas actualizan agenda de verdad (RN-TU-03); fallo (número bloqueado/sesión caída) → bandeja de fallos para recepcionista + endpoint `GET /api/whatsapp/fallos`, `GET /api/whatsapp/costos?desde&hasta`
   - Seed: 5 textos base (recordatorio 24 h, confirmación, cancelación, reprogramación, oferta de hueco)
-  - Migración (número asignado al implementar: el siguiente libre — 008 C-09, 009 C-18, 010 C-19 y 011 C-05c ya están tomados (la 007 quedó sin usar); verificar `alembic heads` con un único head): tablas mensajes/plantillas + índice `(turno_id, estado)`
+  - Migración (número asignado al implementar: el siguiente libre — 008 C-09, 009 C-18, 010 C-19, 011 C-05c, 012 C-05d, 013 C-06 y 014 C-15 ya están tomados (la 007 quedó sin usar); verificar `alembic heads` con un único head): tablas mensajes/plantillas + índice `(turno_id, estado)`
   - Tests: respuesta "SI" confirma turno, duplicado de evento no duplica transición, costo registrado en ARS, sesión caída → fallo en bandeja y fallback
 - **Dependencias**: C-05
 - **Governance**: ALTO
@@ -465,7 +465,7 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
   - Servicio: ante cancelación/ausencia/reprogramación (evento de dominio desde C-05) → busca cola por (prestación/profesional/sillón) en prioridad → envía oferta por WA (C-15) "Jue 16:30 con Dra. X, ¿lo tomás? [Sí/No]" → Sí con un tap reasigna Turno (transfiere/exige seña según política) → si expira (timeout SU-04 a definir) ofrece al siguiente; nadie acepta → hueco libre + métrica hora-perdida
   - Endpoints: CRUD `/api/lista-espera`, `POST /api/lista-espera/{id}/ofertar`, bandeja recepcionista `GET /api/lista-espera/bandeja`
   - Idempotencia: doble aceptación simultánea → una sola reasignación efectiva (lock por turno)
-  - Migración (número asignado al implementar: el siguiente libre — 008 C-09, 009 C-18, 010 C-19 y 011 C-05c ya están tomados (la 007 quedó sin usar); verificar `alembic heads` con un único head): tabla lista_espera + índice `(prestacion_id, estado, prioridad)`
+  - Migración (número asignado al implementar: el siguiente libre — 008 C-09, 009 C-18, 010 C-19, 011 C-05c, 012 C-05d, 013 C-06 y 014 C-15 ya están tomados (la 007 quedó sin usar); verificar `alembic heads` con un único head): tabla lista_espera + índice `(prestacion_id, estado, prioridad)`
   - Tests: cancelación dispara oferta al primero, aceptar reasigna, expirar pasa al siguiente, doble aceptar → 1 efectivo
 - **Dependencias**: C-05, C-15
 - **Governance**: MEDIO

@@ -183,7 +183,10 @@ class TurnoTransicion(Base, TenantMixin):
         CheckConstraint(f"desde IN {_ESTADOS_SQL}", name="desde_valido"),
         CheckConstraint(f"hacia IN {_ESTADOS_SQL}", name="hacia_valido"),
         CheckConstraint("motivo IS NULL OR length(motivo) <= 500", name="motivo_largo"),
-        CheckConstraint("actor_tipo IN ('usuario','paciente_enlace')", name="actor_tipo_valido"),
+        CheckConstraint(
+            "actor_tipo IN ('usuario','paciente_enlace','paciente_whatsapp')",
+            name="actor_tipo_valido",
+        ),
         CheckConstraint(
             "(actor_tipo = 'usuario') = (actor_usuario_id IS NOT NULL)", name="actor_coherente"
         ),
@@ -195,7 +198,7 @@ class TurnoTransicion(Base, TenantMixin):
     desde: Mapped[str] = mapped_column(Text, nullable=False)
     hacia: Mapped[str] = mapped_column(Text, nullable=False)
     actor_usuario_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
-    #: ``usuario`` (staff) o ``paciente_enlace`` (cancelación con el token, C-06 D4).
+    #: ``usuario`` (staff), ``paciente_enlace`` (token, C-06 D4) o ``paciente_whatsapp`` (C-15).
     actor_tipo: Mapped[str] = mapped_column(
         Text, nullable=False, default="usuario", server_default="usuario"
     )

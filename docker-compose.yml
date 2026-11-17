@@ -32,5 +32,21 @@ services:
       - "8000:8000"
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
+  # Gateway QR de WhatsApp (C-15, DD-10). Solo arranca con: docker compose --profile whatsapp up -d waha
+  # Riesgo de bloqueo/ToS asumido; operación en docs/whatsapp-sesion.md.
+  waha:
+    profiles: ["whatsapp"]
+    image: devlikeapro/waha:latest-2026.10.1
+    restart: unless-stopped
+    environment:
+      # Misma clave que WHATSAPP_GATEWAY_API_KEY del backend (solo env, nunca en el repo).
+      # Vacía = gateway sin autenticación: solo aceptable en desarrollo (puerto atado a 127.0.0.1).
+      WAHA_API_KEY: ${WHATSAPP_GATEWAY_API_KEY:-}
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - waha_sessions:/app/.sessions
+
 volumes:
   pgdata:
+  waha_sessions:

@@ -68,6 +68,7 @@ Project: **Turnos Odontología (SaaS multi-tenant AR)** — Stack: Python + Fast
 | Cobros, seña, saldo, anulaciones, Mercado Pago, score de riesgo | dominio-caja | Current RN-CA rules, hard rules 4/7/10/12/17, open assumptions PA-06/SU-07 | `.claude/skills/dominio-caja/SKILL.md` |
 | Historia clínica, ficha, odontograma FDI, evoluciones, correcciones, AuditoriaHC, adjuntos clínicos, RBAC clínico, recall | dominio-clinica | Current RN-CL rules, hard rules 4/7/9/10/14/15/16, open assumption PA-04/SU-08, traceability (1 covered · 1 partial · 3 pending) | `.claude/skills/dominio-clinica/SKILL.md` |
 | Consentimientos firmados, constancia/hash, privacidad, página de cumplimiento, exportación/respaldo, usuarios y roles, receta electrónica vía partner ReNaPDiS | dominio-cumplimiento | Current RN-CU rules, hard rules 4/7/9/10/12/14/15/16/17, open assumptions PA-04/PA-08/SU-08, traceability (0 covered · 2 partial · 3 pending) | `.claude/skills/dominio-cumplimiento/SKILL.md` |
+| WhatsApp, sesión QR, recordatorio 24 h, confirmar/cancelar/reprogramar por WA, webhook WA, textos base, costo por mensaje ARS, bandeja de fallos, oferta de hueco, chatbot | dominio-whatsapp | Current RN-WA + RN-TU-02/03 rules (DD-10 QR), hard rules 4/7/9/10/12/14/17, open assumptions SU-04/PA-05/SU-07, traceability (4 covered · 1 partial · 0 pending) | `.claude/skills/dominio-whatsapp/SKILL.md` |
 
 ## Compact Rules
 
@@ -182,6 +183,12 @@ Pre-digested rules per skill. Delegators copy matching blocks into sub-agent pro
 - Receta only via ReNaPDiS-registered partner behind a port/adapter (DD-06): fake adapter for tests/demo, not configured → 501 with clear message; boot never fails without `RECETAS_PARTNER_KEY`; secrets backend env only.
 - Legal texts are seed placeholders marked "a validar con asesoría legal" (PA-04/SU-08). Migrations: 009 = C-18, 010 = C-19, single `alembic heads`.
 
+### dominio-whatsapp
+- Channel = QR session with dedicated number behind `MensajeriaPort` (DD-10); fake adapter in tests; never "official API/approved templates".
+- Confirm/cancel via WA reuses `transicionar_turno` (C-05b); reschedule/offer reuse `buscar_huecos` + `crear_turno` (same 409). Duplicate inbound event never repeats a transition.
+- Cost per message `NUMERIC` ARS from `ARS_PRECIO_MENSAJE`; session down/blocked → failures inbox + email/manual fallback, turn stays unconfirmed.
+- Env names in repo (`WHATSAPP_SESSION_DIR/RECONNECT/BACKUP_DIR/PHONE_NUMBER`) win over KB 08; webhook verification secret to be decided in C-15 design.
+
 ### event-store-design
 - Evolución (C-09) is append-only: no UPDATE/DELETE endpoints; corrections are new rows with `corrige_a_id` — same pattern as event-sourced logs.
 - `AuditoriaHC` is an immutable event log (actor, acción, entidad_id, diff, timestamp) with no write endpoint; extend to evoluciones/odontograma via DB trigger/function.
@@ -206,9 +213,9 @@ Pre-digested rules per skill. Delegators copy matching blocks into sub-agent pro
 | C-12 caja-mercadopago | context7-mcp (MP SDK), auth-implementation-patterns (webhook firma/idempotencia), docker-testcontainers | dominio-caja |
 | C-13 factura-arca | context7-mcp (WSFE), postgresql-table-design | — (generate with crear-skill-de-dominio before propose) |
 | C-14 comercial-frontend | typescript-dev, vercel-react-best-practices, vitest, webapp-testing | dominio-caja (/caja) |
-| C-15 whatsapp-bidireccional | context7-mcp (WhatsApp QR client, DD-10), docker-testcontainers (webhook idempotencia) | — (generate with crear-skill-de-dominio before propose) |
-| C-16 lista-espera-relleno | postgresql-optimization, context7-mcp, docker-testcontainers | dominio-agenda |
-| C-17 chatbot-reprogramacion | context7-mcp, postgresql-optimization | dominio-agenda |
+| C-15 whatsapp-bidireccional | context7-mcp (WhatsApp QR client, DD-10), docker-testcontainers (webhook idempotencia) | dominio-whatsapp, dominio-agenda (transiciones) |
+| C-16 lista-espera-relleno | postgresql-optimization, context7-mcp, docker-testcontainers | dominio-agenda, dominio-whatsapp (oferta por WA) |
+| C-17 chatbot-reprogramacion | context7-mcp, postgresql-optimization | dominio-agenda, dominio-whatsapp |
 | C-18 consentimientos-cumplimiento | event-store-design, auth-implementation-patterns (admin RBAC), docker-testcontainers; Context7 MCP (FastAPI StreamingResponse / zipfile) | dominio-cumplimiento |
 | C-19 recetas-partner-renapdis | context7-mcp, auth-implementation-patterns (vault/env, 501 sin partner) | dominio-cumplimiento |
 

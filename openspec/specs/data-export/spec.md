@@ -7,7 +7,7 @@ Garantiza que el consultorio pueda llevarse en cualquier momento, sin costo ni r
 
 ### Requirement: Exportación completa en ZIP de CSV
 
-El sistema SHALL responder a `GET /api/admin/exportacion?formato=csv` con un archivo ZIP descargable que contenga un CSV por entidad existente del tenant (pacientes, fichas, adjuntos, odontogramas, evoluciones, consentimientos, firmas, turnos, historial de turnos, catálogo, usuarios y auditoría clínica), los archivos de los adjuntos y un `manifest.json`.
+El sistema SHALL responder a `GET /api/admin/exportacion?formato=csv` con un archivo ZIP descargable que contenga un CSV por entidad existente del tenant (pacientes, fichas, adjuntos, odontogramas, evoluciones, consentimientos, firmas, turnos, historial de turnos, catálogo, usuarios, auditoría clínica, mensajes de WhatsApp y sesión de WhatsApp), los archivos de los adjuntos y un `manifest.json`.
 
 #### Scenario: Exportación de una clínica con datos
 
@@ -23,6 +23,12 @@ El sistema SHALL responder a `GET /api/admin/exportacion?formato=csv` con un arc
 
 - **WHEN** se pide `formato=pdf` o un formato desconocido
 - **THEN** el sistema responde `422` indicando que el formato soportado es `csv` y no registra una exportación.
+
+#### Scenario: Mensajes de WhatsApp incluidos y aislados
+
+- **GIVEN** la clínica A tiene 2 mensajes de WhatsApp y la clínica B tiene 1
+- **WHEN** el admin de A exporta
+- **THEN** `mensajes_whatsapp.csv` tiene exactamente 2 filas de datos, ninguna de B, y el manifest declara 2 para `mensajes_whatsapp`.
 
 ### Requirement: Manifest de la exportación
 
