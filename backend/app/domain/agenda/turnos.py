@@ -183,7 +183,10 @@ class TurnoTransicion(Base, TenantMixin):
         CheckConstraint(f"desde IN {_ESTADOS_SQL}", name="desde_valido"),
         CheckConstraint(f"hacia IN {_ESTADOS_SQL}", name="hacia_valido"),
         CheckConstraint("motivo IS NULL OR length(motivo) <= 500", name="motivo_largo"),
-        CheckConstraint("actor_tipo IN ('usuario','paciente_enlace')", name="actor_tipo_valido"),
+        CheckConstraint(
+            "actor_tipo IN ('usuario','paciente_enlace','paciente_whatsapp')",
+            name="actor_tipo_valido",
+        ),
         CheckConstraint(
             "(actor_tipo = 'usuario') = (actor_usuario_id IS NOT NULL)", name="actor_coherente"
         ),
@@ -195,7 +198,7 @@ class TurnoTransicion(Base, TenantMixin):
     desde: Mapped[str] = mapped_column(Text, nullable=False)
     hacia: Mapped[str] = mapped_column(Text, nullable=False)
     actor_usuario_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
-    #: ``usuario`` (staff) o ``paciente_enlace`` (cancelación con el token, C-06 D4).
+    #: ``usuario`` (staff), ``paciente_enlace`` (token, C-06 D4) o ``paciente_whatsapp`` (C-15).
     actor_tipo: Mapped[str] = mapped_column(
         Text, nullable=False, default="usuario", server_default="usuario"
     )
@@ -275,6 +278,26 @@ def _hay_turno_solapado(
         .limit(1)
     )
     return session.scalars(stmt).first() is not None
+
+
+def horario_libre(
+    session: Session,
+    clinica_id: int,
+    inicio: datetime,
+    fin: datetime,
+    profesional_id: int,
+    sillon_id: int,
+) -> bool:
+    """True si un turno normal entraría hoy en ese rango: horario, bloqueos y solapamiento.
+
+    Mismas reglas que el pre-chequeo de ``crear_turno`` (C-16 D9: la lista de espera solo
+    ofrece huecos reservables). La base sigue arbitrando la carrera al crear (409).
+    """
+    return (
+        dentro_de_horario(session, clinica_id, profesional_id, inicio, fin)
+        and not bloqueos_solapados(session, clinica_id, inicio, fin, profesional_id, sillon_id)
+        and not _hay_turno_solapado(session, clinica_id, inicio, fin, profesional_id, sillon_id)
+    )
 
 
 def crear_turno(

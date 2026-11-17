@@ -9,8 +9,10 @@ from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, Request
+from fastapi.responses import JSONResponse
 from pydantic import AwareDatetime
 from slowapi.util import get_remote_address
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.turnos import get_ahora
@@ -22,7 +24,17 @@ from app.domain.agenda.schemas_publicas import (
     ReservaIn,
     ReservaPublicaOut,
 )
+from app.domain.agenda.servicio import NoEncontrado, ReferenciaInvalida
+from app.domain.agenda.turnos import Turno
 from app.domain.auth.ratelimit import limiter
+from app.domain.reprogramacion.schemas import ReprogramarIn
+from app.domain.reprogramacion.servicios import (
+    Ajustes,
+    HorarioOcupado,
+    opciones,
+    reprogramable,
+    reprogramar,
+)
 from app.infrastructure.db import get_session
 from app.infrastructure.settings import get_settings
 
@@ -85,3 +97,52 @@ def ver_reserva(request: Request, token: str, session: Sesion, ahora: Ahora):  #
 @escritura
 def cancelar_reserva(request: Request, token: str, session: Sesion, ahora: Ahora):  # type: ignore[no-untyped-def]
     return reserva_publica.cancelar_por_token(session, token, ahora)
+
+
+# --- Reprogramación por enlace (C-17 D5): mismo servicio que el chatbot de WhatsApp. ---------
+
+
+def _turno_reprogramable(session: Session, token: str, ahora: datetime) -> Turno:
+    turno = session.scalars(
+        select(Turno).where(
+            Turno.token_publico_hash == reserva_publica.hash_token(token),
+            Turno.is_active.is_(True),
+        )
+    ).first()
+    if turno is None:
+        raise NoEncontrado("No encontrado")
+    if not reprogramable(turno, ahora):
+        raise ReferenciaInvalida("El turno no se puede reprogramar")
+    return turno
+
+
+def _horarios(ops: list[dict]) -> list[dict]:  # type: ignore[type-arg]
+    return [{"inicio": o["inicio"], "fin": o["fin"]} for o in ops]  # sin sillones
+
+
+@router.get("/reservas/{token}/opciones", response_model=list[HuecoPublicoOut])
+@lectura
+def opciones_reprogramacion(request: Request, token: str, session: Sesion, ahora: Ahora):  # type: ignore[no-untyped-def]
+    turno = _turno_reprogramable(session, token, ahora)
+    return _horarios(opciones(session, turno, ahora, Ajustes.desde(get_settings())))
+
+
+@router.post("/reservas/{token}/reprogramar", response_model=ReservaPublicaOut)
+@escritura
+def reprogramar_reserva(  # type: ignore[no-untyped-def]
+    request: Request, token: str, body: ReprogramarIn, session: Sesion, ahora: Ahora
+):
+    """Turno nuevo + original cancelado (actor ``paciente_enlace``); el token sigue al nuevo.
+    Horario ocupado al confirmar -> 409 con las alternativas vigentes."""
+    turno = _turno_reprogramable(session, token, ahora)
+    try:
+        reprogramar(session, turno, body.inicio, ahora, Ajustes.desde(get_settings()),
+                    "paciente_enlace", "enlace", exigir_opcion=True)  # fmt: skip
+    except HorarioOcupado as exc:
+        alternativas = [
+            {k: v.isoformat() for k, v in h.items()} for h in _horarios(exc.alternativas)
+        ]
+        return JSONResponse(
+            status_code=409, content={"detail": exc.detail, "alternativas": alternativas}
+        )
+    return reserva_publica.obtener_por_token(session, token, ahora)

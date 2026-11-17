@@ -1,0 +1,190 @@
+datos sintéticos: {'prof': 1, 'sillon': 1, 'prest': 1, 'pac': 1, 'tel': '+5491100000001', 'clinica': 1}
+
+### 1. Recepción crea un turno para dentro de ~20 h
+POST /api/turnos -> 201
+{
+ "id": 1,
+ "profesional_id": 1,
+ "sillon_id": 1,
+ "paciente_id": 1,
+ "prestacion_id": 1,
+ "inicio": "2026-11-18T17:00:00Z",
+ "fin": "2026-11-18T17:30:00Z",
+ "duracion_min": 30,
+ "estado": "reservado",
+ "origen": "mostrador",
+ "es_sobreturno": false,
+ "motivo_sobreturno": null,
+ "created_at": "2026-11-17T21:22:26.491352Z"
+}
+
+### 2. Corre el job de recordatorios (cron)
+recordatorios: 1 enviados, 0 fallidos
+
+### 2b. Segunda corrida: no reenvía
+recordatorios: 0 enviados, 0 fallidos
+
+### 3. Mensajes del turno
+GET /api/whatsapp/mensajes?turno_id=1 -> 200
+[
+ {
+  "id": 1,
+  "turno_id": 1,
+  "paciente_id": 1,
+  "plantilla": "recordatorio_24h",
+  "direccion": "saliente",
+  "telefono": "+5491100000001",
+  "texto": "Hola Demo Uno, te recordamos tu turno en Clinica Piloto Sintetica el 18/11 a las 14:00 con Profesional Ejemplo (seed). Respondé 1 para confirmar, 2 para cancelar o 3 para reprogramar.",
+  "estado": "enviado",
+  "intencion": null,
+  "intentos": 1,
+  "motivo_error": null,
+  "costo_ars": "12.50",
+  "requiere_atencion": false,
+  "resuelto_at": null,
+  "created_at": "2026-11-17T21:22:30.060948Z"
+ }
+]
+
+### 4. El gateway entrega la respuesta 'Sí, confirmo' firmada (sin JWT)
+POST /api/webhooks/whatsapp -> 200
+{
+ "resultado": "confirmado"
+}
+
+### 4b. Mismo evento repetido
+POST /api/webhooks/whatsapp -> 200
+{
+ "resultado": "duplicado"
+}
+
+### 4c. Firma inválida
+POST /api/webhooks/whatsapp -> 401
+{
+ "detail": "Firma inválida"
+}
+
+### 5. Turno después de la respuesta
+GET /api/turnos/1 -> 200
+{
+ "id": 1,
+ "profesional_id": 1,
+ "sillon_id": 1,
+ "paciente_id": 1,
+ "prestacion_id": 1,
+ "inicio": "2026-11-18T17:00:00Z",
+ "fin": "2026-11-18T17:30:00Z",
+ "duracion_min": 30,
+ "estado": "confirmado",
+ "origen": "mostrador",
+ "es_sobreturno": false,
+ "motivo_sobreturno": null,
+ "created_at": "2026-11-17T21:22:26.491352Z"
+}
+
+### 5b. Historial de transiciones
+[('reservado', 'confirmado', 'paciente_whatsapp', None)]
+
+### 6. Texto libre del paciente
+POST /api/webhooks/whatsapp -> 200
+{
+ "resultado": "bandeja"
+}
+
+### 6b. Bandeja de fallos (recepción)
+GET /api/whatsapp/fallos -> 200
+[
+ {
+  "id": 5,
+  "turno_id": 1,
+  "paciente_id": 1,
+  "plantilla": null,
+  "direccion": "entrante",
+  "telefono": "+5491100000001",
+  "texto": "hola, ¿a qué hora era?",
+  "estado": "recibido",
+  "intencion": "desconocida",
+  "intentos": 0,
+  "motivo_error": null,
+  "costo_ars": "0.00",
+  "requiere_atencion": true,
+  "resuelto_at": null,
+  "created_at": "2026-11-17T21:22:33.990064Z",
+  "paciente_nombre": "Demo Uno Sintético",
+  "turno_inicio": "2026-11-18T17:00:00Z"
+ }
+]
+
+### 6c. Recepción resuelve el fallo
+POST /api/whatsapp/fallos/5/resolver -> 200
+{
+ "id": 5,
+ "turno_id": 1,
+ "paciente_id": 1,
+ "plantilla": null,
+ "direccion": "entrante",
+ "telefono": "+5491100000001",
+ "texto": "hola, ¿a qué hora era?",
+ "estado": "recibido",
+ "intencion": "desconocida",
+ "intentos": 0,
+ "motivo_error": null,
+ "costo_ars": "0.00",
+ "requiere_atencion": true,
+ "resuelto_at": "2026-11-17T21:22:34.052478Z",
+ "created_at": "2026-11-17T21:22:33.990064Z"
+}
+
+### 7. Costos del día (admin)
+GET /api/whatsapp/costos?desde=2026-11-17&hasta=2026-11-18 -> 200
+{
+ "desde": "2026-11-17",
+ "hasta": "2026-11-18",
+ "total_ars": "25.00",
+ "detalle": [
+  {
+   "plantilla": "confirmacion",
+   "direccion": "saliente",
+   "cantidad": 1,
+   "total_ars": "12.50"
+  },
+  {
+   "plantilla": "recordatorio_24h",
+   "direccion": "saliente",
+   "cantidad": 1,
+   "total_ars": "12.50"
+  },
+  {
+   "plantilla": null,
+   "direccion": "entrante",
+   "cantidad": 2,
+   "total_ars": "0.00"
+  }
+ ]
+}
+
+### 8. Sesión (admin)
+GET /api/whatsapp/sesion -> 200
+{
+ "estado": "activa",
+ "numero": "+5491100009999",
+ "estado_at": "2026-11-17T21:22:34.133160Z",
+ "en_vivo": true,
+ "qr": null
+}
+
+### 8b. Reconectar como recepción
+POST /api/whatsapp/sesion/reconectar -> 403
+{
+ "detail": "Rol insuficiente"
+}
+
+### 8c. Reconectar como admin (fake -> escanear_qr)
+POST /api/whatsapp/sesion/reconectar -> 200
+{
+ "estado": "escanear_qr",
+ "numero": "+5491100009999",
+ "estado_at": "2026-11-17T21:22:34.205262Z",
+ "en_vivo": true,
+ "qr": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+}

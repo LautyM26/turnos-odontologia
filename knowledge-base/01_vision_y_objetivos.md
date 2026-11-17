@@ -14,7 +14,7 @@ Contexto: el discovery cruzó 4 fuentes (Perplexity, ChatGPT, Gemini, Claude R1/
 | Actor | Objetivo principal | Objetivos secundarios |
 |-------|--------------------|-----------------------|
 | Odontólogo / profesional | Atender con historia clínica y odontograma confiables, sin doble carga administrativa | Evolución con autoría y auditoría; presupuesto que genera plan y turnos; receta electrónica vía partner |
-| Recepcionista / administrativo | Llenar la agenda y cobrar sin fricción ni solapamientos | Confirmar/cancelar/reprogramar por WhatsApp oficial; lista de espera con relleno automático; caja con seña y saldo |
+| Recepcionista / administrativo | Llenar la agenda y cobrar sin fricción ni solapamientos | Confirmar/cancelar/reprogramar por WhatsApp (QR con número dedicado, DD-10); lista de espera con relleno automático; caja con seña y saldo |
 | Administrador / dueño de clínica | Rentabilidad y cumplimiento: menos ausentismo, cobro asegurado, papeles en regla | Precio en ARS transparente; reportes (presupuestos no convertidos, inactivos); respaldo y exportación completa |
 | Paciente | Reservar, confirmar y pagar su turno sin crear cuentas ni instalar apps | Reserva online por enlace sin registro; seña por Mercado Pago; recordatorios y reprogramación por WhatsApp |
 | Consultorio independiente (segmento) | Acceder a circuito de obra social sin depender de un círculo ni de Excel manual | Datos de OS/plan/afiliado desde el MVP; cálculo de cobertura y RNO en etapa 2; validación en línea vía alianzas |

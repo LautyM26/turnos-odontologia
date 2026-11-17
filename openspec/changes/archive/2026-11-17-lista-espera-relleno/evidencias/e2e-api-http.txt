@@ -1,0 +1,200 @@
+pacientes sintéticos: {'A': 'Demo Uno', 'B': 'Demo Dos', 'C': 'Demo Tres'}
+
+### 1. Turno de A para dentro de ~20 h (será el hueco)
+POST /api/turnos -> 201
+{
+ "id": 1,
+ "profesional_id": 1,
+ "sillon_id": 1,
+ "paciente_id": 1,
+ "prestacion_id": 1,
+ "inicio": "2026-11-18T18:00:00Z",
+ "fin": "2026-11-18T18:30:00Z",
+ "duracion_min": 30,
+ "estado": "reservado",
+ "origen": "mostrador",
+ "es_sobreturno": false,
+ "motivo_sobreturno": null,
+ "created_at": "2026-11-17T22:09:37.931487Z"
+}
+
+### 2. Turno de B en 5 días (lo quiere adelantar)
+POST /api/turnos -> 201
+{
+ "id": 2,
+ "profesional_id": 1,
+ "sillon_id": 1,
+ "paciente_id": 2,
+ "prestacion_id": 1,
+ "inicio": "2026-11-23T18:00:00Z",
+ "fin": "2026-11-23T18:30:00Z",
+ "duracion_min": 30,
+ "estado": "reservado",
+ "origen": "mostrador",
+ "es_sobreturno": false,
+ "motivo_sobreturno": null,
+ "created_at": "2026-11-17T22:09:38.152195Z"
+}
+
+### 3. B a la lista de espera (prioridad 5, adelantar)
+POST /api/lista-espera -> 201
+{
+ "id": 1,
+ "paciente_id": 2,
+ "prestacion_id": 1,
+ "profesional_id": null,
+ "sillon_id": null,
+ "turno_a_adelantar_id": 2,
+ "prioridad": 5,
+ "estado": "en_cola",
+ "created_at": "2026-11-17T22:09:38.238614Z"
+}
+
+### 4. C a la lista de espera (prioridad 0)
+POST /api/lista-espera -> 201
+{
+ "id": 2,
+ "paciente_id": 3,
+ "prestacion_id": 1,
+ "profesional_id": null,
+ "sillon_id": null,
+ "turno_a_adelantar_id": null,
+ "prioridad": 0,
+ "estado": "en_cola",
+ "created_at": "2026-11-17T22:09:38.277320Z"
+}
+
+### 5. A cancela su turno en el mostrador
+POST /api/turnos/1/transicion -> 200
+{
+ "id": 1,
+ "profesional_id": 1,
+ "sillon_id": 1,
+ "paciente_id": 1,
+ "prestacion_id": 1,
+ "inicio": "2026-11-18T18:00:00Z",
+ "fin": "2026-11-18T18:30:00Z",
+ "duracion_min": 30,
+ "estado": "cancelado",
+ "origen": "mostrador",
+ "es_sobreturno": false,
+ "motivo_sobreturno": null,
+ "created_at": "2026-11-17T22:09:37.931487Z"
+}
+
+### 6. Corre el job de la lista de espera
+lista_espera: 0 vencidas, 1 ofertas, 0 fallidas
+
+### 7. Bandeja de ofertas
+GET /api/lista-espera/bandeja -> 200
+[
+ {
+  "id": 1,
+  "lista_espera_id": 1,
+  "turno_liberado_id": 1,
+  "inicio": "2026-11-18T18:00:00Z",
+  "fin": "2026-11-18T18:30:00Z",
+  "profesional_id": 1,
+  "sillon_id": 1,
+  "prestacion_id": 1,
+  "estado": "pendiente",
+  "expira_at": "2026-11-17T22:39:41.781182Z",
+  "respondida_at": null,
+  "turno_creado_id": null,
+  "created_at": "2026-11-17T22:09:41.908224Z",
+  "paciente_id": 2,
+  "paciente_nombre": "Demo Dos Sintético"
+ }
+]
+
+### 8. B responde '1' por WhatsApp (evento firmado)
+POST /api/webhooks/whatsapp -> 200
+{
+ "resultado": "oferta_aceptada"
+}
+
+### 8b. B repite 'si' (otro mensaje)
+POST /api/webhooks/whatsapp -> 200
+{
+ "resultado": "sin_efecto"
+}
+
+### 9. Turno viejo de B
+GET /api/turnos/2 -> 200
+{
+ "id": 2,
+ "profesional_id": 1,
+ "sillon_id": 1,
+ "paciente_id": 2,
+ "prestacion_id": 1,
+ "inicio": "2026-11-23T18:00:00Z",
+ "fin": "2026-11-23T18:30:00Z",
+ "duracion_min": 30,
+ "estado": "cancelado",
+ "origen": "mostrador",
+ "es_sobreturno": false,
+ "motivo_sobreturno": null,
+ "created_at": "2026-11-17T22:09:38.152195Z"
+}
+
+### 9b. Turnos creados por la lista
+[(3, 2, datetime.datetime(2026, 11, 18, 18, 0, tzinfo=datetime.timezone.utc), 'lista_espera', 'reservado')]
+
+### 10. Corre el job otra vez (cascada: hueco del turno viejo de B)
+lista_espera: 0 vencidas, 1 ofertas, 0 fallidas
+
+### 11. Bandeja
+GET /api/lista-espera/bandeja -> 200
+[
+ {
+  "id": 2,
+  "lista_espera_id": 2,
+  "turno_liberado_id": 2,
+  "inicio": "2026-11-23T18:00:00Z",
+  "fin": "2026-11-23T18:30:00Z",
+  "profesional_id": 1,
+  "sillon_id": 1,
+  "prestacion_id": 1,
+  "estado": "pendiente",
+  "expira_at": "2026-11-17T22:39:45.774410Z",
+  "respondida_at": null,
+  "turno_creado_id": null,
+  "created_at": "2026-11-17T22:09:45.887802Z",
+  "paciente_id": 3,
+  "paciente_nombre": "Demo Tres Sintético"
+ },
+ {
+  "id": 1,
+  "lista_espera_id": 1,
+  "turno_liberado_id": 1,
+  "inicio": "2026-11-18T18:00:00Z",
+  "fin": "2026-11-18T18:30:00Z",
+  "profesional_id": 1,
+  "sillon_id": 1,
+  "prestacion_id": 1,
+  "estado": "aceptada",
+  "expira_at": "2026-11-17T22:39:41.781182Z",
+
+### 12. C responde 'no'
+POST /api/webhooks/whatsapp -> 200
+{
+ "resultado": "oferta_rechazada"
+}
+
+### 13. Métricas
+GET /api/lista-espera/metricas?desde=2026-11-17&hasta=2026-11-24 -> 200
+{
+ "desde": "2026-11-17",
+ "hasta": "2026-11-24",
+ "liberados": 2,
+ "recuperados": 1,
+ "perdidos": 1
+}
+
+### 14. Mensajes de WhatsApp registrados
+('+5491100000002', 'saliente', 'oferta_hueco', 'enviado', Decimal('12.50'))
+('+5491100000002', 'entrante', None, 'recibido', Decimal('0.00'))
+('+5491100000002', 'saliente', 'oferta_aceptada', 'enviado', Decimal('12.50'))
+('+5491100000002', 'entrante', None, 'recibido', Decimal('0.00'))
+('+5491100000003', 'saliente', 'oferta_hueco', 'enviado', Decimal('12.50'))
+('+5491100000003', 'entrante', None, 'recibido', Decimal('0.00'))

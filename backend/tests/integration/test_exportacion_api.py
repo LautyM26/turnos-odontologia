@@ -24,7 +24,7 @@ from tests.integration.conftest import (
 
 PNG = b"\x89PNG\r\n\x1a\n" + b"sintetico" * 20
 
-#: CSV -> tabla (las 17 entidades de D5 + recetas de C-19).
+#: CSV -> tabla (las 17 entidades de D5 + recetas de C-19 + WhatsApp de C-15).
 CSVS = {
     "pacientes": "paciente", "fichas": "ficha_version", "adjuntos": "adjunto",
     "odontogramas": "odontograma", "evoluciones": "evolucion",
@@ -34,6 +34,9 @@ CSVS = {
     "profesional_sillones": "profesional_sillon", "bloqueos": "bloqueo",
     "usuarios": "usuario", "usuario_roles": "usuario_rol", "auditoria_hc": "auditoria_hc",
     "recetas": "receta_externa",
+    "mensajes_whatsapp": "mensaje_whatsapp", "whatsapp_sesiones": "whatsapp_sesion",
+    "lista_espera": "lista_espera", "ofertas_lista_espera": "oferta_lista_espera",
+    "conversaciones_whatsapp": "conversacion_wa",
 }  # fmt: skip
 
 
@@ -304,3 +307,73 @@ def test_recetas_csv_con_filas_de_la_clinica_y_items_json(client, auth_data, his
     fila = filas[1]
     assert fila[enc.index("simulada")] == "true"
     assert "ibuprofeno" in fila[enc.index("items")]
+
+
+def test_mensajes_whatsapp_incluidos_y_aislados(client, session_factory, auth_data) -> None:  # type: ignore[no-untyped-def]
+    """C-15 8.1: mensajes_whatsapp.csv trae solo los de la clínica, con conteo en el manifest."""
+    from app.domain.whatsapp.models import MensajeWhatsApp
+
+    a, b = auth_data["clinica_a"], auth_data["clinica_b"]
+    with session_factory() as s:
+        for clinica, n in ((a, 2), (b, 1)):
+            for i in range(n):
+                s.add(MensajeWhatsApp(
+                    clinica_id=clinica, direccion="entrante", estado="recibido",
+                    intencion="desconocida", telefono=f"+549110000{clinica:02d}{i:02d}",
+                    texto="hola sintetico",
+                ))  # fmt: skip
+        s.commit()
+    zf = _leer_zip(_exportar(client, bearer(client, auth_data["admin_email"])))
+    filas = _filas(zf, "mensajes_whatsapp")
+    enc = filas[0]
+    assert len(filas) - 1 == 2
+    assert {fila[enc.index("clinica_id")] for fila in filas[1:]} == {str(a)}
+    assert json.loads(zf.read("manifest.json"))["conteos"]["mensajes_whatsapp"] == 2
+
+
+def test_lista_espera_incluida_y_aislada(client, session_factory, auth_data, turnos_data) -> None:  # type: ignore[no-untyped-def]
+    """C-16 7.1: lista_espera.csv trae solo las entradas de la clínica."""
+    from app.domain.lista_espera.models import ListaEspera
+
+    a, b = auth_data["clinica_a"], auth_data["clinica_b"]
+    with session_factory() as s:
+        for clinica, prest, n in ((a, turnos_data["prest_a"], 2), (b, turnos_data["prest_b"], 1)):
+            for _ in range(n):
+                pac = paciente_sintetico(clinica)
+                s.add(pac)
+                s.flush()
+                s.add(ListaEspera(clinica_id=clinica, paciente_id=pac.id, prestacion_id=prest))
+        s.commit()
+    zf = _leer_zip(_exportar(client, bearer(client, auth_data["admin_email"])))
+    filas = _filas(zf, "lista_espera")
+    enc = filas[0]
+    assert len(filas) - 1 == 2
+    assert {fila[enc.index("clinica_id")] for fila in filas[1:]} == {str(a)}
+    assert json.loads(zf.read("manifest.json"))["conteos"]["lista_espera"] == 2
+
+
+def test_conversaciones_incluidas(client, session_factory, auth_data, turnos_data) -> None:  # type: ignore[no-untyped-def]
+    """C-17 5.1: conversaciones_whatsapp.csv trae solo las de la clínica."""
+    from app.domain.reprogramacion.models import ConversacionWA
+
+    a, b = auth_data["clinica_a"], auth_data["clinica_b"]
+    inicio = datetime(2038, 1, 4, 10, tzinfo=UTC)
+    with session_factory() as s:
+        for clinica, prof, sillon, pac, prest, tel in (
+            (a, turnos_data["p"], turnos_data["s1"], turnos_data["pac_a"], turnos_data["prest_a"],
+             "+5491100000201"),
+            (b, turnos_data["prof_b"], turnos_data["sillon_b"], turnos_data["pac_b"],
+             turnos_data["prest_b"], "+5491100000202"),
+        ):  # fmt: skip
+            t = Turno(clinica_id=clinica, profesional_id=prof, sillon_id=sillon, paciente_id=pac,
+                      prestacion_id=prest, duracion_min=30, inicio=inicio,
+                      fin=inicio + timedelta(minutes=30))  # fmt: skip
+            s.add(t)
+            s.flush()
+            s.add(ConversacionWA(clinica_id=clinica, paciente_id=pac, telefono=tel, turno_id=t.id,
+                                 opciones=[], expira_at=inicio))  # fmt: skip
+        s.commit()
+    zf = _leer_zip(_exportar(client, bearer(client, auth_data["admin_email"])))
+    filas = _filas(zf, "conversaciones_whatsapp")
+    enc = filas[0]
+    assert len(filas) - 1 == 1 and filas[1][enc.index("clinica_id")] == str(a)

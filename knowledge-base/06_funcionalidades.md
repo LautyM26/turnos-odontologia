@@ -36,12 +36,12 @@
 - [ ] Reasignación con un tap del paciente
 **Reglas relacionadas**: RN-AG-06, RN-WA-01
 
-## Épica 2: WhatsApp oficial (IMP)
+## Épica 2: WhatsApp por QR con número dedicado (IMP, DD-10)
 
 ### US-005 — Recordatorio y confirmación bidireccional
 **Como** paciente **Quiero** confirmar o cancelar mi turno respondiendo el WhatsApp **Para** no tener que llamar.
 **Criterios de aceptación**:
-- [ ] Plantillas aprobadas (recordatorio 24 h, confirmación, cancelación, reprogramación)
+- [ ] Textos base internos, sin aprobación de Meta (DD-10): recordatorio 24 h, confirmación, cancelación, reprogramación
 - [ ] La respuesta actualiza el estado del turno en la agenda
 - [ ] Costo por mensaje visible en pesos para el consultorio
 **Reglas relacionadas**: RN-TU-02, RN-TU-03, RN-WA-01, RN-WA-02

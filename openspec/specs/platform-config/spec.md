@@ -88,3 +88,55 @@ El sistema SHALL leer de variables de entorno el partner de recetas (`RECETAS_PA
 
 - **WHEN** un desarrollador lee `backend/.env.example`
 - **THEN** encuentra `RECETAS_PARTNER=fake`, `ENTORNO=desarrollo` y `RECETAS_PARTNER_KEY` con un placeholder, sin ningún valor real.
+
+### Requirement: Configuración del gateway de WhatsApp
+
+El sistema SHALL leer de variables de entorno el gateway de WhatsApp (`WHATSAPP_GATEWAY`: vacío, `fake` o `waha`), su URL, su clave de API y el secreto HMAC del webhook (ambos opcionales y tratados como secretos), la ventana del recordatorio, el máximo de intentos y el límite de envíos por minuto. SHALL arrancar aunque falte cualquiera de ellos y SHALL NOT usar el gateway simulado cuando `ENTORNO = produccion`.
+
+#### Scenario: Arranque sin gateway
+
+- **WHEN** el backend arranca sin ninguna variable `WHATSAPP_*`
+- **THEN** la app arranca, `/api/health` responde `200` y los endpoints de sesión de WhatsApp responden `501`.
+
+#### Scenario: Simulado bloqueado en producción (borde)
+
+- **WHEN** `WHATSAPP_GATEWAY=fake` y `ENTORNO=produccion`
+- **THEN** la app arranca, registra una advertencia y el canal se trata como no configurado.
+
+#### Scenario: Secretos nunca expuestos
+
+- **WHEN** se serializan o loguean los settings
+- **THEN** la clave de API del gateway y el secreto HMAC aparecen enmascarados y no existe ninguna variable `VITE_` relacionada con WhatsApp.
+
+#### Scenario: Ejemplo de entorno de desarrollo
+
+- **WHEN** un desarrollador lee `backend/.env.example`
+- **THEN** encuentra `WHATSAPP_GATEWAY=fake`, la URL del gateway local, placeholders para la clave y el secreto HMAC, `WHATSAPP_RECORDATORIO_HORAS=24`, `WHATSAPP_MAX_INTENTOS`, `WHATSAPP_ENVIOS_POR_MINUTO` y `ARS_PRECIO_MENSAJE`, sin ningún valor real.
+
+### Requirement: Configuración de la lista de espera
+
+El sistema SHALL leer de variables de entorno el vencimiento de la oferta de lista de espera (`LISTA_ESPERA_OFERTA_MIN`, 30 por defecto, entre 5 y 240) y la anticipación mínima de un hueco ofrecible (`LISTA_ESPERA_ANTICIPACION_MIN`, 120 por defecto, entre 0 y 1440), y SHALL rechazar valores fuera de rango al arrancar.
+
+#### Scenario: Defaults
+
+- **WHEN** el backend arranca sin esas variables
+- **THEN** la oferta vence a los 30 minutos y la anticipación mínima es de 120 minutos.
+
+#### Scenario: Valor fuera de rango (borde)
+
+- **WHEN** `LISTA_ESPERA_OFERTA_MIN=1`
+- **THEN** la validación de settings falla en el arranque.
+
+### Requirement: Configuración de la reprogramación
+
+El sistema SHALL leer de variables de entorno el plazo de la conversación de reprogramación (`CHATBOT_TIMEOUT_MIN`, 30 por defecto, entre 5 y 240) y la anticipación mínima de un horario ofrecible al reprogramar (`REPROGRAMACION_ANTICIPACION_MIN`, 120 por defecto, entre 0 y 1440), y SHALL rechazar valores fuera de rango al arrancar.
+
+#### Scenario: Defaults
+
+- **WHEN** el backend arranca sin esas variables
+- **THEN** la conversación vence a los 30 minutos y solo se ofrecen horarios con 120 minutos o más de anticipación.
+
+#### Scenario: Valor fuera de rango (borde)
+
+- **WHEN** `CHATBOT_TIMEOUT_MIN=0`
+- **THEN** la validación de settings falla en el arranque.

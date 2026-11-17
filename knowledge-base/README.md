@@ -7,7 +7,7 @@ Base de conocimiento generada desde `discovery/Discovery Consolidado Turnos Odon
 | Archivo | Contenido |
 |---------|-----------|
 | [01_vision_y_objetivos.md](01_vision_y_objetivos.md) | Propósito (cuadrante vacío: clínica + AR + OS + WhatsApp oficial), objetivos por actor, alcance MVP v1.0, fuera de alcance F2, métricas propias |
-| [02_descripcion_general.md](02_descripcion_general.md) | Stack DECIDIDO (Python + FastAPI + PostgreSQL + React/Vite, ronda usuario 1), arquitectura SaaS multi-tenant + integraciones (WhatsApp oficial, MP, ARCA, partner ReNaPDiS, OS etapa 2) |
+| [02_descripcion_general.md](02_descripcion_general.md) | Stack DECIDIDO (Python + FastAPI + PostgreSQL + React/Vite, ronda usuario 1), arquitectura SaaS multi-tenant + integraciones (WhatsApp por QR con número dedicado — DD-10, MP, ARCA, partner ReNaPDiS, OS etapa 2) |
 | [03_actores_y_roles.md](03_actores_y_roles.md) | 4 roles confirmados + granularidad (tercerizado/sobreturnos, ronda usuario 1); matriz RBAC propuesta (S); rutas públicas |
 | [04_modelo_de_datos.md](04_modelo_de_datos.md) | 6 dominios, ERD textual, 12 entidades (las marcadas (S) son inferencia de modelado), seed data |
 | [05_reglas_de_negocio.md](05_reglas_de_negocio.md) | 30 reglas RN-AG/TU/WA/CL/PR/CA/AF/OS/CU/GL con trazabilidad a §§06/07/09/10 |

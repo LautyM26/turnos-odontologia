@@ -6,7 +6,8 @@ escribe cabeceras estándar): un error produce un 500 limpio, nunca un ZIP trunc
 
 ``ENTIDADES_EXPORTABLES`` exporta TODAS las columnas del modelo menos ``COLUMNAS_EXCLUIDAS``:
 las columnas nuevas de otros changes se exportan solas y los secretos quedan afuera.
-C-12 (caja) y C-13 (facturas) suman su entidad acá y salen de ``EXCLUIDAS``; C-19 ya sumó recetas.
+C-12 (caja) y C-13 (facturas) suman su entidad acá y salen de ``EXCLUIDAS``; C-19 ya sumó
+recetas y C-15 mensajes y sesiones de WhatsApp (``plantilla_wa`` es global, no se exporta).
 """
 
 import json
@@ -32,8 +33,11 @@ from app.domain.core.models import Usuario, UsuarioRol
 from app.domain.cumplimiento.errores import FormatoNoSoportado
 from app.domain.cumplimiento.exportacion import escribir_csv
 from app.domain.cumplimiento.models import Consentimiento, ConsentimientoFirma
+from app.domain.lista_espera.models import ListaEspera, OfertaListaEspera
 from app.domain.pacientes.models import Adjunto, FichaVersion, Paciente
 from app.domain.recetas.models import RecetaExterna
+from app.domain.reprogramacion.models import ConversacionWA
+from app.domain.whatsapp.models import MensajeWhatsApp, WhatsappSesion
 from app.infrastructure.storage.adjuntos import AdjuntoStorage
 
 FORMATOS = ("csv",)
@@ -61,6 +65,11 @@ ENTIDADES_EXPORTABLES: dict[str, Any] = {
     "usuario_roles": UsuarioRol,
     "auditoria_hc": AuditoriaHC,
     "recetas": RecetaExterna,
+    "mensajes_whatsapp": MensajeWhatsApp,
+    "whatsapp_sesiones": WhatsappSesion,
+    "lista_espera": ListaEspera,
+    "ofertas_lista_espera": OfertaListaEspera,
+    "conversaciones_whatsapp": ConversacionWA,
 }
 
 #: ``password_hash``: secreto; ``rango``: columna derivada de inicio/fin (tstzrange);
