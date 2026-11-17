@@ -77,3 +77,11 @@ Cada evidencia registra: pedido realizado, resultado obtenido y qué aportó al 
   2. ¿El odontólogo puede marcar asistencia?
   3. ¿Se puede marcar ausente antes de la hora?
 - **Artefactos:** `openspec/changes/archive/2026-11-16-transiciones-estado-turno/{proposal,design,tasks}.md` + `specs/appointments/spec.md`. Son 8 requisitos y 18 escenarios: felices, de error de negocio y de borde. `openspec validate transiciones-estado-turno --strict` → *"Change 'transiciones-estado-turno' is valid"*.
+
+## E6 — Context7 en la preparación de C-05c (huecos con multirangos de PostgreSQL)
+
+- **Pedido 1, `resolve-library-id`:** `libraryName: "PostgreSQL"`, `query: "Compute free time slots: subtract booked tstzrange intervals from a window using multirange (range_agg, multirange difference operator) in PostgreSQL 16"`.
+  - **Resultado:** `/websites/postgresql` (reputación High, benchmark 80.26, versiones 13–19). Se usó la versión `/websites/postgresql/16`, que coincide con `postgres:16-alpine`.
+- **Pedido 2, `query-docs`:** `libraryId: "/websites/postgresql/16"`, `query: "range_agg aggregate returning multirange, multirange difference operator (-) and unnest(multirange) to list free sub-ranges of a tstzrange window"`.
+  - **Resultado (extracto):** `range_agg(anyrange) → anymultirange` ("Computes the union of the non-null input values"); `anymultirange - anymultirange` ("`'{[5,20)}' - '{[10,15)}'` → `{[5,10), [15,20)}`"); `unnest(anymultirange) → setof anyrange`. Y la advertencia: *"The range union and difference operators will fail if the resulting range would need to contain two disjoint sub-ranges [...] you can avoid errors by first casting your ranges to multiranges."*
+- **Aporte al change:** decisión **D5** de `openspec/changes/huecos-y-sobreturnos/design.md`. Los huecos se calculan en una sola consulta (`ventana - range_agg(ocupados)` por profesional y por sillón), casteando a `tstzmultirange` para no fallar con huecos disjuntos. Se descartó recorrer minuto a minuto en Python.

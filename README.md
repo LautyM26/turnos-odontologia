@@ -51,6 +51,8 @@ python -m pytest backend/tests/unit/test_turno_transiciones.py backend/tests/int
 
 > Si tenés un PostgreSQL instalado en Windows ocupando el puerto 5432, `docker compose up db` no puede usarlo. Los tests no lo necesitan (testcontainers usa un puerto libre); para levantar la API a mano usá otro puerto, por ejemplo `docker run -d -p 55432:5432 -e POSTGRES_USER=turnos -e POSTGRES_PASSWORD=<pass> -e POSTGRES_DB=turnos postgres:16-alpine` y `DATABASE_URL=postgresql+psycopg://turnos:<pass>@localhost:55432/turnos`.
 
+> **¿Vas a continuar el proyecto?** Leé primero [`docs/CONTINUAR.md`](docs/CONTINUAR.md): estado, reparto de changes, entorno y flujo de trabajo.
+
 ## Skills propias y MCP
 
 Detalle, investigación y evidencias: [`docs/skills-mcp/`](docs/skills-mcp/) ([ficha](docs/skills-mcp/investigacion.md) · [informe de aplicación](docs/skills-mcp/aplicacion.md)).

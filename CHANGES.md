@@ -255,6 +255,33 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
   - `knowledge-base/07_flujos_principales.md` §Flujo 2 (paso 3) + §Flujo 5 (disparador)
   - `knowledge-base/03_actores_y_roles.md` §RBAC
 
+---
+
+### [C-05c] `huecos-y-sobreturnos`
+- **Estado**: `[ ]` pendiente — en propuesta 2026-11-16
+- **Propósito**: cerrar C-05 con los huecos libres reales y los sobreturnos por rol (RN-AG-04 parcial según `dominio-agenda`).
+- **Scope**:
+  - `GET /api/agenda/huecos?profesional_id&prestacion_id&desde&hasta`: inicios dentro de la ventana pedida por la recepción, cada `AGENDA_PASO_MIN` (default 15), donde un turno normal se podría crear (profesional libre, algún sillón habilitado libre, sin bloqueos, no en el pasado). Ventana máxima 7 días. Odontólogo solo su agenda (`require_own_agenda`).
+  - Sobreturno en `POST /api/turnos` con `sobreturno: true` + `motivo_sobreturno` obligatorio (admin/recepcionista): puede superponerse a otros turnos pero **respeta bloqueos** (409) (decisión usuario 2026-11-16).
+  - Modelado (decisión usuario 2026-11-16): marca `es_sobreturno` + `motivo_sobreturno` en `turno` y el turno sigue el ciclo normal de estados (C-05b); las exclusion constraints ignoran los turnos marcados. El estado `sobreturno` queda sin uso (se conserva en el CHECK).
+  - Migración 007: columnas nuevas + exclusion constraints recreadas con `AND NOT es_sobreturno`.
+- **Exclusiones**: horario de atención por profesional (→ C-05d), reprogramar (C-17), UI (C-07).
+- **Adelanta / reduce**: con C-05b y C-05c, C-05 queda `[x]` (reprogramar pasa a C-17).
+- **Dependencias**: C-05b ✓
+- **Governance**: CRITICO (heredado de C-05)
+- **Skills**: `dominio-agenda` · MCP Context7
+- **Leer antes**: `.claude/skills/dominio-agenda/SKILL.md`; `knowledge-base/05_reglas_de_negocio.md` §RN-AG-01–04; `knowledge-base/07_flujos_principales.md` §Flujo 1 (paso 1: huecos reales); `knowledge-base/04_modelo_de_datos.md` §Turno
+
+---
+
+### [C-05d] `horario-atencion`
+- **Estado**: `[ ]` pendiente — agregado 2026-11-16, sin proponer
+- **Propósito**: la KB no define horario de atención; sin él, los huecos de la reserva pública (C-06) incluirían cualquier hora. Agrega franjas de atención (día de semana + rango) y limita los huecos a esas franjas.
+- **Dependencias**: C-05c. **Bloquea**: C-06 (los huecos públicos deben respetar el horario).
+- **Pendiente de decidir con el usuario**: si el horario es por profesional, por sillón o de la clínica; manejo de feriados (hoy: bloqueos de clínica).
+
+---
+
 ### [C-06] `reserva-online-publica`
 - **Estado**: `[ ]` pendiente
 - **Scope**: Enlace público de reserva sin registro con pre-bloqueo y política de seña (US-003, Flujo 1, RN-AG-05 + RN-CA-01/02)
@@ -263,7 +290,7 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
   - Enlace compartible `/{clinica_slug}/reservar/{token}`; validación DNI/email/tel normalizados en servidor
   - Migración 006: `hold_expires_at`, `public_token` único en turnos
   - Tests: reservar sin cuenta OK, pago no completado libera hueco tras timeout, doble reserva concurrente → 1 gana, sin CUIT no bloquea reserva (factura queda pendiente — RN-AF-02)
-- **Dependencias**: C-05
+- **Dependencias**: C-05, C-05d (horario de atención para los huecos públicos)
 - **Governance**: ALTO
 - **Leer antes**:
   - `knowledge-base/06_funcionalidades.md` §Épica 1 US-003
