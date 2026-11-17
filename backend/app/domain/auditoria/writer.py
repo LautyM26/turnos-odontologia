@@ -97,6 +97,31 @@ def registrar_evento(
     return evento
 
 
+def registrar_evento_sistema(
+    session: Session,
+    clinica_id: int,
+    accion: str,
+    entidad: str,
+    entidad_id: int,
+    paciente_id: int,
+    diff: dict[str, Any] | None = None,
+) -> AuditoriaHC:
+    """Evento sin usuario (``actor_tipo='sistema'``), p. ej. alta de paciente por la reserva
+    pública (C-06 D3). Misma allowlist de diff; flush sin commit."""
+    if accion not in ACCIONES or entidad not in ENTIDADES:
+        raise ValueError(f"Evento de auditoría inválido: {accion!r}/{entidad!r}")
+    contenido = dict(diff or {})
+    _validar_diff(contenido)
+    evento = AuditoriaHC(
+        clinica_id=clinica_id, paciente_id=paciente_id, actor_usuario_id=None,
+        actor_tipo="sistema", accion=accion, entidad=entidad, entidad_id=entidad_id,
+        diff=contenido,
+    )  # fmt: skip
+    session.add(evento)
+    session.flush()
+    return evento
+
+
 def registrar_evento_admin(
     session: Session,
     auth: "AuthContext",

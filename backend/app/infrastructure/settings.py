@@ -61,6 +61,15 @@ class Settings(BaseSettings):
         default="5/60s",
         description="Ventana de rate-limit login (formato N/Vs).",
     )
+    # --- Reserva pública (C-06 D5): límites por IP en formato slowapi ("N/minute"). ---
+    rate_limit_publico_lectura: str = Field(
+        default="60/minute",
+        description="Catálogo, huecos y consulta de reserva públicos, por IP.",
+    )
+    rate_limit_publico_reserva: str = Field(
+        default="5/minute",
+        description="Reservar y cancelar por enlace, por IP.",
+    )
     # --- Adjuntos clínicos (C-08, D9/D14). ---
     adjuntos_storage_dir: Path = Field(
         default=Path("./var/adjuntos"),

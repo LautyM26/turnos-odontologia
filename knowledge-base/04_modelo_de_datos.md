@@ -30,7 +30,7 @@ Usuario *──* Rol (RBAC) ; Evolucion *──1 Usuario (autor) ; AuditoriaHC r
 ## Entidades
 
 ### Clinica (S)
-- Atributos: id, nombre, CUIT, domicilio, datos fiscales ARCA, moneda (ARS), política de seña, zona_horaria (IANA, default America/Argentina/Buenos_Aires; C-05d)
+- Atributos: id, nombre, CUIT, domicilio, datos fiscales ARCA, moneda (ARS), política de seña, zona_horaria (IANA, default America/Argentina/Buenos_Aires; C-05d), slug (único, enlace público `/reservar/{slug}`; C-06)
 - Relaciones: 1──* Profesional, Sillon, Paciente, Usuario
 - Constraints: CUIT válido; moneda ARS (precio público en ARS, sin packs)
 
@@ -52,6 +52,7 @@ Usuario *──* Rol (RBAC) ; Evolucion *──1 Usuario (autor) ; AuditoriaHC r
 
 ### Turno
 - Atributos: id, clinica_id, profesional_id, sillon_id, paciente_id, prestacion, duracion_min (por prestación), inicio, fin, estado (reservado/confirmado/asistido/ausente/cancelado; el valor `sobreturno` queda en desuso desde C-05c), es_sobreturno + motivo_sobreturno (marca, C-05c), origen (enlace/mostrador/WhatsApp/lista_espera), seña_exigida, seña_pagada
+- Reserva por enlace (C-06): `origen = enlace`, `token_publico_hash` (SHA-256 del token para ver/cancelar; el token no se guarda). Historial de transiciones con `actor_tipo` (`usuario` | `paciente_enlace` sin usuario).
 - Relaciones: *──1 Presupuesto/Plan (cuando nace de un plan), 1──* Cobro, 1──* MensajeWhatsApp
 - Constraints: duracion por prestación; sobreturno solo con rol autorizado y con motivo (marca `es_sobreturno`, exceptuada del anti-solapamiento pero no de los bloqueos, C-05c); transición de estados explícita
 - Índices: (profesional_id, inicio), (sillon_id, inicio), (paciente_id, inicio), (estado)

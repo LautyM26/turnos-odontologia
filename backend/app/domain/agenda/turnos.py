@@ -148,6 +148,8 @@ class Turno(Base, TenantMixin, AuditMixin):
     origen: Mapped[str] = mapped_column(
         Text, nullable=False, default="mostrador", server_default="mostrador"
     )
+    #: SHA-256 del token de la reserva por enlace (C-06 D2); el token en claro no se guarda.
+    token_publico_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
     es_sobreturno: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default=false()
     )
@@ -181,6 +183,10 @@ class TurnoTransicion(Base, TenantMixin):
         CheckConstraint(f"desde IN {_ESTADOS_SQL}", name="desde_valido"),
         CheckConstraint(f"hacia IN {_ESTADOS_SQL}", name="hacia_valido"),
         CheckConstraint("motivo IS NULL OR length(motivo) <= 500", name="motivo_largo"),
+        CheckConstraint("actor_tipo IN ('usuario','paciente_enlace')", name="actor_tipo_valido"),
+        CheckConstraint(
+            "(actor_tipo = 'usuario') = (actor_usuario_id IS NOT NULL)", name="actor_coherente"
+        ),
         Index("ix_turno_transicion_clinica_turno_id", "clinica_id", "turno_id", "id"),
     )
 
@@ -188,7 +194,11 @@ class TurnoTransicion(Base, TenantMixin):
     turno_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     desde: Mapped[str] = mapped_column(Text, nullable=False)
     hacia: Mapped[str] = mapped_column(Text, nullable=False)
-    actor_usuario_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    actor_usuario_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    #: ``usuario`` (staff) o ``paciente_enlace`` (cancelación con el token, C-06 D4).
+    actor_tipo: Mapped[str] = mapped_column(
+        Text, nullable=False, default="usuario", server_default="usuario"
+    )
     motivo: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
@@ -272,8 +282,13 @@ def crear_turno(
     clinica_id: int,
     datos: dict[str, Any],
     ahora: datetime | None = None,
+    origen: str = "mostrador",
+    token_publico_hash: str | None = None,
 ) -> Turno:
-    """Crea un turno ``reservado``/``mostrador``; ``fin`` y ``duracion_min`` salen del servidor.
+    """Crea un turno ``reservado``; ``fin`` y ``duracion_min`` salen del servidor.
+
+    ``origen``/``token_publico_hash`` los fija la reserva pública (C-06: ``enlace`` + hash del
+    token); el mostrador usa los defaults.
 
     Orden: pasado (422) -> referencias (422) -> bloqueos/solapamiento (409) -> INSERT; la
     exclusion constraint resuelve la carrera entre requests concurrentes (409 al perdedor).
@@ -307,7 +322,8 @@ def crear_turno(
         inicio=inicio,
         fin=fin,
         estado="reservado",
-        origen="mostrador",
+        origen=origen,
+        token_publico_hash=token_publico_hash,
         es_sobreturno=es_sobreturno,
         motivo_sobreturno=datos.get("motivo_sobreturno") if es_sobreturno else None,
     )
@@ -322,11 +338,12 @@ def transicionar_turno(
     clinica_id: int,
     turno_id: int,
     destino: str,
-    actor_id: int,
+    actor_id: int | None,
     motivo: str | None,
     ahora: datetime,
     solo_agenda_de: int | None = None,
     destinos_permitidos: frozenset[str] | None = None,
+    actor_tipo: str = "usuario",
 ) -> Turno:
     """Cambia el estado según ``TRANSICIONES`` y registra el historial (RN-TU-01, C-05b).
 
@@ -359,7 +376,7 @@ def transicionar_turno(
     session.add(
         TurnoTransicion(
             clinica_id=clinica_id, turno_id=turno.id, desde=desde, hacia=destino,
-            actor_usuario_id=actor_id, motivo=motivo,
+            actor_usuario_id=actor_id, actor_tipo=actor_tipo, motivo=motivo,
         )  # fmt: skip
     )
     session.commit()

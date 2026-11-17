@@ -18,6 +18,7 @@ from app.api.health import router as health_router
 from app.api.historia_clinica import router as historia_clinica_router
 from app.api.pacientes import router as pacientes_router
 from app.api.permissions import set_resolver_agenda_propia, set_resolver_vinculo_paciente
+from app.api.publico import router as publico_router
 from app.api.recetas import router as recetas_router
 from app.api.turnos import router as turnos_router
 from app.domain.agenda.servicio import CatalogoError, profesional_de_usuario
@@ -89,6 +90,7 @@ def create_app() -> FastAPI:
     app.include_router(recetas_router)
     app.include_router(turnos_router)
     app.include_router(agenda_router)
+    app.include_router(publico_router)
     return app
 
 

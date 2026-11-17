@@ -18,6 +18,8 @@ def _clean_env(monkeypatch: pytest.MonkeyPatch) -> None:
         "JWT_REFRESH_DAYS",
         "COOKIE_SECURE",
         "RATE_LIMIT_LOGIN",
+        "RATE_LIMIT_PUBLICO_LECTURA",
+        "RATE_LIMIT_PUBLICO_RESERVA",
         "ADJUNTOS_STORAGE_DIR",
         "ADJUNTO_MAX_BYTES",
         "RECETAS_PARTNER",

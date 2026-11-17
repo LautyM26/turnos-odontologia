@@ -17,11 +17,12 @@ Escrito el 2026-11-16 por Matheo (con Claude Code). Explica el estado actual, c�
 | **C-10 `clinica-frontend`** | ✅ archivado 2026-11-17 (vitest 202 + E2E Playwright con capturas) | `openspec/changes/archive/2026-11-17-clinica-frontend/` |
 | **C-18 `consentimientos-cumplimiento`** | ✅ archivado 2026-11-17 (1057 tests) | `openspec/changes/archive/2026-11-17-consentimientos-cumplimiento/` |
 | **C-19 `recetas-partner-renapdis`** | ✅ archivado 2026-11-17 (1184 tests) | `openspec/changes/archive/2026-11-17-recetas-partner-renapdis/` |
-| Resto (C-06, C-07, C-11 … C-17) | ⏳ pendientes | `CHANGES.md` |
+| C-06 `reserva-online-publica` | ✅ archivado 2026-11-17 (sin seña → C-12) | `openspec/changes/archive/2026-11-17-reserva-online-publica/` |
+| Resto (C-07, C-11 … C-17) | ⏳ pendientes | `CHANGES.md` |
 
 **TPI:** con 3 integrantes el mínimo es de 6 changes. Ya hay **11 archivados**. Cada change nuevo suma, y todos tenemos que poder explicar el que hicimos.
 
-**Migraciones tomadas:** 008 C-09, 009 C-18, 010 C-19, 011 C-05c, 012 C-05d (head actual: `012_horario_atencion`; la 007 quedó sin usar). La próxima es la 013 con `down_revision` = el head del momento: `python -m alembic -c backend/alembic.ini heads` tiene que mostrar un único head (correrlo desde la raíz).
+**Migraciones tomadas:** 008 C-09, 009 C-18, 010 C-19, 011 C-05c, 012 C-05d, 013 C-06 (head actual: `013_reserva_online`; la 007 quedó sin usar). La próxima es la 014 con `down_revision` = el head del momento: `python -m alembic -c backend/alembic.ini heads` tiene que mostrar un único head (correrlo desde la raíz).
 
 **Frontend:** C-10 agregó el login, el router de datos (`frontend/src/router.tsx`, ya no existe `App.tsx`) y las rutas protegidas. C-07 (agenda) debe agregar `/agenda` dentro del layout autenticado, reutilizando ese shell. Demo: `backend/scripts/seed_demo_clinica.py` (usuarios `@clinica-piloto.test`, contraseña por `SEED_DEMO_PASSWORD`), ver README §"Demo clínica".
 
@@ -31,7 +32,7 @@ Escrito el 2026-11-16 por Matheo (con Claude Code). Explica el estado actual, c�
 
 ## 2. Reparto propuesto (sin pisarnos)
 
-Matheo sigue con la **cadena de agenda**: C-06 → C-07 (C-05c y C-05d ya archivados). **Ojo C-05d:** un profesional sin horario cargado no acepta turnos normales; cargarlo con `PUT /api/admin/profesionales/{id}/horario`. No toquen `backend/app/domain/agenda/turnos.py`, `huecos.py`, `api/turnos.py` ni `api/agenda.py` sin avisar.
+Matheo sigue con **C-07** (agenda frontend); C-05c, C-05d y C-06 ya archivados. **Ojo C-05d:** un profesional sin horario cargado no acepta turnos normales; cargarlo con `PUT /api/admin/profesionales/{id}/horario`. No toquen `backend/app/domain/agenda/turnos.py`, `huecos.py`, `api/turnos.py` ni `api/agenda.py` sin avisar.
 
 Changes que **no dependen** de C-05c/C-05d y se pueden hacer ya (sus dependencias están archivadas):
 
@@ -101,9 +102,10 @@ Las 17 reglas duras están en `AGENTS.md` (= `CLAUDE.md`). Las más fáciles de 
 
 Cada change con backend suma una migración Alembic en cadena (`down_revision`). Si dos personas crean "la siguiente" a la vez, quedan **dos heads** y `alembic upgrade head` falla.
 
+- **Tomado:** `013_reserva_online` (C-06, Matheo, `down_revision = "012_horario_atencion"`). **C-12 (caja):** la rama "seña exigida" se engancha en `backend/app/domain/agenda/reserva_publica.py::reservar`, antes de crear el turno; hoy la reserva es directa.
 - **Tomado:** `012_horario_atencion` (C-05d, Matheo, `down_revision = "011_sobreturno_huecos"`).
 - **Tomado:** `011_sobreturno_huecos` (C-05c, Matheo, `down_revision = "010_recetas_externas"`). La 007 quedó sin usar: no insertar migraciones en medio de la cadena, porque una base que ya está más adelante las da por aplicadas.
-- Quien cree una migración nueva usa el número siguiente al head (hoy 013) y pone como `down_revision` el head **del momento en que mergea**. Antes de mergear: `cd backend && alembic heads` tiene que mostrar un único head. Si hay dos, actualizar el `down_revision` de su migración para colgarla de la otra.
+- Quien cree una migración nueva usa el número siguiente al head (hoy 014) y pone como `down_revision` el head **del momento en que mergea**. Antes de mergear: `cd backend && alembic heads` tiene que mostrar un único head. Si hay dos, actualizar el `down_revision` de su migración para colgarla de la otra.
 - Avisen en el grupo qué número toman.
 
 ---

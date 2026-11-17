@@ -47,6 +47,18 @@ body {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
+/* C-06: entrada del formulario de reserva (anulada por prefers-reduced-motion abajo) */
+@keyframes aparecer {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 :focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 2px;

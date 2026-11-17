@@ -434,3 +434,17 @@ El sistema SHALL rechazar con `409` "Horario no disponible", sin persistir, el a
 - **GIVEN** P atiende el lunes de `09:00–13:00` y no hay bloqueos
 - **WHEN** la recepcionista crea un sobreturno con motivo a las `13:15` locales
 - **THEN** el sistema responde `201` con `es_sobreturno = true`.
+
+### Requirement: Transiciones del paciente por enlace
+
+El historial de transiciones SHALL registrar el tipo de actor de cada transición: `usuario` (con `actor_usuario_id` obligatorio) o `paciente_enlace` (sin usuario). Un turno reservado por enlace SHALL quedar con `origen = "enlace"`; uno creado en el mostrador, con `origen = "mostrador"`. La base SHALL rechazar una transición de tipo `usuario` sin `actor_usuario_id` y una de tipo `paciente_enlace` con usuario.
+
+#### Scenario: Cancelación por enlace en el historial
+
+- **WHEN** el paciente cancela su turno con el token
+- **THEN** el historial guarda `desde = "reservado"`, `hacia = "cancelado"`, `actor_tipo = "paciente_enlace"` y `actor_usuario_id` nulo.
+
+#### Scenario: Coherencia del actor
+
+- **WHEN** se intenta insertar una transición `actor_tipo = "usuario"` sin `actor_usuario_id`
+- **THEN** la base la rechaza (`23514`).

@@ -119,3 +119,22 @@ def test_repositorio_de_otra_clinica_no_ve_el_historial(  # type: ignore[no-unty
         propio = BaseRepository(session, TurnoTransicion, turnos_data["a"])
         assert ajeno.get(fila["id"], include_inactive=True) is None
         assert propio.get(fila["id"], include_inactive=True) is not None
+
+
+def test_transicion_por_enlace_sin_usuario(session_factory, turnos_data) -> None:  # type: ignore[no-untyped-def]
+    """C-06 D4: el paciente cancela con su token; el historial queda sin usuario."""
+    from app.domain.agenda.turnos import transicionar_turno
+
+    with session_factory() as session:
+        turno = _turno(session, turnos_data)
+        session.commit()
+        turno_id = turno.id
+    with session_factory() as session:
+        resultado = transicionar_turno(
+            session, turnos_data["a"], turno_id, "cancelado", None, None,
+            datetime(2031, 1, 1, tzinfo=UTC), actor_tipo="paciente_enlace",
+        )  # fmt: skip
+        assert resultado.estado == "cancelado"
+    with session_factory() as session:
+        tr = session.query(TurnoTransicion).filter_by(turno_id=turno_id).one()
+        assert (tr.actor_tipo, tr.actor_usuario_id) == ("paciente_enlace", None)

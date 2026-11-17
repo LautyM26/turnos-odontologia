@@ -64,7 +64,7 @@ export function getClinicaId(): string {
   return import.meta.env.VITE_CLINICA_ID ?? "";
 }
 
-function buildUrl(path: string): string {
+export function buildUrl(path: string): string {
   const base = getApiBaseUrl().replace(/\/$/, "");
   return `${base}${path}`;
 }
@@ -74,7 +74,7 @@ interface ErrorValidacion {
   msg?: string;
 }
 
-async function leerError(response: Response): Promise<ApiError> {
+export async function leerError(response: Response): Promise<ApiError> {
   let detail = response.statusText || `HTTP ${response.status}`;
   let campos: Record<string, string> | undefined;
   try {

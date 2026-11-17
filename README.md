@@ -92,6 +92,15 @@ Tests del change C-05c `huecos-y-sobreturnos` (sobreturno con motivo y `GET /api
 python -m pytest backend/tests/unit/test_turno_schemas.py backend/tests/integration/test_migracion_011.py backend/tests/integration/test_turnos_db_constraints.py backend/tests/integration/test_sobreturnos_api.py backend/tests/integration/test_huecos_servicio.py backend/tests/integration/test_huecos_api.py -v
 ```
 
+Tests del change C-06 `reserva-online-publica` (reserva sin cuenta por enlace; backend + frontend):
+
+```bash
+python -m pytest backend/tests/unit/test_reserva_schemas.py backend/tests/integration/test_migracion_013.py backend/tests/integration/test_reserva_publica_servicio.py backend/tests/integration/test_reserva_publica_concurrencia.py backend/tests/integration/test_reserva_publica_api.py -v
+cd frontend && npx vitest run tests/reserva-api.test.ts tests/reserva.test.tsx
+```
+
+> **Reserva online (C-06):** el enlace público de la clínica piloto es `http://localhost:5173/reservar/clinica-piloto` (sin login). Solo aparecen profesionales con horario cargado (C-05d). Sin seña: la rama de Mercado Pago llega con C-12.
+
 Tests del change C-05d `horario-atencion` (franjas por profesional, huecos y alta limitados al horario):
 
 ```bash
@@ -219,4 +228,4 @@ claude mcp add --scope user --transport http context7 https://mcp.context7.com/m
 
 ## Estado
 
-Archivados: C-01, C-02, C-03, C-04, C-05 completo (`crear-turno-sin-solapamientos`, C-05b `transiciones-estado-turno` y C-05c `huecos-y-sobreturnos`), C-05d `horario-atencion`, C-08, C-09, C-10, C-18 y C-19. Ver `CHANGES.md` y `openspec/changes/archive/`.
+Archivados: C-01, C-02, C-03, C-04, C-05 completo (`crear-turno-sin-solapamientos`, C-05b `transiciones-estado-turno` y C-05c `huecos-y-sobreturnos`), C-05d `horario-atencion`, C-06 `reserva-online-publica` (sin seña), C-08, C-09, C-10, C-18 y C-19. Ver `CHANGES.md` y `openspec/changes/archive/`.

@@ -1,8 +1,8 @@
 /**
  * Árbol de rutas (router de datos de React Router 7).
  *
- * - Públicas (fuera de la sesión): /, /reservar/:token, /cumplimiento, /privacidad (C-18),
- *   /comprobantes/:id y /login.
+ * - Públicas (fuera de la sesión): /, /reservar/:slug y /reserva/:token (C-06), /cumplimiento,
+ *   /privacidad (C-18), /comprobantes/:id y /login.
  * - Protegidas: hijas de AppLayout, cuyo loader exige sesión. C-07 agrega /agenda acá.
  */
 
@@ -24,14 +24,14 @@ import { ComprobantePage } from "./pages/ComprobantePage";
 import { CumplimientoPage } from "./pages/CumplimientoPage";
 import { HomePage } from "./pages/HomePage";
 import { PrivacidadPage } from "./pages/PrivacidadPage";
-import { ReservarPage } from "./pages/ReservarPage";
 
 export const rutas: RouteObject[] = [
   {
     Component: PublicLayout,
     children: [
       { path: "/", Component: HomePage },
-      { path: "/reservar/:token", Component: ReservarPage },
+      { path: "/reservar/:slug", lazy: () => import("@/features/reserva/ReservarPage") },
+      { path: "/reserva/:token", lazy: () => import("@/features/reserva/ReservaPage") },
       { path: "/cumplimiento", Component: CumplimientoPage },
       { path: "/privacidad", Component: PrivacidadPage },
       { path: "/comprobantes/:id", Component: ComprobantePage },

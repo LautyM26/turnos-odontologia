@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from app.domain.core.models import ROL_CLAVES, Clinica, Rol, Usuario, UsuarioRol
 
 SEED_CLINICA_CUIT = "30123456781"
+SEED_CLINICA_SLUG = "clinica-piloto"
 SEED_CLINICA_NOMBRE = "Clinica Piloto Sintetica"
 SEED_ADMIN_EMAIL = "admin@clinica-piloto.test"
 _DEV_ONLY_FALLBACK = "dev-only-cambiar-en-produccion"
@@ -49,6 +50,7 @@ def seed_core(session: Session) -> dict[str, int]:
         )
         session.add(clinica)
         session.flush()
+    clinica.slug = SEED_CLINICA_SLUG  # enlace /reservar/clinica-piloto (C-06), idempotente
 
     for clave in ROL_CLAVES:
         rol = session.scalars(select(Rol).where(Rol.clave == clave)).one_or_none()

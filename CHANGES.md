@@ -283,7 +283,7 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
 ---
 
 ### [C-06] `reserva-online-publica`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` completado — archivado 2026-11-17 (`openspec/changes/archive/2026-11-17-reserva-online-publica/`, 1348 tests backend + 215 frontend en verde, ver `verify.md`). **Sin seña (→ C-12)**: la rama "seña exigida" se engancha en `reserva_publica.reservar`. Decidido con el usuario: rate limit por IP + máx. 2 turnos futuros por DNI (sin captcha), DNI existente se reutiliza sin tocar datos, API + pantalla pública. Migración `013_reserva_online`.
 - **Scope**: Enlace público de reserva sin registro con pre-bloqueo y política de seña (US-003, Flujo 1, RN-AG-05 + RN-CA-01/02)
   - Endpoints públicos (sin auth, con rate limit + captcha/Turnstile): `GET /api/public/disponibilidad?prestacion_id&profesional_id`, `POST /api/public/reservas` (DNI + email/teléfono, crea/encuentra Paciente sin Usuario), `GET /api/public/reservas/{token}` (token único por reserva para ver/cancelar)
   - Pre-bloqueo: crea Turno `reservado` con `hold_expires_at = now() + RESERVA_PREBLOQUEO_MIN` (default 15, SU-04 a validar con piloto); job expira holds sin seña y libera hueco; si `seña_exigida` (riesgo alto o prestación lo exige) → el horario se bloquea recién al confirmar pago (callback de C-12), si no → reserva directa

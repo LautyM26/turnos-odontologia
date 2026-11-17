@@ -51,8 +51,8 @@ Reglas relacionadas de otras áreas: RN-PR-03 (montos siempre en ARS, precio pú
 
 | Regla | Spec (archivo · requirement) | Test (archivo · función) | Estado |
 |---|---|---|---|
-| RN-CA-01 | — | — | pendiente |
-| RN-CA-02 | — | — | pendiente |
+| RN-CA-01 | — | — | pendiente (C-12). Punto de extensión: `backend/app/domain/agenda/reserva_publica.py` (función `reservar`, antes de `crear_turno`); C-06 reserva sin seña |
+| RN-CA-02 | — | — | pendiente (C-12; el score `riesgo_ausencia` existe en Paciente pero aún no decide la seña) |
 | RN-CA-03 | `openspec/specs/access-control/spec.md` · "Sobreturnos y anulaciones chequeados por rol" (solo el permiso) | `backend/tests/integration/test_rbac.py` · `test_anulacion_caja_solo_admin` | parcial: existe el guard de rol, faltan caja, cobros y traza |
 
 Resumen: 3 reglas · 0 cubiertas · 1 parcial · 2 pendientes.

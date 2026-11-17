@@ -24,6 +24,10 @@ from app.infrastructure.persistence.mixins import AuditMixin, TenantMixin
 ROL_CLAVES = ("admin", "odontologo", "recepcionista", "paciente-enlace")
 
 
+#: Slug al azar con formato válido para clínicas sin slug explícito (espejo de la 013).
+_SLUG_DEFAULT = "'c-' || substr(md5(random()::text || clock_timestamp()::text), 1, 12)"
+
+
 class Clinica(Base, AuditMixin):
     """Tenant raíz. Única tabla no-scoped (sin TenantMixin)."""
 
@@ -34,6 +38,10 @@ class Clinica(Base, AuditMixin):
         ),
         CheckConstraint("cuit ~ '^[0-9]{11}$'", name="cuit_formato"),
         CheckConstraint("moneda = 'ARS'", name="moneda_ars"),
+        CheckConstraint(
+            "slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$' AND length(slug) BETWEEN 3 AND 60",
+            name="slug_formato",
+        ),
         Index("ix_clinica_activa", "id", postgresql_where=text("is_active")),
     )
 
@@ -45,6 +53,13 @@ class Clinica(Base, AuditMixin):
     sena_porcentaje: Mapped[float | None] = mapped_column(NumericType(5, 2), nullable=True)
     sena_monto_minimo: Mapped[float | None] = mapped_column(NumericType(12, 2), nullable=True)
     sena_obligatoria: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    #: Enlace público ``/reservar/{slug}`` (C-06 D1, migración 013); default al azar en la base.
+    slug: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        unique=True,
+        server_default=text(_SLUG_DEFAULT),
+    )
     #: Zona IANA en que se interpretan las franjas de atención (C-05d D2, migración 012).
     zona_horaria: Mapped[str] = mapped_column(
         Text, nullable=False, server_default="America/Argentina/Buenos_Aires"

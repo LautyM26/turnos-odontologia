@@ -25,7 +25,6 @@ describe("rutas protegidas y públicas", () => {
   it.each([
     ["/", "Turnos Odontología"],
     ["/cumplimiento", "Cumplimiento y privacidad"],
-    ["/reservar/abc", "Reservar turno"],
     ["/comprobantes/1", "Comprobante"],
   ])("%s se muestra sin sesión y sin pedir nada", async (ruta, titulo) => {
     const { api } = renderApp(ruta, {});

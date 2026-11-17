@@ -63,8 +63,9 @@ ENTIDADES_EXPORTABLES: dict[str, Any] = {
     "recetas": RecetaExterna,
 }
 
-#: ``password_hash``: secreto; ``rango``: columna derivada de inicio/fin (tstzrange).
-COLUMNAS_EXCLUIDAS = frozenset({"password_hash", "rango"})
+#: ``password_hash``: secreto; ``rango``: columna derivada de inicio/fin (tstzrange);
+#: ``token_publico_hash``: credencial de la reserva por enlace (C-06), no es dato del paciente.
+COLUMNAS_EXCLUIDAS = frozenset({"password_hash", "rango", "token_publico_hash"})
 
 EXCLUIDAS = [
     {"entidad": "caja", "motivo": "no existe aún (C-12)"},
