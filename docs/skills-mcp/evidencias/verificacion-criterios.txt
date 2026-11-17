@@ -1,0 +1,36 @@
+$ python .claude/skills/crear-skill-de-dominio/scripts/verificar.py dominio-agenda RN-AG RN-TU
+[1] RN-AG: 6 en KB, 6 en matriz
+[1] RN-TU: 4 en KB, 4 en matriz
+[2] frases contrarias a DD vigentes fuera de Conflictos: 0
+[3] rutas citadas: 20, inexistentes: 0
+[4] description: Reglas vigentes de agenda y turnos (RN-AG + RN-TU) con trazabilidad a specs y tests. Usar al programar turnos, huecos, solapamientos, sillones, bloqueos, sobreturnos, estados del turno (reservado, confirmado, asistido, ausente, cancelado), cancelar o reprogramar, reserva online, lista de espera o la agenda del frontend (changes C-05, C-05b transiciones-estado-turno, C-06, C-07, C-16, C-17), y antes de /opsx:propose de cualquier change de agenda.
+[5] índices y copias revisados
+[6] números con forma de DNI/teléfono: ninguno (revisar a mano)
+
+RESULTADO: OK
+(exit 0)
+
+$ python .claude/skills/crear-skill-de-dominio/scripts/verificar.py dominio-caja RN-CA
+[1] RN-CA: 3 en KB, 3 en matriz
+[2] frases contrarias a DD vigentes fuera de Conflictos: 0
+[3] rutas citadas: 6, inexistentes: 0
+[4] description: Reglas vigentes de caja y seña (RN-CA) con trazabilidad a specs y tests. Usar al programar cobros, señas, saldos, anulaciones de caja, resumen o arqueo diario, preferencias o webhooks de Mercado Pago, o el score de riesgo que decide si se exige seña (change C-12 caja-mercadopago, y la parte de seña de C-06), y antes de /opsx:propose de cualquier change de caja.
+[5] índices y copias revisados
+[6] números con forma de DNI/teléfono: ninguno (revisar a mano)
+
+RESULTADO: OK
+(exit 0)
+
+$ python .claude/skills/crear-skill-de-dominio/scripts/verificar.py dominio-caja RN-CA RN-AF
+[1] RN-CA: 3 en KB, 3 en matriz
+[1] RN-AF: 2 en KB, 0 en matriz
+[2] frases contrarias a DD vigentes fuera de Conflictos: 0
+[3] rutas citadas: 6, inexistentes: 0
+[4] description: Reglas vigentes de caja y seña (RN-CA) con trazabilidad a specs y tests. Usar al programar cobros, señas, saldos, anulaciones de caja, resumen o arqueo diario, preferencias o webhooks de Mercado Pago, o el score de riesgo que decide si se exige seña (change C-12 caja-mercadopago, y la parte de seña de C-06), y antes de /opsx:propose de cualquier change de caja.
+[5] índices y copias revisados
+[6] números con forma de DNI/teléfono: ninguno (revisar a mano)
+
+RESULTADO: FALLA
+  - 1: faltan en la matriz ['RN-AF-01', 'RN-AF-02']
+(exit 1)
+

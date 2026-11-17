@@ -1,0 +1,87 @@
+[
+  {
+    "skill": "dominio-caja",
+    "debe_activar": true,
+    "query": "vamos a arrancar C-12: necesito diseñar el webhook de mercado pago que confirma la seña del turno, ¿qué reglas del negocio tengo que respetar?",
+    "skills_invocadas": [
+      "dominio-caja"
+    ],
+    "activada": true,
+    "ok": true
+  },
+  {
+    "skill": "dominio-caja",
+    "debe_activar": true,
+    "query": "quiero agregar el endpoint para anular un cobro de caja, quién puede hacerlo y qué tiene que quedar registrado?",
+    "skills_invocadas": [
+      "dominio-caja"
+    ],
+    "activada": true,
+    "ok": true
+  },
+  {
+    "skill": "dominio-agenda",
+    "debe_activar": true,
+    "query": "tengo que proponer el change de transiciones de estado del turno (confirmar, cancelar, ausente). Antes de escribir el proposal decime qué reglas vigentes aplican y qué ya está cubierto por tests",
+    "skills_invocadas": [
+      "dominio-agenda"
+    ],
+    "activada": true,
+    "ok": true
+  },
+  {
+    "skill": "dominio-agenda",
+    "debe_activar": true,
+    "query": "¿cómo debería comportarse el sistema si dos recepcionistas reservan el mismo sillón a la misma hora? quiero agregar sobreturnos con motivo",
+    "skills_invocadas": [
+      "dominio-agenda"
+    ],
+    "activada": true,
+    "ok": true
+  },
+  {
+    "skill": "crear-skill-de-dominio",
+    "debe_activar": true,
+    "query": "creá la skill del dominio clínica (RN-CL) que la vamos a necesitar para C-09 odontograma",
+    "skills_invocadas": [
+      "crear-skill-de-dominio"
+    ],
+    "activada": true,
+    "ok": true
+  },
+  {
+    "skill": "crear-skill-de-dominio",
+    "debe_activar": true,
+    "query": "antes de hacer /opsx:propose de C-15 whatsapp necesito una skill con las reglas RN-WA vigentes y su trazabilidad a specs y tests",
+    "skills_invocadas": [
+      "crear-skill-de-dominio",
+      "dominio-caja"
+    ],
+    "activada": true,
+    "ok": true
+  },
+  {
+    "skill": "dominio-caja",
+    "debe_activar": false,
+    "query": "el test test_cuit.py falla con un CUIT que termina en 0, revisá el validador de CUIT de la clínica",
+    "skills_invocadas": [],
+    "activada": false,
+    "ok": true
+  },
+  {
+    "skill": "dominio-agenda",
+    "debe_activar": false,
+    "query": "agregá un índice por dni a la tabla de pacientes y la migración alembic correspondiente",
+    "skills_invocadas": [],
+    "activada": false,
+    "ok": true
+  },
+  {
+    "skill": "crear-skill-de-dominio",
+    "debe_activar": false,
+    "query": "explicame qué hace la skill openspec-propose y en qué se diferencia de opsx:apply",
+    "skills_invocadas": [],
+    "activada": false,
+    "ok": true
+  }
+]
