@@ -132,3 +132,14 @@ def test_sin_gateway_queda_no_configurado_y_se_reintenta_al_configurar(
     _correr(session_factory, fake, ahora + timedelta(minutes=30))
     [m] = _recordatorios(session_factory, tid)
     assert m.estado == "enviado" and len(fake.enviados) == 1
+
+
+def test_muchos_turnos_en_una_sola_corrida(session_factory, turnos_data) -> None:  # type: ignore[no-untyped-def]
+    """Regresión: con muchos envíos psycopg prepara el INSERT y el ON CONFLICT con un WHERE
+    parametrizado deja de reconocer el índice parcial. Una clínica real tiene decenas por día."""
+    ahora, fake = nuevo_ahora(), FakeMensajeria()
+    ids = [turno_wa(session_factory, turnos_data, ahora + timedelta(hours=1, minutes=45 * i))[0]
+           for i in range(25)]  # fmt: skip
+    c = _correr(session_factory, fake, ahora)
+    assert c == {"enviados": 25, "fallidos": 0}
+    assert all(len(_recordatorios(session_factory, t)) == 1 for t in ids)
