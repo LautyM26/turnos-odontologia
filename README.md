@@ -1,78 +1,255 @@
 # Turnos Odontología — SaaS multi-tenant (AR)
 
 Sistema de gestión de turnos para clínicas odontológicas argentinas: agenda con
-anti-solapamiento duro, reserva online sin cuenta, odontograma + HC append-only,
+anti-solapamiento duro, reserva online sin cuenta, odontograma + historia clínica append-only,
 presupuesto → plan → turnos, caja con Mercado Pago, factura electrónica ARCA,
 WhatsApp por QR con número dedicado y cumplimiento Ley 25.326/26.529.
 
-## Stack (DD-08)
+**Stack (DD-08):** Python + FastAPI · PostgreSQL 16 · Alembic · React + Vite + TypeScript.
 
-Backend Python + FastAPI · PostgreSQL 16 · Frontend React + Vite + TS · Alembic.
+> **¿Vas a continuar el proyecto?** Leé primero [`docs/CONTINUAR.md`](docs/CONTINUAR.md): estado, reparto de changes, entorno y flujo de trabajo.
 
-## Quick start (C-01)
+## Contenido
+
+1. [Estado: qué está completo y qué falta](#estado-qué-está-completo-y-qué-falta)
+2. [Levantar la demo local](#levantar-la-demo-local): requisitos, instalación, configuración, datos ficticios, arranque y Swagger
+3. [Qué mirar en la demo](#qué-mirar-en-la-demo)
+4. [Configuración de integraciones](#configuración-de-integraciones)
+5. [Tests](#tests)
+6. [Skills propias y MCP](#skills-propias-y-mcp)
+7. [Documentación y estructura](#documentación-y-estructura)
+
+## Estado: qué está completo y qué falta
+
+**16 de 20 changes completos y archivados** (implementados, con tests en verde y `verify.md`).
+Detalle en [`CHANGES.md`](CHANGES.md) y `openspec/changes/archive/`.
+
+| Fase | Changes | Estado |
+|------|---------|--------|
+| 0 — Cimientos | C-01 `foundation-setup`, C-02 `core-models-multitenancy` | ✅ completo |
+| 1 — Identidad y acceso | C-03 `auth-rbac` | ✅ completo |
+| 2 — Núcleo agenda | C-04 `clinica-catalogo`, C-08 `pacientes-ficha`, C-05 `motor-turnos` (+ C-05b, C-05c), C-05d `horario-atencion`, C-06 `reserva-online-publica`, C-07 `agenda-frontend`, C-20 `rediseno-visual` | ✅ completo |
+| 3 — Clínica | C-09 `odontograma-evolucion`, C-10 `clinica-frontend` | ✅ completo |
+| 4 — Comercial y fiscal | C-11 `presupuesto-plan`, C-12 `caja-mercadopago`, C-13 `factura-arca`, C-14 `comercial-frontend` | ⬜ **pendiente** |
+| 5 — WhatsApp | C-15 `whatsapp-bidireccional`, C-16 `lista-espera-relleno`, C-17 `chatbot-reprogramacion` | ✅ completo |
+| 6 — Cumplimiento | C-18 `consentimientos-cumplimiento`, C-19 `recetas-partner-renapdis` | ✅ completo |
+
+**Qué queda pendiente**
+
+- **Fase 4 completa (C-11 a C-14):** presupuestos y planes de tratamiento, caja y cobros con Mercado Pago,
+  factura electrónica ARCA y las pantallas comerciales. No hay código de esto todavía.
+- **Seña:** la reserva online, la lista de espera y la reprogramación funcionan **sin seña**; la exigencia de
+  seña se engancha cuando llegue C-12.
+- **Partner de recetas real:** C-19 funciona con un partner **simulado** (`fake`); el adapter de un partner
+  real registrado en ReNaPDiS (PA-08) es un change posterior.
+- **WhatsApp con número real:** el código está completo y probado con un gateway simulado; conectar un número
+  real requiere levantar el gateway QR y escanear la sesión (ver [Configuración de integraciones](#configuración-de-integraciones)).
+
+## Levantar la demo local
+
+> 🔒 **El repo no trae ninguna contraseña ni secreto.** Cada uno elige los suyos en su PC (los `<...>` de
+> abajo son lugares para completar). Usuarios, pacientes y turnos de la demo son **ficticios**: nada real
+> (regla dura 14).
+
+Los comandos son para bash (Git Bash en Windows). En PowerShell, `export NOMBRE=valor` se escribe `$env:NOMBRE="valor"`.
+
+### 1. Requisitos
+
+| Herramienta | Versión | Para qué |
+|-------------|---------|----------|
+| Python | 3.12 o superior | Backend |
+| Node.js | 20 o superior | Frontend |
+| Docker Desktop | corriendo | Base de datos PostgreSQL 16 y tests de integración |
+| Git | — | Clonar el repo |
+
+### 2. Instalación
 
 ```bash
-docker compose up db            # PostgreSQL 16 en :5432
-uvicorn app.main:app --reload --app-dir backend   # API en :8000
-cd frontend && npm install && npm run dev          # UI en :5173
-curl http://localhost:8000/api/health             # {"status":"ok"}
+git clone <url-del-repo> turnos-odontologia && cd turnos-odontologia
+
+# Backend: entorno virtual + dependencias
+python -m venv .venv
+source .venv/bin/activate          # Windows (Git Bash): source .venv/Scripts/activate
+pip install fastapi uvicorn "pydantic[email]" pydantic-settings sqlalchemy "psycopg[binary]" \
+  alembic bcrypt PyJWT slowapi phonenumbers python-multipart httpx
+
+# Frontend: dependencias
+cd frontend && npm install && cd ..
+
+# Base de datos: PostgreSQL 16 en Docker
+# (puerto 55432 para no chocar con un PostgreSQL instalado en Windows en :5432)
+docker run -d --name turnos-demo-pg -p 55432:5432 \
+  -e POSTGRES_USER=turnos -e POSTGRES_PASSWORD=<pass-db> -e POSTGRES_DB=turnos postgres:16-alpine
 ```
 
-## Demo clínica (C-10): backend + frontend juntos
+### 3. Configuración de ejemplo (sin secretos)
 
-Requisitos: Python 3.12+, Node 20+, Docker Desktop. Los usuarios y pacientes son **sintéticos** (nada real).
-Elegí vos las contraseñas: no se versionan.
+Crear un archivo `.env` **en la raíz del repo** (el backend lo lee desde la carpeta donde se arranca;
+`.env` está en `.gitignore`, nunca se commitea). Ejemplo para la demo local:
+
+```dotenv
+# Base de datos (la misma <pass-db> del docker run)
+DATABASE_URL=postgresql+psycopg://turnos:<pass-db>@localhost:55432/turnos
+
+# Auth: cualquier texto aleatorio de 32+ caracteres, solo para tu PC
+JWT_SECRET_KEY=<secreto-largo-de-32-o-mas-caracteres>
+COOKIE_SECURE=false            # solo en http local; en producción va true
+
+# Entorno de demo: habilita los adaptadores simulados de abajo
+ENTORNO=demo
+WHATSAPP_GATEWAY=fake          # WhatsApp simulado (no envía mensajes reales)
+RECETAS_PARTNER=fake           # partner de recetas simulado (recetas marcadas "simulada")
+```
+
+Todas las variables posibles, con su descripción y valores por defecto, están en
+[`backend/.env.example`](backend/.env.example) y en `backend/app/infrastructure/settings.py`.
+
+> ⚠️ El backend rechaza variables que no conoce: las `SEED_*` del paso siguiente **no** van en el `.env`,
+> se exportan en la terminal.
+
+### 4. Datos ficticios
 
 ```bash
-# 1) Base de datos PostgreSQL 16 (puerto 55432 para no chocar con una instalación local en :5432)
-docker run -d --name turnos-demo-pg -p 55432:5432 -e POSTGRES_USER=turnos   -e POSTGRES_PASSWORD=<pass-db> -e POSTGRES_DB=turnos postgres:16-alpine
-
-# 2) Variables (bash; en PowerShell usá $env:NOMBRE="valor")
 export DATABASE_URL=postgresql+psycopg://turnos:<pass-db>@localhost:55432/turnos
-export JWT_SECRET_KEY=<secreto-largo-solo-dev>
-export COOKIE_SECURE=false            # solo dev http local: la cookie de refresh sin flag Secure
-export SEED_DEMO_PASSWORD=<pass-demo> # password de los usuarios de demo
+export SEED_DEMO_PASSWORD=<pass-demo>    # contraseña que vas a usar para entrar con los usuarios de demo
+export SEED_ADMIN_PASSWORD=<pass-demo>   # idem para el admin (puede ser la misma)
 
-# 3) Migraciones + datos de demo (idempotente: se puede repetir)
-python -m alembic -c backend/alembic.ini upgrade head
-python backend/scripts/seed_demo_clinica.py
-
-# 4) API (:8000) y UI (:5173, proxy /api -> :8000)
-uvicorn app.main:app --app-dir backend --port 8000
-cd frontend && npm install && npm run dev
+python -m alembic -c backend/alembic.ini upgrade head   # crea las tablas (migraciones)
+python backend/scripts/seed_demo_clinica.py             # clínica piloto, 3 usuarios y 3 pacientes demo
+python backend/scripts/seed_demo_agenda.py              # 3 sillones, 3 profesionales, 12 pacientes y ~60 turnos de la semana actual
 ```
 
-Abrí http://localhost:5173/login. Usuarios de demo (todos con `SEED_DEMO_PASSWORD`, salvo el admin que usa
-`SEED_ADMIN_PASSWORD` o el fallback dev-only de `seed_core`):
+Los scripts se pueden repetir sin duplicar datos. Todo lo que crean está marcado como seed y es sintético
+(DNI de prueba 98xxxxxx, emails `@clinica-piloto.test`).
+
+### 5. Arranque del backend y del frontend
+
+```bash
+# Terminal 1 — API en http://localhost:8000
+uvicorn app.main:app --app-dir backend --port 8000
+
+# Terminal 2 — Frontend en http://localhost:5173 (el proxy de Vite manda /api a :8000)
+cd frontend && npm run dev
+```
+
+Comprobar: `curl http://localhost:8000/api/health` → `{"status":"ok"}` y abrir http://localhost:5173.
+
+### 6. Swagger
+
+La documentación interactiva de la API está en **http://localhost:8000/docs** (Swagger UI) y en
+http://localhost:8000/redoc: lista todas las rutas con sus esquemas, y las públicas (health, reserva online,
+páginas legales) se prueban directo con **Try it out**.
+
+Las rutas protegidas piden un token. El botón **Authorize** de Swagger no sirve en este proyecto (manda un
+formulario y el login acepta JSON), así que el token se obtiene con `POST /api/auth/login` y se usa por curl:
+
+```bash
+TOKEN=$(curl -s -X POST http://localhost:8000/api/auth/login -H "Content-Type: application/json" \
+  -d '{"email":"recepcion@clinica-piloto.test","password":"<pass-demo>"}' | python -c "import json,sys;print(json.load(sys.stdin)['access_token'])")
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/pacientes
+```
+
+**Problemas comunes**
+
+- **Página en blanco o error `Failed to resolve import "..."`:** faltan dependencias del frontend
+  (se agregan en algunos changes). Correr `npm install` en `frontend/` y reiniciar `npm run dev`.
+- **El puerto 8000 está ocupado:** levantá la API en otro (`--port 8010`) y arrancá el frontend con
+  `VITE_PROXY_TARGET=http://localhost:8010 npm run dev`.
+- **`pip install -e backend` falla** ("Multiple top-level packages"): es esperable; instalá las
+  dependencias con el `pip install` del paso 2.
+- **`docker compose up db` no arranca** porque ya hay un PostgreSQL en :5432: usá el `docker run` del paso 2.
+
+### Usuarios de demo
+
+Todos entran con la contraseña que pusiste en `SEED_DEMO_PASSWORD` (el admin, con `SEED_ADMIN_PASSWORD`).
+Login: máximo 5 intentos por minuto.
 
 | Usuario | Rol | Qué ve |
 |---------|-----|--------|
-| `odontologo@clinica-piloto.test` | Odontólogo | Todo: ficha, odontograma (marcar y guardar), evoluciones (alta y corrección), adjuntos |
-| `recepcion@clinica-piloto.test` | Recepcionista | Pacientes y datos administrativos; las pestañas clínicas muestran "Sin acceso clínico" |
-| `admin@clinica-piloto.test` | Administrador | Historia clínica en solo lectura (sin controles de escritura) |
+| `odontologo@clinica-piloto.test` | Odontólogo | Todo lo clínico: ficha, odontograma, evoluciones (alta y corrección), adjuntos |
+| `recepcion@clinica-piloto.test` | Recepcionista | Agenda, pacientes y datos administrativos; en lo clínico ve "Sin acceso clínico" |
+| `admin@clinica-piloto.test` | Administrador | Historia clínica en solo lectura, usuarios, exportación |
 
-Pacientes de demo: `Sintético, Demo Uno/Dos` (con consentimiento) y `Demo Tres` (sin consentimiento: la escritura clínica queda bloqueada).
-Login: máximo 5 intentos por minuto. Tests del frontend: `cd frontend && npm test`. E2E con navegador real:
-`E2E_PASSWORD=<pass-demo> python scripts/e2e/clinica_demo.py` (requiere `pip install playwright` y `python -m playwright install chromium`).
+Pacientes de demo: `Sintético, Demo Uno` y `Demo Dos` (con consentimiento) y `Demo Tres` (sin
+consentimiento: la escritura clínica queda bloqueada). `seed_demo_agenda.py` suma 12 pacientes ficticios
+más (DNI 98xxxxxx), solo con datos de contacto.
 
-## Cómo correr los tests
+## Qué mirar en la demo
 
-Requisitos: Python 3.12+ y **Docker Desktop corriendo** (los tests de integración levantan
-PostgreSQL 16 real con testcontainers; nunca SQLite).
+| Pantalla | URL | Login | Notas |
+|----------|-----|-------|-------|
+| Landing | http://localhost:5173/ | No | Botón de tema: Claro / Oscuro / Sistema (C-20) |
+| Agenda | http://localhost:5173/agenda | Staff | Día por sillón y semana por profesional; alta y cambios de estado (C-07) |
+| Pacientes e historia clínica | http://localhost:5173/pacientes | Staff | Ficha, odontograma, evoluciones y adjuntos (C-10) |
+| Reserva online | http://localhost:5173/reservar/clinica-piloto | No | Solo aparecen profesionales con horario cargado (C-05d, C-06) |
+| Comprobante / reprogramar | `/reserva/{token}` · `/reprogramar/{token}` | No | El enlace llega al reservar (C-17, C-20) |
+| Cumplimiento y privacidad | http://localhost:5173/cumplimiento · `/privacidad` | No | Páginas legales públicas (C-18) |
+| API (Swagger) | http://localhost:8000/docs | — | Todas las rutas del backend |
+
+- **Horario de atención:** un profesional sin franjas no tiene huecos ni acepta turnos normales.
+  Se carga con `PUT /api/admin/profesionales/{id}/horario` (admin). Los seeds traen lunes a viernes 09–13 y 14–18.
+- **Diseño:** el sistema de diseño está en [`design-system/turnos-odontologia/MASTER.md`](design-system/turnos-odontologia/MASTER.md).
+  Las capturas de la landing (`frontend/public/landing/`) se regeneran con `E2E_PASSWORD=<pass-demo> python scripts/e2e/capturas_landing.py`.
+
+## Configuración de integraciones
+
+Las variables van en el `.env` del paso 3 (lista completa en `backend/.env.example`). Son solo del backend:
+nunca con prefijo `VITE_` y nunca con valores reales en el repo.
+
+Las integraciones externas nunca impiden que el sistema arranque: si una no está configurada, solo esa
+función responde `501` con un mensaje de configuración. Los adaptadores simulados (`fake`) funcionan solo con
+`ENTORNO` distinto de `produccion` (el default es `produccion`, por seguridad).
+
+### WhatsApp (C-15, C-16, C-17)
+
+| Variable | Valores | Efecto |
+|---|---|---|
+| `WHATSAPP_GATEWAY` | vacío, `fake`, `waha` | Vacío = no configurado (`501`). `fake` = gateway simulado, para demo y tests. `waha` = gateway QR real. |
+| `WHATSAPP_GATEWAY_URL` | URL del gateway | Solo con `waha` (local: `http://127.0.0.1:3000`). |
+| `WHATSAPP_GATEWAY_API_KEY` | clave del gateway | Solo env del backend; la misma que usa el contenedor `waha`. |
+| `WHATSAPP_WEBHOOK_HMAC_KEY` | secreto HMAC | Firma de los eventos entrantes del gateway. |
+
+Para usar un número real por QR: levantar el gateway con `docker compose --profile whatsapp up -d waha` y
+seguir el runbook [`docs/whatsapp-sesion.md`](docs/whatsapp-sesion.md) (sesión QR, reconexión y backup).
+
+### Partner de recetas (C-19)
+
+| Variable | Valores | Efecto |
+|---|---|---|
+| `RECETAS_PARTNER` | vacío, `fake` | Vacío = no configurado: emitir responde `501` y el resto del sistema sigue funcionando. `fake` = partner simulado. |
+| `ENTORNO` | `desarrollo`, `test`, `demo`, `produccion` (default) | Con `produccion`, `fake` queda bloqueado (`501`): una receta simulada nunca puede pasar por válida. |
+| `RECETAS_PARTNER_KEY` | credencial del partner real | Solo env/vault del backend; se enmascara en logs y errores. |
+
+`fake` genera ids `FAKE-...` y enlaces `https://partner-simulado.invalid/...`, y marca cada receta `simulada = true`.
+El adapter del partner real (PA-08) es un change posterior.
+
+## Tests
+
+**Requisitos:** el entorno de Python del paso 2 más `pip install pytest "testcontainers[postgres]" ruff`, y
+**Docker Desktop corriendo**: los tests de integración levantan un PostgreSQL 16 real con testcontainers
+(nunca SQLite). No hace falta tener la base de la demo levantada.
 
 ```bash
-python -m venv .venv
-# Windows: .venv\Scripts\activate   ·   Linux/macOS: source .venv/bin/activate
-pip install fastapi uvicorn "pydantic[email]" pydantic-settings sqlalchemy "psycopg[binary]" \
-  alembic bcrypt PyJWT slowapi phonenumbers python-multipart \
-  pytest httpx "testcontainers[postgres]" ruff
 docker version                      # debe mostrar la sección "Server"
-python -m pytest backend/tests -q   # unit + integración
+python -m pytest backend/tests -q   # backend completo: unit + integración (~20 min)
 ruff check backend
+cd frontend && npm test             # frontend (vitest)
 ```
 
-Solo los tests del change `crear-turno-sin-solapamientos` (un archivo por grupo de escenarios del spec
-`openspec/specs/appointments/spec.md`):
+E2E con navegador real (con la demo levantada; requiere `pip install playwright` y
+`python -m playwright install chromium`):
+
+```bash
+E2E_PASSWORD=<pass-demo> python scripts/e2e/clinica_demo.py      # flujo clínico
+python scripts/e2e/rediseno_evidencias.py                         # capturas claro/oscuro, desktop/móvil
+```
+
+Cada change archivado tiene en su `verify.md` la corrida completa y el detalle de qué cubre cada test.
+
+<details>
+<summary><b>Tests por change</b> (para correr solo un grupo)</summary>
+
+**`crear-turno-sin-solapamientos`** (C-05: alta + anti-solapamiento + bloqueos)
 
 ```bash
 python -m pytest backend/tests/unit/test_turno_schemas.py backend/tests/unit/test_turno_errores.py \
@@ -80,94 +257,100 @@ python -m pytest backend/tests/unit/test_turno_schemas.py backend/tests/unit/tes
   backend/tests/integration/test_turnos_api.py backend/tests/integration/test_turnos_concurrencia.py -v
 ```
 
-Tests del change C-05b `transiciones-estado-turno` (estados del turno, historial y concurrencia):
+**C-05b `transiciones-estado-turno`** (estados del turno, historial y concurrencia)
 
 ```bash
-python -m pytest backend/tests/unit/test_turno_transiciones.py backend/tests/integration/test_migracion_006.py   backend/tests/integration/test_turno_transicion_db.py backend/tests/integration/test_turno_transiciones_api.py   backend/tests/integration/test_turno_transiciones_concurrencia.py -v
+python -m pytest backend/tests/unit/test_turno_transiciones.py backend/tests/integration/test_migracion_006.py \
+  backend/tests/integration/test_turno_transicion_db.py backend/tests/integration/test_turno_transiciones_api.py \
+  backend/tests/integration/test_turno_transiciones_concurrencia.py -v
 ```
 
-Tests del change C-05c `huecos-y-sobreturnos` (sobreturno con motivo y `GET /api/agenda/huecos`; Docker Desktop corriendo):
+**C-05c `huecos-y-sobreturnos`** (sobreturno con motivo y `GET /api/agenda/huecos`)
 
 ```bash
-python -m pytest backend/tests/unit/test_turno_schemas.py backend/tests/integration/test_migracion_011.py backend/tests/integration/test_turnos_db_constraints.py backend/tests/integration/test_sobreturnos_api.py backend/tests/integration/test_huecos_servicio.py backend/tests/integration/test_huecos_api.py -v
+python -m pytest backend/tests/unit/test_turno_schemas.py backend/tests/integration/test_migracion_011.py \
+  backend/tests/integration/test_turnos_db_constraints.py backend/tests/integration/test_sobreturnos_api.py \
+  backend/tests/integration/test_huecos_servicio.py backend/tests/integration/test_huecos_api.py -v
 ```
 
-Tests del change C-07 `agenda-frontend` (agenda día/semana, alta y estados; backend + frontend):
+**C-05d `horario-atencion`** (franjas por profesional; huecos y alta limitados al horario)
+
+```bash
+python -m pytest backend/tests/unit/test_horario_schemas.py backend/tests/integration/test_migracion_012.py \
+  backend/tests/integration/test_horario_api.py backend/tests/integration/test_horario_concurrencia.py \
+  backend/tests/integration/test_horario_turnos.py backend/tests/integration/test_seed_catalogo.py -v
+```
+
+**C-06 `reserva-online-publica`** (reserva sin cuenta por enlace; backend + frontend)
+
+```bash
+python -m pytest backend/tests/unit/test_reserva_schemas.py backend/tests/integration/test_migracion_013.py \
+  backend/tests/integration/test_reserva_publica_servicio.py backend/tests/integration/test_reserva_publica_concurrencia.py \
+  backend/tests/integration/test_reserva_publica_api.py -v
+cd frontend && npx vitest run tests/reserva-api.test.ts tests/reserva.test.tsx
+```
+
+**C-07 `agenda-frontend`** (agenda día/semana, alta y estados; backend + frontend)
 
 ```bash
 python -m pytest backend/tests/integration/test_agenda_lectura_api.py -v
 cd frontend && npx vitest run tests/agenda.test.tsx tests/agenda-tiempo.test.ts tests/ui-componentes.test.tsx tests/app-shell.test.tsx
 ```
 
-Tests del change C-20 `rediseno-visual` (landing, tema claro/oscuro, reprogramación por enlace; solo frontend):
+**C-09 `odontograma-evolucion`** (odontograma FDI, evoluciones append-only, historia consolidada)
+
+```bash
+python -m pytest backend/tests/unit/test_fdi.py backend/tests/unit/test_clinica_schemas.py \
+  backend/tests/unit/test_clinica_errores.py backend/tests/integration/test_migracion_008.py \
+  backend/tests/integration/test_clinica_db.py backend/tests/integration/test_odontograma_api.py \
+  backend/tests/integration/test_odontograma_concurrencia.py backend/tests/integration/test_evoluciones_api.py \
+  backend/tests/integration/test_evoluciones_concurrencia.py backend/tests/integration/test_historia_api.py \
+  backend/tests/integration/test_rbac_clinica.py backend/tests/integration/test_clinica_aislamiento.py \
+  backend/tests/integration/test_auditoria_writer.py -v
+```
+
+**C-18 `consentimientos-cumplimiento`** (consentimientos con firma y constancia, usuarios, exportación, páginas legales)
+
+```bash
+python -m pytest backend/tests/unit/test_cumplimiento_hash.py backend/tests/unit/test_cumplimiento_textos.py \
+  backend/tests/unit/test_cumplimiento_schemas.py backend/tests/unit/test_cumplimiento_errores.py \
+  backend/tests/unit/test_exportacion_csv.py backend/tests/unit/test_usuarios_schemas.py \
+  backend/tests/integration/test_migracion_009.py backend/tests/integration/test_cumplimiento_db.py \
+  backend/tests/integration/test_auditoria_writer.py backend/tests/integration/test_consentimientos_api.py \
+  backend/tests/integration/test_consentimientos_concurrencia.py backend/tests/integration/test_rbac_consentimientos.py \
+  backend/tests/integration/test_admin_usuarios_api.py backend/tests/integration/test_usuarios_concurrencia.py \
+  backend/tests/integration/test_rbac_admin_cumplimiento.py backend/tests/integration/test_exportacion_api.py \
+  backend/tests/integration/test_exportacion_aislamiento.py -v
+npm --prefix frontend test -- tests/legal.test.tsx
+```
+
+Rutas (ver `/docs`): `POST|GET /api/pacientes/{id}/consentimientos`, `GET .../consentimientos/{cid}`,
+`POST .../consentimientos/{cid}/firmar`, `GET|POST /api/admin/usuarios`, `PATCH /api/admin/usuarios/{id}/roles`,
+`GET /api/admin/exportacion?formato=csv`. Migración `009_consentimientos_cumplimiento`.
+
+**C-19 `recetas-partner-renapdis`** (receta y órdenes de estudio solo vía partner registrado; partner simulado)
+
+```bash
+python -m pytest backend/tests/test_settings.py backend/tests/test_env_example.py backend/tests/test_health.py \
+  backend/tests/unit/test_recetas_partner.py backend/tests/unit/test_recetas_schemas.py \
+  backend/tests/unit/test_recetas_errores.py backend/tests/integration/test_migracion_010.py \
+  backend/tests/integration/test_recetas_db.py backend/tests/integration/test_auditoria_writer.py \
+  backend/tests/integration/test_recetas_api.py backend/tests/integration/test_recetas_concurrencia.py \
+  backend/tests/integration/test_rbac_recetas.py backend/tests/integration/test_exportacion_api.py \
+  backend/tests/integration/test_exportacion_aislamiento.py -v
+```
+
+Rutas (ver `/docs`): `POST|GET /api/pacientes/{id}/recetas` y `GET .../recetas/{rid}`. Migración `010_recetas_externas`.
+
+**C-20 `rediseno-visual`** (landing, tema claro/oscuro, reprogramación por enlace; solo frontend)
 
 ```bash
 cd frontend && npx vitest run tests/landing.test.tsx tests/tema.test.tsx tests/reprogramar.test.tsx tests/reserva.test.tsx tests/ui-componentes.test.tsx
 ```
 
-> **Landing y tema (C-20):** `http://localhost:5173/` es la landing del producto, con capturas reales de la agenda (`frontend/public/landing/`, regeneradas con `E2E_PASSWORD=... python scripts/e2e/capturas_landing.py`). El botón de tema (barra superior) alterna Claro / Oscuro / Sistema. El paciente reprograma desde el comprobante (`/reserva/{token}` → "Reprogramar") o directo en `/reprogramar/{token}`. Evidencia visual: `python scripts/e2e/rediseno_evidencias.py`.
+C-15, C-16 y C-17 (WhatsApp) se cubren con la suite completa del backend; el detalle está en el `verify.md` de cada uno.
 
-> **Agenda (C-07):** `http://localhost:5173/agenda` (login de staff). Para tener una semana con datos sintéticos (3 sillones, 3 profesionales, ~60 turnos, bloqueos y un sobreturno), corré después de `seed_demo_clinica.py`: `python backend/scripts/seed_demo_agenda.py` (idempotente). El sistema de diseño está en `design-system/turnos-odontologia/MASTER.md`.
-
-Tests del change C-06 `reserva-online-publica` (reserva sin cuenta por enlace; backend + frontend):
-
-```bash
-python -m pytest backend/tests/unit/test_reserva_schemas.py backend/tests/integration/test_migracion_013.py backend/tests/integration/test_reserva_publica_servicio.py backend/tests/integration/test_reserva_publica_concurrencia.py backend/tests/integration/test_reserva_publica_api.py -v
-cd frontend && npx vitest run tests/reserva-api.test.ts tests/reserva.test.tsx
-```
-
-> **Reserva online (C-06):** el enlace público de la clínica piloto es `http://localhost:5173/reservar/clinica-piloto` (sin login). Solo aparecen profesionales con horario cargado (C-05d). Sin seña: la rama de Mercado Pago llega con C-12.
-
-Tests del change C-05d `horario-atencion` (franjas por profesional, huecos y alta limitados al horario):
-
-```bash
-python -m pytest backend/tests/unit/test_horario_schemas.py backend/tests/integration/test_migracion_012.py backend/tests/integration/test_horario_api.py backend/tests/integration/test_horario_concurrencia.py backend/tests/integration/test_horario_turnos.py backend/tests/integration/test_seed_catalogo.py -v
-```
-
-> **Horario de atención (C-05d):** un profesional sin franjas no tiene huecos ni acepta turnos normales. Antes de dar turnos, cargale el horario con `PUT /api/admin/profesionales/{id}/horario` (admin). El seed trae lunes a viernes 09–13 y 14–18 para el profesional de ejemplo.
-
-Tests del change C-09 `odontograma-evolucion` (odontograma FDI, evoluciones append-only, historia consolidada; Docker Desktop corriendo):
-
-```bash
-python -m pytest backend/tests/unit/test_fdi.py backend/tests/unit/test_clinica_schemas.py backend/tests/unit/test_clinica_errores.py backend/tests/integration/test_migracion_008.py backend/tests/integration/test_clinica_db.py backend/tests/integration/test_odontograma_api.py backend/tests/integration/test_odontograma_concurrencia.py backend/tests/integration/test_evoluciones_api.py backend/tests/integration/test_evoluciones_concurrencia.py backend/tests/integration/test_historia_api.py backend/tests/integration/test_rbac_clinica.py backend/tests/integration/test_clinica_aislamiento.py backend/tests/integration/test_auditoria_writer.py -v
-```
-
-## Tests de C-18
-
-Change C-18 `consentimientos-cumplimiento` (consentimientos con firma y constancia, administración de usuarios, exportación del tenant y páginas legales públicas; Docker Desktop corriendo):
-
-```bash
-python -m pytest backend/tests/unit/test_cumplimiento_hash.py backend/tests/unit/test_cumplimiento_textos.py backend/tests/unit/test_cumplimiento_schemas.py backend/tests/unit/test_cumplimiento_errores.py backend/tests/unit/test_exportacion_csv.py backend/tests/unit/test_usuarios_schemas.py backend/tests/integration/test_migracion_009.py backend/tests/integration/test_cumplimiento_db.py backend/tests/integration/test_auditoria_writer.py backend/tests/integration/test_consentimientos_api.py backend/tests/integration/test_consentimientos_concurrencia.py backend/tests/integration/test_rbac_consentimientos.py backend/tests/integration/test_admin_usuarios_api.py backend/tests/integration/test_usuarios_concurrencia.py backend/tests/integration/test_rbac_admin_cumplimiento.py backend/tests/integration/test_exportacion_api.py backend/tests/integration/test_exportacion_aislamiento.py -v
-npm --prefix frontend test -- tests/legal.test.tsx
-```
-
-Rutas nuevas (ver `/docs`): `POST|GET /api/pacientes/{id}/consentimientos`, `GET .../consentimientos/{cid}`, `POST .../consentimientos/{cid}/firmar`, `GET|POST /api/admin/usuarios`, `PATCH /api/admin/usuarios/{id}/roles`, `GET /api/admin/exportacion?formato=csv`; páginas públicas `/cumplimiento` y `/privacidad`. La migración 009 es `009_consentimientos_cumplimiento`.
-
-> Si tenés un PostgreSQL instalado en Windows ocupando el puerto 5432, `docker compose up db` no puede usarlo. Los tests no lo necesitan (testcontainers usa un puerto libre); para levantar la API a mano usá otro puerto, por ejemplo `docker run -d -p 55432:5432 -e POSTGRES_USER=turnos -e POSTGRES_PASSWORD=<pass> -e POSTGRES_DB=turnos postgres:16-alpine` y `DATABASE_URL=postgresql+psycopg://turnos:<pass>@localhost:55432/turnos`.
-
-## Tests de C-19
-
-Change C-19 `recetas-partner-renapdis` (receta electrónica y órdenes de estudio solo vía partner registrado en ReNaPDiS; partner simulado para desarrollo; Docker Desktop corriendo para los tests de integración):
-
-```bash
-python -m pytest backend/tests/test_settings.py backend/tests/test_env_example.py backend/tests/test_health.py backend/tests/unit/test_recetas_partner.py backend/tests/unit/test_recetas_schemas.py backend/tests/unit/test_recetas_errores.py backend/tests/integration/test_migracion_010.py backend/tests/integration/test_recetas_db.py backend/tests/integration/test_auditoria_writer.py backend/tests/integration/test_recetas_api.py backend/tests/integration/test_recetas_concurrencia.py backend/tests/integration/test_rbac_recetas.py backend/tests/integration/test_exportacion_api.py backend/tests/integration/test_exportacion_aislamiento.py -v
-```
-
-Rutas nuevas (ver `/docs`): `POST|GET /api/pacientes/{id}/recetas` y `GET .../recetas/{rid}`. La migración 010 es `010_recetas_externas`.
-
-### Configurar el partner de recetas
-
-Variables de `backend/.env` (solo backend, nunca `VITE_`; el repo no contiene ningún valor real):
-
-| Variable | Valores | Efecto |
-|---|---|---|
-| `RECETAS_PARTNER` | vacío, `fake` | Vacío = no configurado: emitir responde `501` con un mensaje de configuración y el resto del sistema sigue funcionando. `fake` = partner simulado. |
-| `ENTORNO` | `desarrollo`, `test`, `demo`, `produccion` (default) | Con `produccion`, `fake` queda bloqueado (`501`): una receta simulada nunca puede pasar por válida. |
-| `RECETAS_PARTNER_KEY` | credencial del partner real | Solo env/vault del backend; se enmascara en logs y errores. Vacía = sin credencial. |
-
-`fake` es solo para desarrollo y demo: genera ids `FAKE-...` y enlaces `https://partner-simulado.invalid/...`, y cada receta queda marcada `simulada = true`. El adapter del partner real (PA-08) es un change posterior.
-
-> **¿Vas a continuar el proyecto?** Leé primero [`docs/CONTINUAR.md`](docs/CONTINUAR.md): estado, reparto de changes, entorno y flujo de trabajo.
+</details>
 
 ## Skills propias y MCP
 
@@ -177,46 +360,46 @@ Detalle, investigación y evidencias: [`docs/skills-mcp/`](docs/skills-mcp/) ([f
 
 Viven en el repo, no hay nada que instalar:
 
-| Skill | Ubicación | Para qué |
-|-------|-----------|----------|
-| `crear-skill-de-dominio` | `.claude/skills/crear-skill-de-dominio/` | Genera una skill `dominio-<área>` desde la KB (RN filtradas por DD vigentes + reglas duras + matriz RN → spec → test) |
-| `dominio-agenda` | `.claude/skills/dominio-agenda/` | Reglas vigentes RN-AG + RN-TU (turnos, solapamientos, estados) |
-| `dominio-caja` | `.claude/skills/dominio-caja/` | Reglas vigentes RN-CA (seña, cobros, Mercado Pago) |
+| Skill | Para qué |
+|-------|----------|
+| `crear-skill-de-dominio` | Genera una skill `dominio-<área>` desde la KB: reglas de negocio filtradas por las decisiones vigentes + reglas duras + matriz regla → spec → test |
+| `dominio-agenda` | Reglas RN-AG + RN-TU: turnos, solapamientos, estados, reserva online, lista de espera |
+| `dominio-caja` | Reglas RN-CA: seña, cobros, Mercado Pago |
+| `dominio-clinica` | Reglas RN-CL: historia clínica, odontograma, evoluciones append-only, auditoría |
+| `dominio-whatsapp` | Reglas RN-WA: sesión QR, recordatorios, respuestas, bandeja de fallos |
+| `dominio-cumplimiento` | Reglas RN-CU: consentimientos, privacidad, exportación, recetas vía ReNaPDiS |
 
-Claude Code las descubre solas desde `.claude/skills/`. GitHub Copilot usa las copias de `.github/skills/` y OpenCode las de `.opencode/skills/` (idénticas: `diff -r -x evals .claude/skills/dominio-caja .github/skills/dominio-caja` no imprime nada).
+Claude Code las descubre solas desde `.claude/skills/`. GitHub Copilot usa las copias de `.github/skills/` y
+OpenCode las de `.opencode/skills/` (idénticas salvo `evals/`).
 
-**Comprobar:** abrir Claude Code en la raíz del repo y pedir *"¿qué skills de proyecto hay?"* o *"creá la skill del dominio clínica (RN-CL) para C-09"*. El agente debe nombrar o cargar `crear-skill-de-dominio`.
+**Comprobar:** abrir Claude Code en la raíz del repo y pedir *"¿qué skills de proyecto hay?"* o
+*"creá la skill del dominio X"*. El agente debe nombrar o cargar `crear-skill-de-dominio`.
 
-La skill creadora se construyó con **`skill-creator`** de Anthropic ([github.com/anthropics/skills](https://github.com/anthropics/skills), carpeta `skills/skill-creator`). Solo hace falta para *modificar* la skill creadora, no para usarla. En esta PC se usó la copia que trae Claude Code como skill de Anthropic (`anthropic-skills:skill-creator`). Para instalarla en otra PC: `/plugin marketplace add anthropics/skills` y `/plugin install example-skills@anthropic-agent-skills` (que `skill-creator` venga en `example-skills` está **pendiente de verificar**: el README del repo no lo dice). Alternativa sin plugin: copiar la carpeta `skills/skill-creator` del repo a `~/.claude/skills/skill-creator/`.
+La skill creadora se construyó con **`skill-creator`** de Anthropic
+([github.com/anthropics/skills](https://github.com/anthropics/skills), carpeta `skills/skill-creator`). Solo hace
+falta para *modificar* la skill creadora, no para usarla. Para instalarla en otra PC, copiar esa carpeta a
+`~/.claude/skills/skill-creator/`.
 
 ### MCP: Context7
 
-Integración (no skill) que da al agente documentación vigente de librerías (FastAPI, SQLAlchemy, Pydantic, Alembic, Mercado Pago, React).
+Integración (no skill) que le da al agente documentación vigente de librerías (FastAPI, SQLAlchemy, Pydantic,
+Alembic, Mercado Pago, React).
 
 | Dato | Valor |
 |------|-------|
 | Servidor | Context7 (Upstash), remoto HTTP: `https://mcp.context7.com/mcp` |
 | Configuración | [`.mcp.json`](.mcp.json) en la raíz (scope proyecto, versionado, **sin secretos**) |
 | Requisitos | Claude Code + conexión a internet. No necesita Node ni Docker en modo HTTP |
-| Credenciales | Ninguna obligatoria. API key opcional y gratuita para más cuota (context7.com/dashboard) |
-| Variable de entorno | `CONTEXT7_API_KEY` (opcional, solo si se usa la key; **nunca** commitearla) |
+| Credenciales | Ninguna obligatoria. API key opcional y gratuita para más cuota (`CONTEXT7_API_KEY`, **nunca** commitearla) |
 | Herramientas | `resolve-library-id` (nombre → id `/org/proyecto`) y `query-docs` (id + pregunta) |
 
-**Configurar (ya viene en el repo):**
-
-```json
-{
-  "mcpServers": {
-    "context7": { "type": "http", "url": "https://mcp.context7.com/mcp" }
-  }
-}
-```
+**Usarlo (ya viene configurado en el repo):**
 
 1. Abrir Claude Code en la raíz del repo. La primera vez pregunta si aprobar los servidores de `.mcp.json`: aprobar `context7`.
-2. Comprobar la conexión: `/mcp` dentro de Claude Code, o `claude mcp list` en la terminal. Debe decir `context7 … ✔ Connected`.
-3. Ejecutar una herramienta real, por ejemplo: *"usá Context7 para buscar en la doc de SQLAlchemy cómo bloquear una fila con `with_for_update`"*. El agente llama `resolve-library-id` y después `query-docs`.
+2. Comprobar la conexión con `/mcp` dentro de Claude Code, o `claude mcp list` en la terminal. Debe decir `context7 … ✔ Connected`.
+3. Probar una consulta real, por ejemplo: *"usá Context7 para buscar en la doc de SQLAlchemy cómo bloquear una fila con `with_for_update`"*.
 
-**Con API key (opcional), sin tocar el repo:** configurarla en el scope de usuario, que queda en `~/.claude.json` y no se versiona:
+**Con API key (opcional), sin tocar el repo:** se configura en el scope de usuario (`~/.claude.json`, no se versiona):
 
 ```bash
 claude mcp add --scope user --transport http context7 https://mcp.context7.com/mcp --header "Authorization: Bearer $CONTEXT7_API_KEY"
@@ -224,25 +407,26 @@ claude mcp add --scope user --transport http context7 https://mcp.context7.com/m
 
 **Solución de problemas**
 
-- `/mcp` muestra `⏸ Pending approval`: el servidor de `.mcp.json` no fue aprobado. Correr `claude mcp reset-project-choices`, reabrir Claude Code y aprobar.
-- `✘ Failed to connect`: revisar internet o proxy. Alternativa local stdio (requiere Node): `claude mcp add context7 -- npx -y @upstash/context7-mcp`. En Windows nativo puede hacer falta anteponer `cmd /c` a `npx`.
+- `/mcp` muestra `⏸ Pending approval`: correr `claude mcp reset-project-choices`, reabrir Claude Code y aprobar.
+- `✘ Failed to connect`: revisar internet o proxy. Alternativa local stdio (requiere Node): `claude mcp add context7 -- npx -y @upstash/context7-mcp` (en Windows puede hacer falta anteponer `cmd /c`).
 - Una entrada con `url` pero sin `"type": "http"` se interpreta como stdio y falla: el `type` es obligatorio.
-- Problema encontrado en este repo: los servidores agregados a `.mcp.json` **no aparecen en la sesión que ya estaba abierta**. Hay que reiniciar Claude Code para que cargue `context7`.
+- Los servidores agregados a `.mcp.json` no aparecen en una sesión ya abierta: hay que reiniciar Claude Code.
 
 **Límites de uso:** solo lectura de documentación pública. No enviar en las consultas secretos, tokens, datos de pacientes ni código privado.
 
-## Documentación del trabajo (Metodología I)
+## Documentación y estructura
 
-- `docs/discovery/` — informe de Discovery (`.md` + `.pdf`) y checklist de 11 puntos.
-- `knowledge-base/` — 10 archivos canónicos · `CHANGES.md` — roadmap · `AGENTS.md`/`CLAUDE.md` — reglas del agente.
-- `openspec/changes/archive/` — changes archivados (el del ciclo OPSX de la Etapa 6: `crear-turno-sin-solapamientos`).
-- `docs/skills-mcp/` — TP Skills + MCP: ficha de investigación, informe de aplicación y evidencias.
-
-## Estructura
-
-`backend/` · `frontend/` · `jobs/` · `docs-legales/` · `knowledge-base/` ·
-`openspec/` · `CHANGES.md` (roadmap de 19 changes) · `AGENTS.md` (17 reglas duras).
-
-## Estado
-
-Archivados: C-01, C-02, C-03, C-04, C-05 completo (`crear-turno-sin-solapamientos`, C-05b `transiciones-estado-turno` y C-05c `huecos-y-sobreturnos`), C-05d `horario-atencion`, C-06 `reserva-online-publica` (sin seña), C-07 `agenda-frontend`, C-20 `rediseno-visual`, C-08, C-09, C-10, C-18 y C-19. Ver `CHANGES.md` y `openspec/changes/archive/`.
+| Carpeta / archivo | Qué hay |
+|-------------------|---------|
+| `backend/` | API FastAPI, migraciones Alembic, seeds de demo y tests |
+| `frontend/` | App React + Vite + TypeScript |
+| `design-system/` | Sistema de diseño del frontend |
+| `scripts/e2e/` | Pruebas y capturas con navegador real (Playwright) |
+| `knowledge-base/` | Base de conocimiento del dominio (fuente de verdad) |
+| `CHANGES.md` | Roadmap de 20 changes con dependencias y estado |
+| `openspec/` | Specs vigentes (`specs/`) y changes archivados (`changes/archive/`) |
+| `AGENTS.md` / `CLAUDE.md` | Reglas para los agentes (17 reglas duras) |
+| `docs/discovery/` | Informe de Discovery (`.md` + `.pdf`) y checklist |
+| `docs/skills-mcp/` | TP Skills + MCP: investigación, informe de aplicación y evidencias |
+| `docs/CONTINUAR.md` | Guía para quien sigue el proyecto |
+| `docs/whatsapp-sesion.md` | Runbook de la sesión QR de WhatsApp |
