@@ -12,7 +12,7 @@ import time
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import select, update
+from sqlalchemy import select, text, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -27,6 +27,10 @@ PLANTILLA = "recordatorio_24h"
 _ES_RECORDATORIO = (MensajeWhatsApp.direccion == "saliente") & (
     MensajeWhatsApp.plantilla == PLANTILLA
 )
+#: Predicado del índice parcial ``uq_mensaje_whatsapp_recordatorio_turno`` como SQL literal: con
+#: parámetros, en cuanto psycopg prepara el INSERT, PostgreSQL deja de inferir el índice del
+#: ``ON CONFLICT`` (InvalidColumnReference). Tiene que coincidir con la migración 014.
+_PREDICADO_INDICE = text("direccion = 'saliente' AND plantilla = 'recordatorio_24h'")
 
 
 Candidato = tuple[int, int, int, str | None]
@@ -87,7 +91,7 @@ def _reclamar_nuevo(
         .values(**valores)
         .on_conflict_do_nothing(
             index_elements=["clinica_id", "turno_id"],
-            index_where=_ES_RECORDATORIO,
+            index_where=_PREDICADO_INDICE,
         )
         .returning(MensajeWhatsApp.id)
     )
