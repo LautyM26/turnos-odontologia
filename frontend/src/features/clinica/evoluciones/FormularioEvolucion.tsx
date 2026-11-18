@@ -73,20 +73,20 @@ export function FormularioEvolucion({ original, onCreada, onYaCorregida, onCance
   return (
     <form
       aria-label={original ? "Corregir evolución" : "Nueva evolución"}
-      className="space-y-3 rounded-md border border-border p-4"
+      className="space-y-4 rounded-[14px] border border-border bg-surface-2/50 p-4 sm:p-5"
       onSubmit={enviar}
       noValidate
     >
       {bloqueado && <Aviso tipo="alerta">{TEXTO_SIN_CONSENTIMIENTO}</Aviso>}
       <div>
-        <label className="block text-sm font-medium" htmlFor={`${idForm}-texto`}>
+        <label className="block text-[13px] font-medium" htmlFor={`${idForm}-texto`}>
           Texto de la evolución
         </label>
         <textarea
           id={`${idForm}-texto`}
           rows={4}
           maxLength={MAX_TEXTO}
-          className="mt-1 w-full rounded-md border border-border px-3 py-2"
+          className="mt-1.5 w-full rounded-lg border border-border-control bg-surface px-3 py-2 text-sm shadow-xs transition-[border-color,box-shadow] focus:border-primary focus:outline-none focus:ring-3 focus:ring-focus"
           value={texto}
           disabled={bloqueado}
           aria-invalid={errores.texto ? true : undefined}
@@ -99,12 +99,12 @@ export function FormularioEvolucion({ original, onCreada, onYaCorregida, onCance
         {errores.texto && <p className="text-sm text-danger">{errores.texto}</p>}
       </div>
       <div>
-        <label className="block text-sm font-medium" htmlFor={`${idForm}-pieza`}>
+        <label className="block text-[13px] font-medium" htmlFor={`${idForm}-pieza`}>
           Pieza FDI (opcional)
         </label>
         <select
           id={`${idForm}-pieza`}
-          className="mt-1 rounded border border-border px-2 py-1"
+          className="mt-1.5 h-10 rounded-lg border border-border-control bg-surface px-3 text-sm shadow-xs focus:border-primary focus:outline-none focus:ring-3 focus:ring-focus"
           value={pieza}
           disabled={bloqueado}
           onChange={(e) => setPieza(e.target.value)}
@@ -119,13 +119,13 @@ export function FormularioEvolucion({ original, onCreada, onYaCorregida, onCance
       </div>
       {original && (
         <div>
-          <label className="block text-sm font-medium" htmlFor={`${idForm}-motivo`}>
+          <label className="block text-[13px] font-medium" htmlFor={`${idForm}-motivo`}>
             Motivo de la corrección
           </label>
           <input
             id={`${idForm}-motivo`}
             maxLength={MAX_MOTIVO}
-            className="mt-1 w-full rounded-md border border-border px-3 py-2"
+            className="mt-1.5 w-full rounded-lg border border-border-control bg-surface px-3 py-2 text-sm shadow-xs transition-[border-color,box-shadow] focus:border-primary focus:outline-none focus:ring-3 focus:ring-focus"
             value={motivo}
             disabled={bloqueado}
             onChange={(e) => setMotivo(e.target.value)}
@@ -137,7 +137,7 @@ export function FormularioEvolucion({ original, onCreada, onYaCorregida, onCance
       <div className="flex gap-2">
         <button
           type="submit"
-          className="rounded bg-primary px-4 py-2 text-primary-foreground disabled:opacity-60"
+          className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-[10px] bg-primary px-4 text-sm font-medium text-primary-foreground shadow-xs transition-[background-color,transform] duration-150 hover:bg-primary-hover active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60"
           disabled={enviando || bloqueado}
         >
           {original ? "Guardar corrección" : "Guardar evolución"}
@@ -145,7 +145,7 @@ export function FormularioEvolucion({ original, onCreada, onYaCorregida, onCance
         {onCancelar && (
           <button
             type="button"
-            className="rounded border border-border px-4 py-2"
+            className="inline-flex h-10 cursor-pointer items-center rounded-[10px] border border-border bg-surface px-4 text-sm font-medium shadow-xs transition-colors hover:bg-surface-2"
             onClick={onCancelar}
           >
             Cancelar

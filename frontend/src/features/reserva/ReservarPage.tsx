@@ -4,11 +4,13 @@
  * Nada se guarda en el navegador: el token vive solo en la URL del comprobante.
  */
 
+import { MapPin } from "lucide-react";
 import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
 import { ApiError } from "@/shared/api/client";
 import { Aviso } from "@/shared/ui/Aviso";
+import { CONTROL } from "@/shared/ui/Field";
 
 import {
   type CatalogoPublico,
@@ -62,8 +64,10 @@ function mensaje(error: unknown): string {
   return "No pudimos completar la reserva. Revisá tu conexión e intentá de nuevo.";
 }
 
-const CAMPO = "mt-1 w-full rounded-md border border-border bg-background px-3 py-2";
-const ETIQUETA = "block text-sm font-medium";
+const SEMANA =
+  "inline-flex h-9 cursor-pointer items-center rounded-lg border border-border bg-surface px-3 text-sm font-medium shadow-xs transition-colors hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-50";
+const CAMPO = `${CONTROL} mt-1.5 h-11`;
+const ETIQUETA = "block text-[13px] font-medium";
 
 export function Component() {
   const { slug = "" } = useParams();
@@ -208,11 +212,14 @@ export function Component() {
   return (
     <section className="mx-auto max-w-2xl px-4 py-10">
       <title>{`Reservar turno · ${catalogo.clinica}`}</title>
-      <p className="text-sm uppercase tracking-wide text-muted">{catalogo.clinica}</p>
-      <h1 className="mt-1 text-3xl font-semibold">Reservar turno</h1>
+      <p className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-muted">
+        <MapPin aria-hidden className="size-3.5 text-primary" />
+        {catalogo.clinica}
+      </p>
+      <h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">Reservar turno</h1>
       <p className="mt-2 text-muted">Sin crear cuenta. Te lleva un minuto.</p>
 
-      <fieldset className="mt-8 grid gap-4 sm:grid-cols-2">
+      <fieldset className="mt-8 grid gap-4 rounded-[18px] border border-border bg-surface p-5 shadow-xs sm:grid-cols-2 sm:p-6">
         <legend className="sr-only">Qué y con quién</legend>
         <div>
           <label className={ETIQUETA} htmlFor="prestacion">
@@ -253,25 +260,24 @@ export function Component() {
       </fieldset>
 
       {prestacionId !== null && profesionalId !== null && (
-        <section className="mt-8" aria-labelledby="titulo-horarios">
-          <div className="flex items-center justify-between gap-2">
-            <h2 id="titulo-horarios" className="text-xl font-semibold">
+        <section
+          className="mt-6 rounded-[18px] border border-border bg-surface p-5 shadow-xs sm:p-6"
+          aria-labelledby="titulo-horarios"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 id="titulo-horarios" className="text-lg font-semibold">
               Horarios disponibles
             </h2>
             <div className="flex gap-2">
               <button
                 type="button"
-                className="rounded-md border border-border px-3 py-1 text-sm disabled:opacity-50"
+                className={SEMANA}
                 disabled={semana === 0}
                 onClick={() => setSemana((s) => s - 1)}
               >
                 Semana anterior
               </button>
-              <button
-                type="button"
-                className="rounded-md border border-border px-3 py-1 text-sm"
-                onClick={() => setSemana((s) => s + 1)}
-              >
+              <button type="button" className={SEMANA} onClick={() => setSemana((s) => s + 1)}>
                 Semana siguiente
               </button>
             </div>
@@ -288,7 +294,9 @@ export function Component() {
             <div className="mt-4 space-y-5">
               {porDia(huecos, zona).map(([dia, lista]) => (
                 <div key={dia}>
-                  <h3 className="text-sm font-medium text-muted first-letter:uppercase">{dia}</h3>
+                  <h3 className="text-[13px] font-medium text-muted first-letter:uppercase">
+                    {dia}
+                  </h3>
                   <ul className="mt-2 flex flex-wrap gap-2">
                     {lista.map((h) => {
                       const activo = elegido?.inicio === h.inicio;
@@ -297,10 +305,10 @@ export function Component() {
                           <button
                             type="button"
                             aria-pressed={activo}
-                            className={`rounded-md border px-3 py-1.5 text-sm tabular-nums transition-colors duration-150 ${
+                            className={`h-10 min-w-[4.5rem] cursor-pointer rounded-lg border px-3 text-sm font-medium tabular-nums transition-[background-color,border-color,color,transform] duration-150 active:translate-y-px ${
                               activo
-                                ? "border-primary bg-primary text-primary-foreground"
-                                : "border-border hover:bg-surface"
+                                ? "border-primary bg-primary text-primary-foreground shadow-xs"
+                                : "border-border-control bg-surface hover:border-primary hover:text-primary"
                             }`}
                             onClick={() => setElegido(h)}
                           >
@@ -327,11 +335,11 @@ export function Component() {
         <form
           ref={formulario}
           tabIndex={-1}
-          className="mt-6 space-y-4 rounded-lg border border-border p-5 motion-safe:animate-[aparecer_150ms_ease-out]"
+          className="mt-6 space-y-4 rounded-[18px] border border-border bg-surface p-5 shadow-xs outline-none sm:p-6 motion-safe:animate-[aparecer_150ms_ease-out]"
           onSubmit={confirmar}
           aria-labelledby="titulo-datos"
         >
-          <h2 id="titulo-datos" className="text-xl font-semibold">
+          <h2 id="titulo-datos" className="text-lg font-semibold">
             Tus datos
           </h2>
           <p className="text-sm text-muted">
@@ -423,14 +431,14 @@ export function Component() {
           <label className="flex items-start gap-2 text-sm">
             <input
               type="checkbox"
-              className="mt-1"
+              className="mt-0.5 size-4 accent-primary"
               required
               checked={datos.privacidad}
               onChange={(e) => setDatos((d) => ({ ...d, privacidad: e.target.checked }))}
             />
             <span>
               Acepto la{" "}
-              <Link className="underline" to="/privacidad" target="_blank">
+              <Link className="font-medium text-primary underline" to="/privacidad" target="_blank">
                 política de privacidad
               </Link>
               .
@@ -438,7 +446,7 @@ export function Component() {
           </label>
           <button
             type="submit"
-            className="w-full rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground transition-opacity disabled:opacity-60"
+            className="inline-flex h-12 w-full cursor-pointer items-center justify-center rounded-xl bg-primary px-4 font-medium text-primary-foreground shadow-sm transition-[background-color,transform] duration-150 hover:bg-primary-hover active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60"
             disabled={enviando || (!datos.email.trim() && !datos.telefono.trim())}
           >
             {enviando ? "Reservando…" : "Confirmar reserva"}

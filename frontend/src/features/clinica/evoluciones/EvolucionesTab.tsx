@@ -79,21 +79,28 @@ function Timeline({ historia }: { historia: Historia }) {
       {evoluciones.length === 0 ? (
         <p className="text-muted">Todavía no hay evoluciones registradas</p>
       ) : (
-        <ol className="space-y-3">
+        <ol
+          aria-label="Evoluciones del paciente"
+          className="relative ml-2 space-y-4 border-l border-border pl-6"
+        >
           {evoluciones.map((e) => {
             const original = e.corrige_a_id === null ? undefined : porId.get(e.corrige_a_id);
             return (
-              <li key={e.id}>
+              <li key={e.id} className="relative">
+                <span
+                  aria-hidden
+                  className={`absolute -left-[31px] top-4 size-2.5 rounded-full ring-4 ring-surface ${e.corregida_por_id === null ? "bg-primary" : "bg-border-strong"}`}
+                />
                 <article
                   id={`evolucion-${e.id}`}
                   tabIndex={-1}
-                  className={`rounded-md border border-border p-3 ${e.corregida_por_id === null ? "" : "opacity-70"}`}
+                  className={`rounded-[14px] border border-border bg-surface p-4 outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-primary ${e.corregida_por_id === null ? "shadow-xs" : "bg-surface-2/60 text-muted"}`}
                 >
                   <p className="text-sm text-muted">
                     {fechaHora(e.fecha_hora)} · {nombreProfesional(e.profesional_id, profesionales)}
                     {e.pieza_fdi !== null && ` · Pieza ${e.pieza_fdi}`}
                     {e.corregida_por_id !== null && (
-                      <span className="ml-2 rounded bg-surface px-2 py-0.5 font-medium">
+                      <span className="ml-2 rounded-md bg-warning-soft px-2 py-0.5 text-xs font-medium text-foreground">
                         Corregida
                       </span>
                     )}
@@ -102,7 +109,7 @@ function Timeline({ historia }: { historia: Historia }) {
                     <p className="mt-1 text-sm">
                       <button
                         type="button"
-                        className="underline"
+                        className="font-medium text-primary hover:underline"
                         onClick={() => irA(e.corrige_a_id as number)}
                       >
                         Corrige a la evolución del{" "}
@@ -116,7 +123,7 @@ function Timeline({ historia }: { historia: Historia }) {
                     {e.corregida_por_id !== null && (
                       <button
                         type="button"
-                        className="underline"
+                        className="font-medium text-primary hover:underline"
                         onClick={() => irA(e.corregida_por_id as number)}
                       >
                         Ver corrección
@@ -125,7 +132,7 @@ function Timeline({ historia }: { historia: Historia }) {
                     {puedeCorregir(e, yo) && corrigiendo !== e.id && (
                       <button
                         type="button"
-                        className="underline"
+                        className="font-medium text-primary hover:underline"
                         onClick={() => setCorrigiendo(e.id)}
                       >
                         Corregir
@@ -152,7 +159,7 @@ function Timeline({ historia }: { historia: Historia }) {
       {historia.next_cursor !== null && (
         <button
           type="button"
-          className="rounded border border-border px-3 py-1"
+          className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-sm font-medium shadow-xs transition-colors hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-55"
           onClick={cargarAnteriores}
         >
           Cargar anteriores
@@ -165,8 +172,11 @@ function Timeline({ historia }: { historia: Historia }) {
 export function Component() {
   const { historia, reintentar } = useContextoPaciente();
   return (
-    <section aria-labelledby="evo-titulo">
-      <h2 id="evo-titulo" className="mb-3 text-lg font-semibold">
+    <section
+      aria-labelledby="evo-titulo"
+      className="rounded-[18px] border border-border bg-surface p-5 shadow-xs sm:p-6"
+    >
+      <h2 id="evo-titulo" className="mb-4 text-lg font-semibold">
         Evoluciones
       </h2>
       {historia.tipo === "ok" ? (

@@ -46,7 +46,7 @@ function SelectRegistro({
       </label>
       <select
         id={id}
-        className="rounded border border-border px-2 py-1"
+        className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 text-[13px] font-medium shadow-xs transition-colors hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-55"
         value={value}
         disabled={disabled}
         onChange={(e) => onChange(e.target.value as Registro)}
@@ -107,7 +107,7 @@ export function PanelPieza({
     <dialog
       ref={dialogo}
       aria-labelledby="panel-titulo"
-      className="m-auto w-[min(32rem,95vw)] rounded-lg border border-border p-5 backdrop:bg-black/40"
+      className="m-auto w-[min(32rem,95vw)] rounded-[20px] border border-border bg-surface p-6 text-foreground shadow-lg backdrop:bg-foreground/35 backdrop:backdrop-blur-[3px] motion-safe:animate-[aparecer_200ms_var(--ease-suave)]"
       onCancel={(e) => {
         e.preventDefault();
         onCerrar();
@@ -122,7 +122,7 @@ export function PanelPieza({
         </label>
         <select
           id="panel-estado"
-          className="rounded border border-border px-2 py-1"
+          className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 text-[13px] font-medium shadow-xs transition-colors hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-55"
           value={estado?.codigo ?? ""}
           disabled={soloLectura}
           onChange={(e) => cambiarEstado(e.target.value)}
@@ -157,7 +157,7 @@ export function PanelPieza({
               <span className="w-32 text-sm text-muted">{ETIQUETA_CARA[c]}</span>
               <select
                 id={`panel-cara-${c}`}
-                className="rounded border border-border px-2 py-1"
+                className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 text-[13px] font-medium shadow-xs transition-colors hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-55"
                 value={marca?.codigo ?? ""}
                 disabled={soloLectura || sinCarasPorEstado}
                 onChange={(e) =>

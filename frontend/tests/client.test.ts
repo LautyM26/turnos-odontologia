@@ -98,6 +98,10 @@ describe("contrato auth C-03", () => {
         if (entry.isDirectory()) {
           walk(full);
         } else if (entry.name.endsWith(".ts") || entry.name.endsWith(".tsx")) {
+          // Única excepción: la preferencia de tema (C-20 D1), que no guarda tokens (ver abajo).
+          if (full.endsWith(path.join("shared", "ui", "tema.ts"))) {
+            continue;
+          }
           sources.push(fs.readFileSync(full, "utf-8"));
         }
       }
@@ -105,6 +109,8 @@ describe("contrato auth C-03", () => {
     walk(srcDir);
     // Acceso real a storage (con `.`), no menciones en comentarios/docs.
     expect(sources.join("\n")).not.toMatch(/localStorage\s*\.\s*\w|sessionStorage\s*\.\s*\w/);
+    const tema = fs.readFileSync(path.join(srcDir, "shared", "ui", "tema.ts"), "utf-8");
+    expect(tema).not.toMatch(/token|jwt|access|refresh|sessionStorage/i);
   });
 });
 describe("fetchAll", () => {

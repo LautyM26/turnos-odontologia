@@ -56,12 +56,16 @@ export interface DatosReserva {
   acepta_privacidad: true;
 }
 
-async function publico<T>(path: string, init?: RequestInit): Promise<T> {
+function pedir(path: string, init?: RequestInit): Promise<Response> {
   const headers = new Headers();
   if (typeof init?.body === "string") {
     headers.set("Content-Type", "application/json");
   }
-  const response = await fetch(buildUrl(path), { ...init, headers, credentials: "omit" });
+  return fetch(buildUrl(path), { ...init, headers, credentials: "omit" });
+}
+
+async function publico<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await pedir(path, init);
   if (!response.ok) {
     throw await leerError(response);
   }
@@ -103,4 +107,34 @@ export function obtenerReserva(token: string): Promise<ReservaPublica> {
 
 export function cancelarReserva(token: string): Promise<ReservaPublica> {
   return publico(`/api/public/reservas/${enc(token)}/cancelar`, { method: "POST" });
+}
+
+/** 409 de la reprogramación (C-17): el horario se ocupó; trae otras opciones para elegir. */
+export class HorarioOcupado extends Error {
+  readonly alternativas: HuecoPublico[];
+
+  constructor(alternativas: HuecoPublico[]) {
+    super("Horario ocupado");
+    this.name = "HorarioOcupado";
+    this.alternativas = alternativas;
+  }
+}
+
+export function opcionesReprogramacion(token: string): Promise<HuecoPublico[]> {
+  return publico(`/api/public/reservas/${enc(token)}/opciones`);
+}
+
+export async function reprogramar(token: string, inicio: string): Promise<ReservaPublica> {
+  const response = await pedir(`/api/public/reservas/${enc(token)}/reprogramar`, {
+    method: "POST",
+    body: JSON.stringify({ inicio }),
+  });
+  if (response.status === 409) {
+    const cuerpo = (await response.json().catch(() => ({}))) as { alternativas?: HuecoPublico[] };
+    throw new HorarioOcupado(cuerpo.alternativas ?? []);
+  }
+  if (!response.ok) {
+    throw await leerError(response);
+  }
+  return (await response.json()) as ReservaPublica;
 }

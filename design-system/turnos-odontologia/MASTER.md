@@ -59,6 +59,22 @@ Fondo casi blanco con matiz frío, superficies blancas y un solo color de marca 
 
 Convención clínica del odontograma (no se cambia): rojo = a realizar, azul = existente.
 
+### Modo oscuro (C-20)
+
+Tema por preferencia del sistema (`prefers-color-scheme`) o elegido con el botón de tema (Claro / Oscuro / Sistema), guardado en `localStorage["tema"]` (solo la preferencia, nunca credenciales). El atributo `data-theme` va en `<html>` y un script inline en `index.html` lo aplica antes de pintar (sin parpadeo). Mismos tokens, otros valores:
+
+| Rol | Oscuro |
+|---|---|
+| Background / Surface / Surface-2 | `#0B1215` / `#111A1E` / `#162127` |
+| Foreground / Muted | `#E6EDF0` / `#93A3AD` |
+| Border / Border-control | `#24323A` / `#5F7480` |
+| Primary / On-primary | `#22A3C4` / `#0B1215` (texto oscuro sobre teal claro) |
+| Accent / Danger / Success / Warning | `#FF8A65` / `#F87171` / `#4ADE80` / `#FBBF24` |
+
+- `--border-control` (claro `#808FA0`) es el borde de inputs y selects: ≥ 3:1 sobre la superficie en ambos temas (WCAG 1.4.11).
+- La grilla del odontograma se muestra siempre sobre "papel" blanco, también en oscuro, con los mismos rojo y azul.
+- Contraste medido (C-20 `verify.md`): todos los pares de texto ≥ 4,5:1 y los bordes de control ≥ 3:1, en claro y oscuro.
+
 ## Tipografía
 
 - **Títulos:** Figtree 600/700, tracking −0,01 a −0,02 em en tamaños grandes.

@@ -94,3 +94,29 @@ describe("EstadoBadge", () => {
     expect(screen.getByText(texto)).toBeInTheDocument();
   });
 });
+
+describe("Tabs y Avatar (C-20)", () => {
+  it("Tabs marca la pestaña actual con aria-current", async () => {
+    const { MemoryRouter } = await import("react-router");
+    const { Tabs } = await import("@/shared/ui/Tabs");
+    render(
+      <MemoryRouter initialEntries={["/p/ficha"]}>
+        <Tabs
+          etiqueta="Secciones"
+          pestanas={[
+            { to: "/p/ficha", etiqueta: "Ficha" },
+            { to: "/p/odontograma", etiqueta: "Odontograma" },
+          ]}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("link", { name: "Ficha" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Odontograma" })).not.toHaveAttribute("aria-current");
+  });
+
+  it("Avatar muestra las iniciales (apellido + nombre)", async () => {
+    const { Avatar } = await import("@/shared/ui/Avatar");
+    const { container } = render(<Avatar nombre="Ana" apellido="Sintético" />);
+    expect(container).toHaveTextContent("SA");
+  });
+});

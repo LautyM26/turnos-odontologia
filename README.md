@@ -99,6 +99,14 @@ python -m pytest backend/tests/integration/test_agenda_lectura_api.py -v
 cd frontend && npx vitest run tests/agenda.test.tsx tests/agenda-tiempo.test.ts tests/ui-componentes.test.tsx tests/app-shell.test.tsx
 ```
 
+Tests del change C-20 `rediseno-visual` (landing, tema claro/oscuro, reprogramación por enlace; solo frontend):
+
+```bash
+cd frontend && npx vitest run tests/landing.test.tsx tests/tema.test.tsx tests/reprogramar.test.tsx tests/reserva.test.tsx tests/ui-componentes.test.tsx
+```
+
+> **Landing y tema (C-20):** `http://localhost:5173/` es la landing del producto, con capturas reales de la agenda (`frontend/public/landing/`, regeneradas con `E2E_PASSWORD=... python scripts/e2e/capturas_landing.py`). El botón de tema (barra superior) alterna Claro / Oscuro / Sistema. El paciente reprograma desde el comprobante (`/reserva/{token}` → "Reprogramar") o directo en `/reprogramar/{token}`. Evidencia visual: `python scripts/e2e/rediseno_evidencias.py`.
+
 > **Agenda (C-07):** `http://localhost:5173/agenda` (login de staff). Para tener una semana con datos sintéticos (3 sillones, 3 profesionales, ~60 turnos, bloqueos y un sobreturno), corré después de `seed_demo_clinica.py`: `python backend/scripts/seed_demo_agenda.py` (idempotente). El sistema de diseño está en `design-system/turnos-odontologia/MASTER.md`.
 
 Tests del change C-06 `reserva-online-publica` (reserva sin cuenta por enlace; backend + frontend):
@@ -237,4 +245,4 @@ claude mcp add --scope user --transport http context7 https://mcp.context7.com/m
 
 ## Estado
 
-Archivados: C-01, C-02, C-03, C-04, C-05 completo (`crear-turno-sin-solapamientos`, C-05b `transiciones-estado-turno` y C-05c `huecos-y-sobreturnos`), C-05d `horario-atencion`, C-06 `reserva-online-publica` (sin seña), C-07 `agenda-frontend`, C-08, C-09, C-10, C-18 y C-19. Ver `CHANGES.md` y `openspec/changes/archive/`.
+Archivados: C-01, C-02, C-03, C-04, C-05 completo (`crear-turno-sin-solapamientos`, C-05b `transiciones-estado-turno` y C-05c `huecos-y-sobreturnos`), C-05d `horario-atencion`, C-06 `reserva-online-publica` (sin seña), C-07 `agenda-frontend`, C-20 `rediseno-visual`, C-08, C-09, C-10, C-18 y C-19. Ver `CHANGES.md` y `openspec/changes/archive/`.

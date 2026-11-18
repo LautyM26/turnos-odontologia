@@ -136,7 +136,7 @@ export function OdontogramaGrafico({ denticion, piezas, onAbrir }: Props) {
     </div>
   );
   return (
-    <div className="overflow-x-auto rounded-md border border-border p-3">
+    <div className="overflow-x-auto rounded-[14px] border border-border bg-white p-4 text-slate-800 [color-scheme:light]">
       <svg width="0" height="0" aria-hidden="true" focusable="false" className="absolute">
         <defs>
           <pattern
@@ -153,7 +153,7 @@ export function OdontogramaGrafico({ denticion, piezas, onAbrir }: Props) {
       </svg>
       <div className="mx-auto w-max space-y-1">
         {superior.map(fila)}
-        <hr className="my-2 border-border" />
+        <hr className="my-2 border-slate-200" />
         {inferior.map(fila)}
       </div>
     </div>

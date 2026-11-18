@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Turnos Odontología</title>
     <meta name="theme-color" content="#0e7490" />
+    <script>
+      // C-20 D1: aplicar el tema guardado antes del primer pintado (sin parpadeo).
+      try {
+        var t = localStorage.getItem("tema");
+        if (t === "oscuro") document.documentElement.setAttribute("data-theme", "dark");
+        if (t === "claro") document.documentElement.setAttribute("data-theme", "light");
+      } catch (e) {}
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

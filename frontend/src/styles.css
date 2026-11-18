@@ -13,6 +13,8 @@
   --muted: #5b6b7f;
   --border: #e3e8ee;
   --border-strong: #cbd5e1;
+  /* Borde de controles de formulario: ≥ 3:1 sobre la superficie (WCAG 1.4.11). */
+  --border-control: #808fa0;
   --primary: #0e7490;
   --primary-hover: #155e75;
   --primary-soft: #e6f6f9;
@@ -37,6 +39,67 @@
   --odo-existente: oklch(0.5 0.18 260);
 }
 
+/* Modo oscuro (C-20 D1): elegido a mano o por el sistema si no hay elección. */
+:root[data-theme="dark"] {
+  --background: #0b1215;
+  --foreground: #e6edf0;
+  --surface: #111a1e;
+  --surface-2: #162127;
+  --muted: #93a3ad;
+  --border: #24323a;
+  --border-strong: #33454f;
+  --border-control: #5f7480;
+  --primary: #22a3c4;
+  --primary-hover: #4bb8d4;
+  --primary-soft: #0f2a33;
+  --primary-foreground: #0b1215;
+  --accent: #ff8a65;
+  --accent-soft: #33201a;
+  --danger: #f87171;
+  --danger-soft: #3a1a1c;
+  --success: #4ade80;
+  --success-soft: #12291c;
+  --warning: #fbbf24;
+  --warning-soft: #2e2410;
+  --focus: rgb(34 163 196 / 0.55);
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.3);
+  --shadow-sm: 0 1px 3px rgb(0 0 0 / 0.35), 0 1px 2px rgb(0 0 0 / 0.25);
+  --shadow-md: 0 8px 24px -6px rgb(0 0 0 / 0.5);
+  --shadow-lg: 0 24px 48px -12px rgb(0 0 0 / 0.6);
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --background: #0b1215;
+    --foreground: #e6edf0;
+    --surface: #111a1e;
+    --surface-2: #162127;
+    --muted: #93a3ad;
+    --border: #24323a;
+    --border-strong: #33454f;
+    --border-control: #5f7480;
+    --primary: #22a3c4;
+    --primary-hover: #4bb8d4;
+    --primary-soft: #0f2a33;
+    --primary-foreground: #0b1215;
+    --accent: #ff8a65;
+    --accent-soft: #33201a;
+    --danger: #f87171;
+    --danger-soft: #3a1a1c;
+    --success: #4ade80;
+    --success-soft: #12291c;
+    --warning: #fbbf24;
+    --warning-soft: #2e2410;
+    --focus: rgb(34 163 196 / 0.55);
+    --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.3);
+    --shadow-sm: 0 1px 3px rgb(0 0 0 / 0.35), 0 1px 2px rgb(0 0 0 / 0.25);
+    --shadow-md: 0 8px 24px -6px rgb(0 0 0 / 0.5);
+    --shadow-lg: 0 24px 48px -12px rgb(0 0 0 / 0.6);
+    color-scheme: dark;
+  }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -49,6 +112,7 @@
   --color-muted: var(--muted);
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
+  --color-border-control: var(--border-control);
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
   --color-danger: var(--danger);
@@ -146,6 +210,30 @@ h3 {
   }
 }
 
+/* C-20 D2: reveal al scroll (useReveal). Sin JS u Observer, el contenido queda visible. */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.6s var(--ease-suave),
+    transform 0.6s var(--ease-suave);
+  transition-delay: calc(var(--i, 0) * 70ms);
+}
+[data-reveal][data-visible] {
+  opacity: 1;
+  transform: none;
+}
+
+@keyframes flotar {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
 :focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
@@ -159,6 +247,10 @@ h3 {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+  [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
   }
 }
 /* biome-ignore-end lint/complexity/noImportantStyles: fin del reset */

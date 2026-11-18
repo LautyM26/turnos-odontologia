@@ -98,14 +98,14 @@ function Editor({ ficha }: { ficha: Ficha }) {
       )}
       {CAMPOS.map(([campo, label]) => (
         <div key={campo}>
-          <label className="block text-sm font-medium" htmlFor={`ficha-${campo}`}>
+          <label className="block text-[13px] font-medium" htmlFor={`ficha-${campo}`}>
             {label}
           </label>
           <textarea
             id={`ficha-${campo}`}
             rows={3}
             maxLength={10000}
-            className="mt-1 w-full rounded-md border border-border px-3 py-2 disabled:bg-surface"
+            className="mt-1.5 w-full rounded-lg border border-border-control bg-surface px-3 py-2 text-sm shadow-xs transition-[border-color,box-shadow] focus:border-primary focus:outline-none focus:ring-3 focus:ring-focus disabled:cursor-not-allowed disabled:bg-surface-2"
             value={valores[campo]}
             readOnly={!puedeEscribir}
             disabled={puedeEscribir && sinConsentimiento}
@@ -116,7 +116,11 @@ function Editor({ ficha }: { ficha: Ficha }) {
       {mensaje?.tipo === "conflicto" && (
         <Aviso tipo="error">
           {mensaje.texto}{" "}
-          <button type="button" className="underline" onClick={recargar}>
+          <button
+            type="button"
+            className="font-medium text-primary hover:underline"
+            onClick={recargar}
+          >
             Recargar versión vigente
           </button>
         </Aviso>
@@ -127,7 +131,7 @@ function Editor({ ficha }: { ficha: Ficha }) {
       {puedeEscribir && (
         <button
           type="button"
-          className="rounded bg-primary px-4 py-2 text-primary-foreground disabled:opacity-60"
+          className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-[10px] bg-primary px-4 text-sm font-medium text-primary-foreground shadow-xs transition-[background-color,transform] duration-150 hover:bg-primary-hover active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60"
           disabled={enviando || sinConsentimiento}
           onClick={guardar}
         >
@@ -154,7 +158,11 @@ function Versiones() {
 
   return (
     <div className="mt-4">
-      <button type="button" className="rounded border border-border px-3 py-1" onClick={cargar}>
+      <button
+        type="button"
+        className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-sm font-medium shadow-xs transition-colors hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-55"
+        onClick={cargar}
+      >
         Ver versiones anteriores
       </button>
       {error && (
@@ -165,14 +173,17 @@ function Versiones() {
       {versiones && (
         <ul aria-label="Versiones de la ficha" className="mt-2 space-y-2">
           {versiones.map((v) => (
-            <li key={v.version} className="rounded border border-border p-3 text-sm">
+            <li
+              key={v.version}
+              className="rounded-[12px] border border-border bg-surface-2/50 p-3 text-sm"
+            >
               <p className="font-medium">
                 Versión {v.version} · {nombreAutor(v.autor_usuario_id, yo, profesionales)} ·{" "}
                 {v.created_at ? fechaHora(v.created_at) : ""}
               </p>
-              <p>Anamnesis: {v.anamnesis ?? "—"}</p>
-              <p>Alergias: {v.alergias ?? "—"}</p>
-              <p>Antecedentes: {v.antecedentes ?? "—"}</p>
+              <p>Anamnesis: {v.anamnesis ?? "Sin datos"}</p>
+              <p>Alergias: {v.alergias ?? "Sin datos"}</p>
+              <p>Antecedentes: {v.antecedentes ?? "Sin datos"}</p>
             </li>
           ))}
         </ul>
@@ -184,7 +195,10 @@ function Versiones() {
 export function AnamnesisSeccion() {
   const { historia, reintentar } = useContextoPaciente();
   return (
-    <section aria-labelledby="anamnesis-titulo" className="mt-8">
+    <section
+      aria-labelledby="anamnesis-titulo"
+      className="mt-6 rounded-[18px] border border-border bg-surface p-5 shadow-xs sm:p-6"
+    >
       <h2 id="anamnesis-titulo" className="text-lg font-semibold">
         Anamnesis
       </h2>

@@ -101,20 +101,23 @@ export function DatosPaciente() {
 
   const otorgado = paciente.consentimiento_datos;
   return (
-    <section aria-labelledby="datos-titulo">
+    <section
+      aria-labelledby="datos-titulo"
+      className="rounded-[18px] border border-border bg-surface p-5 shadow-xs sm:p-6"
+    >
       <h2 id="datos-titulo" className="text-lg font-semibold">
         Datos del paciente
       </h2>
-      <form className="mt-3 grid gap-3 sm:grid-cols-2" onSubmit={guardar} noValidate>
+      <form className="mt-4 grid gap-4 sm:grid-cols-2" onSubmit={guardar} noValidate>
         {CAMPOS.map(({ campo, label, tipo }) => (
           <div key={campo}>
-            <label className="block text-sm font-medium" htmlFor={`dato-${campo}`}>
+            <label className="block text-[13px] font-medium" htmlFor={`dato-${campo}`}>
               {label}
             </label>
             <input
               id={`dato-${campo}`}
               type={tipo ?? "text"}
-              className="mt-1 w-full rounded-md border border-border px-3 py-2"
+              className="mt-1.5 w-full rounded-lg border border-border-control bg-surface px-3 py-2 text-sm shadow-xs transition-[border-color,box-shadow] focus:border-primary focus:outline-none focus:ring-3 focus:ring-focus"
               value={valores[campo]}
               aria-invalid={errores[campo] ? true : undefined}
               aria-describedby={errores[campo] ? `dato-${campo}-error` : undefined}
@@ -130,7 +133,7 @@ export function DatosPaciente() {
         <div className="sm:col-span-2">
           <button
             type="submit"
-            className="rounded bg-primary px-4 py-2 text-primary-foreground disabled:opacity-60"
+            className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-[10px] bg-primary px-4 text-sm font-medium text-primary-foreground shadow-xs transition-[background-color,transform] duration-150 hover:bg-primary-hover active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60"
             disabled={enviando || tocados.length === 0}
           >
             Guardar datos
@@ -160,7 +163,7 @@ export function DatosPaciente() {
       </dl>
       <button
         type="button"
-        className="mt-3 rounded border border-border px-3 py-1"
+        className="mt-3 inline-flex h-9 cursor-pointer items-center rounded-lg border border-border bg-surface px-3 text-sm font-medium shadow-xs transition-colors hover:bg-surface-2"
         onClick={() => setConfirmando(true)}
       >
         {otorgado ? "Revocar consentimiento" : "Registrar consentimiento"}

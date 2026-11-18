@@ -51,10 +51,11 @@ export function Field({ id, label, ayuda, error, className, children }: FieldPro
   );
 }
 
-const CONTROL =
-  "w-full rounded-lg border border-border bg-surface px-3 text-sm text-foreground shadow-xs " +
+/** Clases de control de formulario, para selects/inputs nativos fuera de `Input`/`Select`. */
+export const CONTROL =
+  "w-full rounded-lg border border-border-control bg-surface px-3 text-sm text-foreground shadow-xs " +
   "transition-[border-color,box-shadow] duration-150 placeholder:text-muted " +
-  "hover:border-border-strong focus:border-primary focus:outline-none focus:ring-3 focus:ring-focus " +
+  "hover:border-foreground/60 focus:border-primary focus:outline-none focus:ring-3 focus:ring-focus " +
   "aria-[invalid=true]:border-danger disabled:cursor-not-allowed disabled:bg-surface-2";
 
 export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {

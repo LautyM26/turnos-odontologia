@@ -150,7 +150,7 @@ function Editor({ vigente }: { vigente: Odontograma }) {
         {vista && (
           <button
             type="button"
-            className="rounded border border-border px-3 py-1 text-sm"
+            className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-sm font-medium shadow-xs transition-colors hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-55"
             onClick={() => setVista(null)}
           >
             Volver a la versión vigente
@@ -163,7 +163,7 @@ function Editor({ vigente }: { vigente: Odontograma }) {
             </label>
             <select
               id="denticion"
-              className="rounded border border-border px-2 py-1"
+              className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 text-[13px] font-medium shadow-xs transition-colors hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-55"
               value={borrador.denticion}
               disabled={sinConsentimiento}
               onChange={(e) => pedirDenticion(e.target.value as Denticion)}
@@ -199,7 +199,11 @@ function Editor({ vigente }: { vigente: Odontograma }) {
       {conflicto && (
         <Aviso tipo="error">
           {MENSAJE_409}{" "}
-          <button type="button" className="underline" onClick={() => setConfirmaRecarga(true)}>
+          <button
+            type="button"
+            className="font-medium text-primary hover:underline"
+            onClick={() => setConfirmaRecarga(true)}
+          >
             Recargar versión vigente
           </button>
         </Aviso>
@@ -208,7 +212,7 @@ function Editor({ vigente }: { vigente: Odontograma }) {
       {puedeEscribirClinica(yo) && !vista && (
         <button
           type="button"
-          className="rounded bg-primary px-4 py-2 text-primary-foreground disabled:opacity-60"
+          className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-[10px] bg-primary px-4 text-sm font-medium text-primary-foreground shadow-xs transition-[background-color,transform] duration-150 hover:bg-primary-hover active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60"
           disabled={!cambios || guardando || sinConsentimiento}
           onClick={guardar}
         >
@@ -233,7 +237,7 @@ function Editor({ vigente }: { vigente: Odontograma }) {
       <div>
         <button
           type="button"
-          className="rounded border border-border px-3 py-1 text-sm"
+          className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-sm font-medium shadow-xs transition-colors hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-55"
           onClick={verVersiones}
         >
           Ver versiones
@@ -244,7 +248,11 @@ function Editor({ vigente }: { vigente: Odontograma }) {
               <li key={o.version} className="flex flex-wrap items-center gap-2">
                 <span>{quien(o)}</span>
                 {o.version !== vigente.version && (
-                  <button type="button" className="underline" onClick={() => setVista(o)}>
+                  <button
+                    type="button"
+                    className="font-medium text-primary hover:underline"
+                    onClick={() => setVista(o)}
+                  >
                     Ver versión {o.version}
                   </button>
                 )}
@@ -294,8 +302,11 @@ function Editor({ vigente }: { vigente: Odontograma }) {
 export function Component() {
   const { historia, reintentar } = useContextoPaciente();
   return (
-    <section aria-labelledby="odonto-titulo">
-      <h2 id="odonto-titulo" className="mb-3 text-lg font-semibold">
+    <section
+      aria-labelledby="odonto-titulo"
+      className="rounded-[18px] border border-border bg-surface p-5 shadow-xs sm:p-6"
+    >
+      <h2 id="odonto-titulo" className="mb-4 text-lg font-semibold">
         Odontograma
       </h2>
       {historia.tipo === "ok" ? (

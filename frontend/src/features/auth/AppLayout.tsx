@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useMatches, useNavigate } from "react-router";
 
 import { cx } from "@/shared/ui/cx";
+import { ToggleTema } from "@/shared/ui/ToggleTema";
 
 import { rolesLegibles } from "./roles";
 import { cerrarSesion, useSesion } from "./session";
@@ -148,8 +149,9 @@ export function AppLayout() {
           >
             <Menu aria-hidden className="size-[18px]" />
           </button>
+          <ToggleTema className="ml-auto" />
           {me && (
-            <div className="ml-auto flex min-w-0 items-center gap-3">
+            <div className="flex min-w-0 items-center gap-3">
               <span
                 aria-hidden
                 className="hidden size-8 shrink-0 place-items-center rounded-full bg-primary-soft text-xs font-semibold text-primary-hover sm:grid"

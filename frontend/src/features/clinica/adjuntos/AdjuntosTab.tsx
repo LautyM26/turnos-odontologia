@@ -1,3 +1,4 @@
+import { Download, FileText, Image as ImageIcon } from "lucide-react";
 import { type FormEvent, useRef, useState } from "react";
 import { useLoaderData, useRevalidator } from "react-router";
 
@@ -106,9 +107,13 @@ function Lista({ inicial }: { inicial: Adjunto[] }) {
   return (
     <div className="space-y-4">
       {puedeEscribirClinica(yo) && (
-        <form className="space-y-2" onSubmit={subir} noValidate>
+        <form
+          className="space-y-3 rounded-[14px] border border-dashed border-border-strong bg-surface-2/60 p-4"
+          onSubmit={subir}
+          noValidate
+        >
           {bloqueado && <Aviso tipo="alerta">{TEXTO_SIN_CONSENTIMIENTO}</Aviso>}
-          <label className="block text-sm font-medium" htmlFor="adjunto-archivo">
+          <label className="block text-[13px] font-medium" htmlFor="adjunto-archivo">
             Archivo
           </label>
           <input
@@ -117,12 +122,13 @@ function Lista({ inicial }: { inicial: Adjunto[] }) {
             type="file"
             accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf"
             disabled={bloqueado}
+            className="block w-full cursor-pointer text-sm text-muted file:mr-3 file:h-9 file:cursor-pointer file:rounded-lg file:border file:border-border file:bg-surface file:px-3 file:text-sm file:font-medium file:text-foreground file:shadow-xs hover:file:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-60"
             onChange={(e) => setArchivo(e.target.files?.[0] ?? null)}
           />
           <p className="text-xs text-muted">Se aceptan {ACEPTADOS}, hasta 10 MB.</p>
           <button
             type="submit"
-            className="rounded bg-primary px-4 py-2 text-primary-foreground disabled:opacity-60"
+            className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-[10px] bg-primary px-4 text-sm font-medium text-primary-foreground shadow-xs transition-[background-color,transform] duration-150 hover:bg-primary-hover active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60"
             disabled={subiendo || bloqueado}
           >
             {subiendo ? "Subiendo…" : "Subir adjunto"}
@@ -133,25 +139,39 @@ function Lista({ inicial }: { inicial: Adjunto[] }) {
       {adjuntos.length === 0 ? (
         <p className="text-muted">Todavía no hay adjuntos. Se aceptan {ACEPTADOS}.</p>
       ) : (
-        <ul
-          aria-label="Adjuntos del paciente"
-          className="divide-y divide-border rounded-md border border-border"
-        >
+        <ul aria-label="Adjuntos del paciente" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {adjuntos.map((a) => (
             <li
               key={a.id}
-              className="flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2 text-sm"
+              className="flex items-start gap-3 rounded-[14px] border border-border bg-surface p-4 text-sm shadow-xs"
             >
-              <span className="font-medium">{a.tipo === "pdf" ? "PDF" : "Foto"}</span>
-              <span>{tamano(a.tamano_bytes)}</span>
-              <span>{nombreAutor(a.subido_por, yo, profesionales)}</span>
-              <span>{fechaHora(a.created_at)}</span>
+              <span
+                aria-hidden
+                className="grid size-10 shrink-0 place-items-center rounded-[10px] bg-primary-soft text-primary"
+              >
+                {a.tipo === "pdf" ? (
+                  <FileText className="size-5" />
+                ) : (
+                  <ImageIcon className="size-5" />
+                )}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="font-medium">
+                  {a.tipo === "pdf" ? "PDF" : "Foto"}{" "}
+                  <span className="font-normal text-muted">· {tamano(a.tamano_bytes)}</span>
+                </p>
+                <p className="truncate text-muted">
+                  {nombreAutor(a.subido_por, yo, profesionales)}
+                </p>
+                <p className="text-muted">{fechaHora(a.created_at)}</p>
+              </div>
               <button
                 type="button"
-                className="ml-auto underline"
+                className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg px-2 font-medium text-primary transition-colors hover:bg-primary-soft"
                 aria-label={`Descargar adjunto ${a.id}`}
                 onClick={() => bajar(a)}
               >
+                <Download aria-hidden className="size-4" />
                 Descargar
               </button>
             </li>
@@ -167,8 +187,11 @@ export function Component() {
   const revalidator = useRevalidator();
   const [resultado] = useEstadoDesde(datos);
   return (
-    <section aria-labelledby="adj-titulo">
-      <h2 id="adj-titulo" className="mb-3 text-lg font-semibold">
+    <section
+      aria-labelledby="adj-titulo"
+      className="rounded-[18px] border border-border bg-surface p-5 shadow-xs sm:p-6"
+    >
+      <h2 id="adj-titulo" className="mb-4 text-lg font-semibold">
         Adjuntos
       </h2>
       {resultado.tipo === "ok" ? (

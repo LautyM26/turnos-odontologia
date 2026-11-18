@@ -1,5 +1,5 @@
 import { type FormEvent, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 
 import { ApiError } from "@/shared/api/client";
 import { Aviso } from "@/shared/ui/Aviso";
@@ -39,61 +39,109 @@ export function LoginPage() {
   }
 
   return (
-    <main className="mx-auto max-w-sm px-4 py-12">
+    <main className="grid min-h-dvh bg-background text-foreground lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
       <title>Ingresar · Turnos Odontología</title>
-      <h1 className="text-2xl font-semibold">Ingresar</h1>
-      <p className="mt-1 text-muted">Turnos Odontología · acceso del personal</p>
-      {params.get("expirada") === "1" && (
-        <Aviso tipo="info" className="mt-4">
-          Tu sesión expiró, volvé a ingresar
-        </Aviso>
-      )}
-      <form
-        className="mt-6 space-y-4"
-        onSubmit={enviar}
-        aria-describedby={error ? "login-error" : undefined}
-      >
-        <div>
-          <label className="block text-sm font-medium" htmlFor="email">
-            Email
-          </label>
-          <input
-            id="email"
-            className="mt-1 w-full rounded-md border border-border px-3 py-2"
-            type="email"
-            autoComplete="username"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium" htmlFor="password">
-            Contraseña
-          </label>
-          <input
-            id="password"
-            className="mt-1 w-full rounded-md border border-border px-3 py-2"
-            type="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-        {error && (
-          <Aviso tipo="error" id="login-error">
-            {error}
-          </Aviso>
-        )}
-        <button
-          className="w-full rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground disabled:opacity-60"
-          type="submit"
-          disabled={enviando}
+      <div className="flex flex-col px-6 py-8 sm:px-10">
+        <Link
+          to="/"
+          className="flex w-fit items-center gap-2.5 rounded-lg"
+          aria-label="Turnos Odontología, inicio"
         >
-          {enviando ? "Ingresando…" : "Ingresar"}
-        </button>
-      </form>
+          <span
+            aria-hidden
+            className="grid size-8 place-items-center rounded-[10px] bg-primary font-heading text-sm font-bold text-primary-foreground shadow-xs"
+          >
+            T
+          </span>
+          <span aria-hidden className="font-heading text-[15px] font-semibold">
+            Turnos Odontología
+          </span>
+        </Link>
+        <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-10 motion-safe:animate-[fundido_260ms_var(--ease-suave)]">
+          <h1 className="text-3xl font-semibold">Ingresar</h1>
+          <p className="mt-1.5 text-muted">Turnos Odontología · acceso del personal</p>
+          {params.get("expirada") === "1" && (
+            <Aviso tipo="info" className="mt-5">
+              Tu sesión expiró, volvé a ingresar
+            </Aviso>
+          )}
+          <form
+            className="mt-8 space-y-5"
+            onSubmit={enviar}
+            aria-describedby={error ? "login-error" : undefined}
+          >
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[13px] font-medium" htmlFor="email">
+                Email
+              </label>
+              <input
+                id="email"
+                className="h-11 w-full rounded-lg border border-border-control bg-surface px-3 text-[15px] shadow-xs transition-[border-color,box-shadow] focus:border-primary focus:outline-none focus:ring-3 focus:ring-focus"
+                type="email"
+                autoComplete="username"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[13px] font-medium" htmlFor="password">
+                Contraseña
+              </label>
+              <input
+                id="password"
+                className="h-11 w-full rounded-lg border border-border-control bg-surface px-3 text-[15px] shadow-xs transition-[border-color,box-shadow] focus:border-primary focus:outline-none focus:ring-3 focus:ring-focus"
+                type="password"
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+            {error && (
+              <Aviso tipo="error" id="login-error">
+                {error}
+              </Aviso>
+            )}
+            <button
+              className="h-11 w-full cursor-pointer rounded-[10px] bg-primary px-4 font-medium text-primary-foreground shadow-xs transition-[background-color,transform] duration-150 hover:bg-primary-hover active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60"
+              type="submit"
+              disabled={enviando}
+            >
+              {enviando ? "Ingresando…" : "Ingresar"}
+            </button>
+          </form>
+          <p className="mt-8 text-sm text-muted">
+            ¿Sos paciente?{" "}
+            <Link
+              className="font-medium text-primary hover:underline"
+              to="/reservar/clinica-piloto"
+            >
+              Reservá tu turno online
+            </Link>
+          </p>
+        </div>
+      </div>
+      <aside
+        aria-hidden
+        className="relative hidden overflow-hidden border-l border-border bg-primary-soft lg:block"
+      >
+        <div className="absolute inset-0 bg-[radial-gradient(70%_60%_at_80%_10%,color-mix(in_srgb,var(--primary)_18%,transparent),transparent_70%)]" />
+        <div className="relative flex h-full flex-col justify-center px-12">
+          <p className="max-w-[26ch] font-heading text-2xl font-semibold leading-snug">
+            La agenda de toda la clínica, por sillón y sin superposiciones.
+          </p>
+          <div className="mt-8 translate-x-6 overflow-hidden rounded-[18px] border border-border bg-surface shadow-lg">
+            <img
+              src="/landing/agenda.png"
+              alt=""
+              width={1440}
+              height={900}
+              className="block h-auto w-full"
+            />
+          </div>
+        </div>
+      </aside>
     </main>
   );
 }

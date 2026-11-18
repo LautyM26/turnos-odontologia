@@ -1,10 +1,14 @@
+import { Search } from "lucide-react";
 import { useState } from "react";
 import { Form, Link, type LoaderFunctionArgs, useLoaderData, useRevalidator } from "react-router";
-
 import { requireSession } from "@/features/auth/session";
 import { apiFetch } from "@/shared/api/client";
 import { cargarSeguro, type Resultado } from "@/shared/api/resultado";
+
+import { Avatar } from "@/shared/ui/Avatar";
+import { Button } from "@/shared/ui/Button";
 import { EstadoSeccion } from "@/shared/ui/EstadoSeccion";
+import { PageHeader } from "@/shared/ui/PageHeader";
 
 import type { Paciente, Pagina } from "../tipos";
 import { interpretarBusqueda } from "./busqueda";
@@ -75,9 +79,12 @@ function Lista({ buscar, inicial }: { buscar: string; inicial: Pagina<Paciente> 
     return buscar.trim() === "" ? (
       <EstadoSeccion estado={{ tipo: "vacio", mensaje: "Todavía no hay pacientes cargados." }} />
     ) : (
-      <div>
-        <p>No hay pacientes que coincidan con «{buscar.trim()}»</p>
-        <Link className="underline" to="/pacientes">
+      <div className="rounded-[14px] border border-border bg-surface px-6 py-10 text-center">
+        <p className="font-medium">No hay pacientes que coincidan con «{buscar.trim()}»</p>
+        <Link
+          className="mt-2 inline-block text-sm font-medium text-primary hover:underline"
+          to="/pacientes"
+        >
           Limpiar búsqueda
         </Link>
       </div>
@@ -85,27 +92,39 @@ function Lista({ buscar, inicial }: { buscar: string; inicial: Pagina<Paciente> 
   }
   return (
     <div>
-      <ul className="divide-y divide-border rounded-md border border-border">
+      <ul className="overflow-hidden rounded-[14px] border border-border bg-surface shadow-xs">
         <li
           aria-hidden="true"
-          className="hidden grid-cols-4 gap-2 bg-surface px-3 py-2 text-sm font-medium md:grid"
+          className="hidden grid-cols-[2fr_1fr_1.2fr_1.4fr] gap-4 border-b border-border bg-surface-2 px-5 py-2.5 text-xs font-medium uppercase tracking-wide text-muted md:grid"
         >
           <span>Paciente</span>
           <span>DNI</span>
           <span>Teléfono</span>
           <span>Obra social</span>
         </li>
-        {items.map((p) => (
-          <li key={p.id} className="grid gap-1 px-3 py-3 md:grid-cols-4 md:gap-2">
-            <Link className="font-medium underline" to={`/pacientes/${p.id}`}>
-              {p.apellido}, {p.nombre}
-            </Link>
-            <span>
+        {items.map((p, i) => (
+          <li
+            key={p.id}
+            style={{ animationDelay: `${Math.min(i, 8) * 25}ms` }}
+            className="grid items-center gap-1 border-b border-border px-5 py-3.5 transition-colors last:border-b-0 hover:bg-surface-2 motion-safe:animate-[aparecer_220ms_var(--ease-suave)_both] md:grid-cols-[2fr_1fr_1.2fr_1.4fr] md:gap-4"
+          >
+            <span className="flex min-w-0 items-center gap-3">
+              <Avatar nombre={p.nombre} apellido={p.apellido} tamano="sm" />
+              <Link
+                className="truncate font-medium text-foreground hover:text-primary hover:underline"
+                to={`/pacientes/${p.id}`}
+              >
+                {p.apellido}, {p.nombre}
+              </Link>
+            </span>
+            <span className="text-sm tabular-nums">
               <span className="text-muted md:hidden">DNI </span>
               {p.dni}
             </span>
-            <span>{p.telefono ?? "—"}</span>
-            <span>{p.obra_social_nombre ?? "—"}</span>
+            <span className="text-sm tabular-nums text-muted">{p.telefono ?? "Sin teléfono"}</span>
+            <span className="truncate text-sm text-muted">
+              {p.obra_social_nombre ?? "Sin obra social"}
+            </span>
           </li>
         ))}
       </ul>
@@ -115,14 +134,9 @@ function Lista({ buscar, inicial }: { buscar: string; inicial: Pagina<Paciente> 
         </p>
       )}
       {cursor !== null && (
-        <button
-          type="button"
-          className="mt-3 rounded border border-border px-3 py-1"
-          disabled={cargando}
-          onClick={cargarMas}
-        >
+        <Button variante="secondary" className="mt-4" cargando={cargando} onClick={cargarMas}>
           Cargar más
-        </button>
+        </Button>
       )}
     </div>
   );
@@ -132,33 +146,44 @@ export function Component() {
   const { buscar, corta, resultado } = useLoaderData() as Datos;
   const revalidator = useRevalidator();
   return (
-    <section>
+    <section className="space-y-6">
       <title>Pacientes · Turnos Odontología</title>
-      <h1 className="text-2xl font-semibold">Pacientes</h1>
-      <Form method="get" className="mt-4 flex flex-wrap items-end gap-2" role="search">
-        <div>
-          <label className="block text-sm font-medium" htmlFor="buscar">
-            Buscar paciente
-          </label>
-          <input
-            id="buscar"
-            name="buscar"
-            type="search"
-            defaultValue={buscar}
-            aria-describedby="buscar-ayuda"
-            className="mt-1 w-72 max-w-full rounded-md border border-border px-3 py-2"
-          />
-        </div>
-        <button type="submit" className="rounded bg-primary px-4 py-2 text-primary-foreground">
-          Buscar
-        </button>
-      </Form>
-      <p id="buscar-ayuda" className="mt-1 text-sm text-muted">
-        Nombre, DNI o teléfono
-      </p>
-      <div className="mt-4">
+      <PageHeader
+        titulo="Pacientes"
+        descripcion="Fichas, historia clínica y datos de contacto de la clínica."
+      />
+      <div className="rounded-[14px] border border-border bg-surface p-4 shadow-xs">
+        <Form method="get" className="flex flex-wrap items-end gap-3" role="search">
+          <div className="min-w-0 flex-1 basis-72">
+            <label className="block text-[13px] font-medium" htmlFor="buscar">
+              Buscar paciente
+            </label>
+            <div className="relative mt-1.5">
+              <Search
+                aria-hidden
+                className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted"
+              />
+              <input
+                id="buscar"
+                name="buscar"
+                type="search"
+                defaultValue={buscar}
+                aria-describedby="buscar-ayuda"
+                className="h-10 w-full rounded-lg border border-border-control bg-surface pl-9 pr-3 text-sm shadow-xs focus:border-primary focus:outline-none focus:ring-3 focus:ring-focus"
+              />
+            </div>
+          </div>
+          <Button type="submit">Buscar</Button>
+        </Form>
+        <p id="buscar-ayuda" className="mt-2 text-xs text-muted">
+          Nombre, DNI o teléfono
+        </p>
+      </div>
+      <div>
         {corta ? (
-          <p role="status">Escribí al menos 3 caracteres para buscar.</p>
+          <p role="status" className="text-sm text-muted">
+            Escribí al menos 3 caracteres para buscar.
+          </p>
         ) : resultado.tipo === "ok" ? (
           <Lista key={buscar} buscar={buscar} inicial={resultado.datos} />
         ) : (

@@ -319,7 +319,7 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
 
 
 ### [C-20] `rediseno-visual`
-- **Estado**: `[ ]` pendiente — agregado 2026-11-17 (pedido del usuario para la presentación en video).
+- **Estado**: `[x]` completado — archivado 2026-11-17 (`openspec/changes/archive/2026-11-17-rediseno-visual/`, 268 tests frontend en verde, 36 capturas claro/oscuro × desktop/móvil, ver `verify.md`). Solo frontend. Landing en `/`, modo oscuro, rediseño de todas las pantallas y `/reprogramar/{token}` sobre la API de C-17. Decidido con el usuario: landing de producto con capturas reales, motion media en público y sobria en la app, modo oscuro (sistema + toggle), odontograma solo restyle.
 - **Propósito**: llevar las pantallas existentes (landing, login, pacientes, ficha, odontograma, evoluciones, adjuntos, reserva pública y comprobante, páginas legales) al sistema de diseño de `design-system/turnos-odontologia/MASTER.md` que estrenó C-07 (tokens, Figtree/Noto Sans, Lucide, componentes `shared/ui`).
 - **Alcance**: solo frontend, sin cambios de backend ni de contratos HTTP; conserva textos, roles y labels que usan los tests (o los actualiza) y la accesibilidad lograda.
 - **Incluye además** (decisión del usuario 2026-11-17): la pantalla pública `/reprogramar/{token}` del chatbot de C-17, que consume `GET /api/public/reservas/{token}/opciones` y `POST /api/public/reservas/{token}/reprogramar {inicio}` (el 409 trae `alternativas`); backend ya existente.
