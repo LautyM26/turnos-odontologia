@@ -73,6 +73,16 @@ ORDER BY cand.ini
 """)
 
 
+def validar_ventana(desde: datetime, hasta: datetime) -> None:
+    """Ventana de agenda válida: con zona, ``hasta > desde`` y a lo sumo 7 días (422 si no)."""
+    if desde.tzinfo is None or hasta.tzinfo is None:
+        raise ReferenciaInvalida("desde y hasta deben incluir zona horaria")
+    if hasta <= desde:
+        raise ReferenciaInvalida("hasta debe ser posterior a desde")
+    if hasta - desde > VENTANA_MAXIMA:
+        raise ReferenciaInvalida("La ventana de búsqueda no puede superar 7 días")
+
+
 def buscar_huecos(
     session: Session,
     clinica_id: int,
@@ -88,12 +98,7 @@ def buscar_huecos(
     422 (``ReferenciaInvalida``): fechas sin zona, ``hasta <= desde``, ventana > 7 días,
     profesional inexistente/inactivo/sin agenda o de otra clínica, prestación inactiva o ajena.
     """
-    if desde.tzinfo is None or hasta.tzinfo is None:
-        raise ReferenciaInvalida("desde y hasta deben incluir zona horaria")
-    if hasta <= desde:
-        raise ReferenciaInvalida("hasta debe ser posterior a desde")
-    if hasta - desde > VENTANA_MAXIMA:
-        raise ReferenciaInvalida("La ventana de búsqueda no puede superar 7 días")
+    validar_ventana(desde, hasta)
     profesional = BaseRepository(session, Profesional, clinica_id).get(profesional_id)
     if profesional is None or not profesional.agenda_activa:
         raise ReferenciaInvalida("profesional_id inexistente, inactivo o sin agenda activa")

@@ -302,7 +302,7 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
 ---
 
 ### [C-07] `agenda-frontend`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` completado — archivado 2026-11-17 (`openspec/changes/archive/2026-11-17-agenda-frontend/`, 1576 tests backend + 249 frontend en verde, ver `verify.md`). Día por sillón + semana por profesional, alta con buscador + alta rápida, 409 con alternativas, refresco cada 60 s; endpoints de lectura `/api/agenda/turnos` y `/api/agenda/bloqueos`; base visual del `design-system/turnos-odontologia/MASTER.md`. La pantalla `/reprogramar/{token}` pasó a C-20.
 - **Scope**: Agenda día/semana por profesional y sillón + gestión de mostrador (US-001, US-002 lado UI)
   - Páginas: `/agenda` (vista día y semana, ejes profesional × sillón), drawer de turno (crear/editar/cancelar, sobreturno con motivo si rol), overlay de bloqueos no reservables, badge de estado + origen
   - Consume `GET /api/agenda/huecos` y `/api/turnos`; cálculo de fin solo display (la verdad está en servidor); optimistic-lock con manejo 409 ("horario tomado, estos son alternativos")
@@ -317,6 +317,14 @@ Paso │ Agente A (Backend Core)      │ Agente B (Backend Aux)         │ Age
   - `knowledge-base/08_arquitectura_propuesta.md` §Estructura frontend (features/agenda, features/reserva)
   - `knowledge-base/05_reglas_de_negocio.md` §Agenda RN-AG-01–04
 
+
+### [C-20] `rediseno-visual`
+- **Estado**: `[ ]` pendiente — agregado 2026-11-17 (pedido del usuario para la presentación en video).
+- **Propósito**: llevar las pantallas existentes (landing, login, pacientes, ficha, odontograma, evoluciones, adjuntos, reserva pública y comprobante, páginas legales) al sistema de diseño de `design-system/turnos-odontologia/MASTER.md` que estrenó C-07 (tokens, Figtree/Noto Sans, Lucide, componentes `shared/ui`).
+- **Alcance**: solo frontend, sin cambios de backend ni de contratos HTTP; conserva textos, roles y labels que usan los tests (o los actualiza) y la accesibilidad lograda.
+- **Incluye además** (decisión del usuario 2026-11-17): la pantalla pública `/reprogramar/{token}` del chatbot de C-17, que consume `GET /api/public/reservas/{token}/opciones` y `POST /api/public/reservas/{token}/reprogramar {inicio}` (el 409 trae `alternativas`); backend ya existente.
+- **Dependencias**: C-07 (base visual). **Governance**: BAJO.
+- **Leer antes**: `design-system/turnos-odontologia/MASTER.md`, `openspec/specs/*-web/spec.md`.
 ---
 
 ## FASE 3 — Clínica (odontograma, evolución, UI)

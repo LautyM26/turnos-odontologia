@@ -169,6 +169,23 @@ describe("AppLayout", () => {
     expect(screen.getByRole("link", { name: "Pacientes" })).toHaveAttribute("aria-current", "page");
   });
 
+  it("la navegación lateral ofrece Agenda (C-07) sin marcarla como actual", async () => {
+    renderApp("/pacientes", { ...conSesion(meOdontologo), ...listaVacia });
+    const agenda = await screen.findByRole("link", { name: "Agenda" });
+    expect(agenda).toHaveAttribute("href", "/agenda");
+    expect(agenda).not.toHaveAttribute("aria-current");
+  });
+
+  it("menú móvil: Abrir menú lo expande y Escape lo cierra", async () => {
+    renderApp("/pacientes", { ...conSesion(meOdontologo), ...listaVacia });
+    const boton = await screen.findByRole("button", { name: "Abrir menú" });
+    expect(boton).toHaveAttribute("aria-expanded", "false");
+    await userEvent.click(boton);
+    expect(boton).toHaveAttribute("aria-expanded", "true");
+    await userEvent.keyboard("{Escape}");
+    expect(boton).toHaveAttribute("aria-expanded", "false");
+  });
+
   it.each([
     [meRecepcion, "Recepcionista"],
     [meOdontologo, "Odontólogo"],

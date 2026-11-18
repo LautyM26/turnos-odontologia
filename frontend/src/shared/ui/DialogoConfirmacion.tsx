@@ -43,7 +43,7 @@ export function DialogoConfirmacion({
     <dialog
       ref={dialogo}
       aria-labelledby="dialogo-titulo"
-      className="m-auto max-w-md rounded-lg border border-border p-5 backdrop:bg-black/40"
+      className="m-auto w-[calc(100%-2rem)] max-w-md rounded-[20px] border border-border bg-surface p-6 text-foreground shadow-lg backdrop:bg-foreground/35 backdrop:backdrop-blur-[3px] motion-safe:animate-[aparecer_200ms_var(--ease-suave)]"
       onCancel={(e) => {
         e.preventDefault();
         onCancelar();
@@ -52,18 +52,18 @@ export function DialogoConfirmacion({
       <h2 id="dialogo-titulo" className="text-lg font-semibold">
         {titulo}
       </h2>
-      <div className="mt-2 text-sm">{children}</div>
-      <div className="mt-4 flex justify-end gap-2">
+      <div className="mt-2 text-sm text-muted">{children}</div>
+      <div className="mt-6 flex justify-end gap-2">
         <button
           ref={botonCancelar}
-          className="rounded border border-border px-3 py-1"
+          className="h-10 cursor-pointer rounded-[10px] border border-border bg-surface px-4 text-sm font-medium transition-colors hover:bg-surface-2"
           type="button"
           onClick={onCancelar}
         >
           {cancelar}
         </button>
         <button
-          className="rounded bg-primary px-3 py-1 text-primary-foreground"
+          className="h-10 cursor-pointer rounded-[10px] bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover"
           type="button"
           onClick={onConfirmar}
         >

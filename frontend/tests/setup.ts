@@ -1,8 +1,11 @@
 /** Setup global de Vitest: matchers de jest-dom, cleanup y stubs de APIs que jsdom no trae. */
 
 import "@testing-library/jest-dom/vitest";
-import { cleanup } from "@testing-library/react";
+import { cleanup, configure } from "@testing-library/react";
 import { afterEach } from "vitest";
+
+// Rutas con `lazy` (C-10/C-07): el primer import puede superar 1 s con la suite en paralelo.
+configure({ asyncUtilTimeout: 3000 });
 
 afterEach(() => {
   cleanup();

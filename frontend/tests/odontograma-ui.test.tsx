@@ -380,7 +380,8 @@ describe("Acceso clínico y consentimiento", () => {
       await screen.findByText("Sin acceso clínico: tu rol no permite ver la historia clínica"),
     ).toBeInTheDocument();
     expect(screen.queryAllByRole("button", { name: /^Pieza \d{2}/ })).toHaveLength(0);
-    expect(document.querySelector("svg")).toBeNull();
+    // ningún gráfico del odontograma; los íconos de interfaz (Lucide, C-07) no cuentan
+    expect(document.querySelector("svg:not(.lucide)")).toBeNull();
     expect(screen.getByRole("heading", { name: /Sintético Uno, Demo/ })).toBeInTheDocument();
   });
 

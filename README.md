@@ -92,6 +92,15 @@ Tests del change C-05c `huecos-y-sobreturnos` (sobreturno con motivo y `GET /api
 python -m pytest backend/tests/unit/test_turno_schemas.py backend/tests/integration/test_migracion_011.py backend/tests/integration/test_turnos_db_constraints.py backend/tests/integration/test_sobreturnos_api.py backend/tests/integration/test_huecos_servicio.py backend/tests/integration/test_huecos_api.py -v
 ```
 
+Tests del change C-07 `agenda-frontend` (agenda día/semana, alta y estados; backend + frontend):
+
+```bash
+python -m pytest backend/tests/integration/test_agenda_lectura_api.py -v
+cd frontend && npx vitest run tests/agenda.test.tsx tests/agenda-tiempo.test.ts tests/ui-componentes.test.tsx tests/app-shell.test.tsx
+```
+
+> **Agenda (C-07):** `http://localhost:5173/agenda` (login de staff). Para tener una semana con datos sintéticos (3 sillones, 3 profesionales, ~60 turnos, bloqueos y un sobreturno), corré después de `seed_demo_clinica.py`: `python backend/scripts/seed_demo_agenda.py` (idempotente). El sistema de diseño está en `design-system/turnos-odontologia/MASTER.md`.
+
 Tests del change C-06 `reserva-online-publica` (reserva sin cuenta por enlace; backend + frontend):
 
 ```bash
@@ -228,4 +237,4 @@ claude mcp add --scope user --transport http context7 https://mcp.context7.com/m
 
 ## Estado
 
-Archivados: C-01, C-02, C-03, C-04, C-05 completo (`crear-turno-sin-solapamientos`, C-05b `transiciones-estado-turno` y C-05c `huecos-y-sobreturnos`), C-05d `horario-atencion`, C-06 `reserva-online-publica` (sin seña), C-08, C-09, C-10, C-18 y C-19. Ver `CHANGES.md` y `openspec/changes/archive/`.
+Archivados: C-01, C-02, C-03, C-04, C-05 completo (`crear-turno-sin-solapamientos`, C-05b `transiciones-estado-turno` y C-05c `huecos-y-sobreturnos`), C-05d `horario-atencion`, C-06 `reserva-online-publica` (sin seña), C-07 `agenda-frontend`, C-08, C-09, C-10, C-18 y C-19. Ver `CHANGES.md` y `openspec/changes/archive/`.

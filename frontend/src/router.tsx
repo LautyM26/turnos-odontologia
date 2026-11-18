@@ -3,7 +3,7 @@
  *
  * - Públicas (fuera de la sesión): /, /reservar/:slug y /reserva/:token (C-06), /cumplimiento,
  *   /privacidad (C-18), /comprobantes/:id y /login.
- * - Protegidas: hijas de AppLayout, cuyo loader exige sesión. C-07 agrega /agenda acá.
+ * - Protegidas: hijas de AppLayout, cuyo loader exige sesión; /agenda (C-07) usa ancho completo.
  */
 
 import {
@@ -46,6 +46,11 @@ export const rutas: RouteObject[] = [
     Component: AppLayout,
     loader: ({ request }) => requireSession(new URL(request.url)),
     children: [
+      {
+        path: "/agenda",
+        lazy: () => import("@/features/agenda/AgendaPage"),
+        handle: { anchoCompleto: true },
+      },
       { path: "/pacientes", lazy: () => import("@/features/clinica/pacientes/PacientesPage") },
       {
         path: "/pacientes/:pacienteId",

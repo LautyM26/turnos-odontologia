@@ -356,3 +356,34 @@ class HorarioOut(BaseModel):
     profesional_id: int
     zona_horaria: str
     franjas: list[FranjaOut]
+
+
+# --- Lectura de agenda (C-07 D1) -----------------------------------------------------------
+
+
+class AgendaTurnoOut(BaseModel):
+    """Turno para la grilla: sin DNI, contacto ni datos clínicos (D2)."""
+
+    id: int
+    profesional_id: int
+    sillon_id: int
+    paciente_id: int
+    paciente_nombre: str
+    prestacion_id: int
+    prestacion_nombre: str
+    inicio: datetime
+    fin: datetime
+    estado: str
+    origen: str
+    es_sobreturno: bool
+    motivo_sobreturno: str | None
+
+
+class AgendaBloqueoOut(BaseModel):
+    id: int
+    alcance: Literal["clinica", "profesional", "sillon"]
+    profesional_id: int | None
+    sillon_id: int | None
+    inicio: datetime
+    fin: datetime
+    motivo: str

@@ -1,22 +1,37 @@
 @import "tailwindcss";
 
+/*
+ * Tokens del design system (design-system/turnos-odontologia/MASTER.md, C-07 D3).
+ * Mismos nombres que C-10: las pantallas existentes heredan el look sin cambios.
+ * Contraste medido (WCAG 2.1): blanco sobre --primary 5,36:1; --muted sobre blanco ≥ 4,5:1.
+ */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --radius: 0.5rem;
-  /* C-10: tokens semánticos con contraste AA sobre --background / --surface */
-  --surface: oklch(0.975 0 0);
-  --muted: oklch(0.45 0 0);
-  --border: oklch(0.82 0 0);
-  --danger: oklch(0.5 0.2 27);
-  --danger-soft: oklch(0.96 0.03 27);
-  --success: oklch(0.42 0.13 150);
-  --success-soft: oklch(0.96 0.04 150);
-  --warning: oklch(0.45 0.1 70);
-  --warning-soft: oklch(0.97 0.05 85);
-  --focus: oklch(0.5 0.2 260);
+  --background: #f7fafa;
+  --foreground: #0f172a;
+  --surface: #ffffff;
+  --surface-2: #f1f5f6;
+  --muted: #5b6b7f;
+  --border: #e3e8ee;
+  --border-strong: #cbd5e1;
+  --primary: #0e7490;
+  --primary-hover: #155e75;
+  --primary-soft: #e6f6f9;
+  --primary-foreground: #ffffff;
+  --accent: #e8613c;
+  --accent-soft: #fdeee8;
+  --danger: #c6282d;
+  --danger-soft: #fdecec;
+  --success: #15803d;
+  --success-soft: #eaf7ee;
+  --warning: #a16207;
+  --warning-soft: #fef6e1;
+  --focus: rgb(14 116 144 / 0.45);
+  --radius: 0.625rem;
+  --shadow-xs: 0 1px 2px rgb(15 23 42 / 0.04);
+  --shadow-sm: 0 1px 3px rgb(15 23 42 / 0.06), 0 1px 2px rgb(15 23 42 / 0.04);
+  --shadow-md: 0 8px 24px -6px rgb(15 23 42 / 0.1);
+  --shadow-lg: 0 24px 48px -12px rgb(15 23 42 / 0.18);
+  --ease-suave: cubic-bezier(0.2, 0.8, 0.2, 1);
   /* Convención clínica del odontograma (DC-3): rojo = a realizar, azul = existente */
   --odo-a-realizar: oklch(0.55 0.22 27);
   --odo-existente: oklch(0.5 0.18 260);
@@ -26,10 +41,16 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
   --color-primary-foreground: var(--primary-foreground);
   --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
   --color-muted: var(--muted);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --color-success: var(--success);
@@ -39,12 +60,28 @@
   --color-focus: var(--focus);
   --color-odo-a-realizar: var(--odo-a-realizar);
   --color-odo-existente: var(--odo-existente);
+  --font-sans: "Noto Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-heading: "Figtree", "Noto Sans", system-ui, sans-serif;
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --ease-suave: var(--ease-suave);
 }
 
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-heading);
+  letter-spacing: -0.015em;
 }
 
 /* C-06: entrada del formulario de reserva (anulada por prefers-reduced-motion abajo) */
@@ -56,6 +93,56 @@ body {
   to {
     opacity: 1;
     transform: none;
+  }
+}
+
+/* C-07: paneles laterales y cambio de vista de la agenda */
+@keyframes entrar-derecha {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes entrar-izquierda {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes fundido {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes resaltar {
+  0% {
+    box-shadow: 0 0 0 0 rgb(14 116 144 / 0.45);
+  }
+  100% {
+    box-shadow: 0 0 0 8px rgb(14 116 144 / 0);
+  }
+}
+
+@keyframes brillo {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
   }
 }
 

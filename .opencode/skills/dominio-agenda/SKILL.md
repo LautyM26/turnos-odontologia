@@ -1,6 +1,6 @@
 ---
 name: dominio-agenda
-description: Reglas vigentes de agenda y turnos (RN-AG + RN-TU) con trazabilidad a specs y tests. Usar al programar turnos, huecos, solapamientos, sillones, bloqueos, sobreturnos, estados del turno (reservado, confirmado, asistido, ausente, cancelado), cancelar o reprogramar, reserva online, lista de espera o la agenda del frontend (changes C-05, C-05b transiciones-estado-turno, C-05c huecos-y-sobreturnos, C-05d horario-atencion, C-06 reserva-online-publica, C-07, C-16, C-17), y antes de /opsx:propose de cualquier change de agenda.
+description: Reglas vigentes de agenda y turnos (RN-AG + RN-TU) con trazabilidad a specs y tests. Usar al programar turnos, huecos, solapamientos, sillones, bloqueos, sobreturnos, estados del turno (reservado, confirmado, asistido, ausente, cancelado), cancelar o reprogramar, reserva online, lista de espera o la agenda del frontend (changes C-05, C-05b transiciones-estado-turno, C-05c huecos-y-sobreturnos, C-05d horario-atencion, C-06 reserva-online-publica, C-07 agenda-frontend, C-16, C-17), y antes de /opsx:propose de cualquier change de agenda.
 ---
 
 # dominio-agenda
@@ -52,6 +52,7 @@ Cubre el corazón operativo de la clínica: cuándo y dónde puede atenderse un 
 - "Activo" = `reservado`, `confirmado`, `asistido`. `cancelado`/`ausente` liberan el hueco sin tocar las constraints. Un sobreturno es una **marca** (`es_sobreturno` + `motivo_sobreturno`, C-05c), no un estado: queda fuera de las exclusion constraints y del pre-chequeo, pero respeta los bloqueos y sigue `TRANSICIONES`. El estado `sobreturno` de la 005 está en desuso.
 - Horario de atención (C-05d, decisión del usuario, sin RN en la KB): franjas semanales por profesional (`franja_horaria`, minutos locales) en `clinica.zona_horaria`. `SQL_HORARIO_CTE` de `backend/app/domain/agenda/horario.py` es la única definición del horario y la usan huecos y `crear_turno`. Turno normal fuera de horario → `409`; sobreturno exceptuado; **sin franjas el profesional no atiende**. En tests, `turnos_data` da 00:00–24:00 a P, Q, R y al profesional de B.
 - Reserva pública (C-06): `backend/app/domain/agenda/reserva_publica.py` reutiliza `buscar_huecos` y `crear_turno(origen="enlace", token_publico_hash=...)`; el servidor elige el sillón; tope 2 turnos futuros por DNI; cancelación con token → historial `actor_tipo="paciente_enlace"`. Endpoints `/api/public/...` sin JWT, con rate limit por IP.
+- Agenda del staff (C-07): `GET /api/agenda/turnos` y `GET /api/agenda/bloqueos` (solo lectura, `backend/app/domain/agenda/agenda_lectura.py`; odontólogo = solo su agenda) y la pantalla `/agenda` en `frontend/src/features/agenda/` (Día por sillón, Semana por profesional, `Promise.all` de turnos + bloqueos + horarios, 409 con alternativas de `GET /api/agenda/huecos`). Diseño: `design-system/turnos-odontologia/MASTER.md`; demo: `backend/scripts/seed_demo_agenda.py`.
 - Respuestas: solapamiento o bloqueo → `409` "Horario no disponible" sin datos del turno ajeno; referencia inválida/ajena → `422`; rol no autorizado → `403`; turno de otra clínica → `404`.
 - Sobreturno: reutilizar `require_sobreturno()` de `backend/app/api/permissions.py` (admin/recepcionista).
 - Lista de espera (C-16): `backend/app/domain/lista_espera/servicios.py` + job `backend/app/jobs/lista_espera.py`. Hueco liberado = turno `cancelado` no sobreturno con el horario libre (`horario_libre` de `turnos.py`); aceptar = claim de estado de la oferta + `crear_turno(origen='lista_espera')`; el turno a adelantar se cancela con actor `paciente_whatsapp`.
@@ -74,6 +75,8 @@ Cubre el corazón operativo de la clínica: cuándo y dónde puede atenderse un 
 | RN-TU-04 | `openspec/specs/patients/spec.md` · "Riesgo de ausencia de solo lectura" (solo el campo) | `backend/tests/integration/test_pacientes_api.py` · `test_patch_riesgo_ausencia_422` | parcial: falta que el ausente alimente el score y el seguimiento |
 
 Resumen: 10 reglas · 8 cubiertas · 2 parciales · 0 pendientes.
+
+Regla dura 13 (agenda frontend) → `openspec/specs/agenda-web/spec.md` · "Datos frescos y deep-link" → `frontend/tests/agenda.test.tsx` · `carga turnos, bloqueos y horarios en paralelo`.
 
 Requisito sin RN (decisión del usuario 2026-11-17): **horario de atención** → `openspec/specs/business-hours/spec.md` y "Huecos solo dentro del horario de atención" / "El turno normal respeta el horario de atención" → `backend/tests/integration/test_horario_api.py`, `backend/tests/integration/test_horario_turnos.py`, `backend/tests/integration/test_horario_concurrencia.py`. Ningún test cita el código RN: la trazabilidad se hizo por significado (requirement → escenario → test).
 
